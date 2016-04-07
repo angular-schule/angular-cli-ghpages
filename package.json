@@ -1,0 +1,39 @@
+{
+  "name": "angular-cli-ghpages",
+  "version": "0.1.0",
+  "description": "Angular CLI addon. Publish to any `gh-pages` branch on GitHub (or any other branch on any other remote).",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Angular2Buch/angular-cli-ghpages.git"
+  },
+  "bugs": {
+    "url": "https://github.com/Angular2Buch/angular-cli-ghpages/issues"
+  },
+  "author": {
+    "name": "Angular2Buch Team",
+    "email": "team@angular2buch.de"
+  },
+  "maintainers": [
+    {
+      "name": "johanneshoppe",
+      "email": "johannes.hoppe@haushoppe-its.de"
+    },
+    {
+      "name": "fmalcher",
+      "email": "mail@ferdinand-malcher.de"
+    },
+    {
+      "name": "d-koppenhagen",
+      "email": "mail@d-koppenhagen.de"
+    },
+    {
+      "name": "gregonnet",
+      "email": "gregor.woiwode@gmail.com"
+    }
+  ],
+  "license": "MIT",
+  "dependencies": {
+    "gh-pages": "^0.3.1"
+  },
+  "keywords": ["ember-addon", "angular2", "angular-cli", "git", "gh-pages", "ghpages"]
+}

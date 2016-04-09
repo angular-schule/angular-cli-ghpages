@@ -1,5 +1,7 @@
 'use strict';
 
+var path = require('path');
+var fs = require('fs');
 var ghpages = require('gh-pages');
 var RSVP = require('rsvp');
 
@@ -57,11 +59,17 @@ module.exports = {
         'Travis build: https://travis-ci.org/'     + process.env.TRAVIS_REPO_SLUG + '/builds/' + process.env.TRAVIS_BUILD_ID;
     }
 
+    var access = publish = RSVP.denodeify(fs.access);
     var publish = RSVP.denodeify(ghpages.publish);
 
-    return publish(dir, options)
-      .then(function(committed) {
-          ui.write('Successfully published!\n');
+    return access(dir, fs.F_OK)
+       .catch(function(error) {
+          ui.writeError('Dist folder does not exist. Can \'t publish anything. Run `ng build` first!');
+          return RSVP.reject(error) ;
+        })
+      .then(publish(dir, options))
+      .then(function() {
+        ui.write('Successfully published!');
       });
   }
 };

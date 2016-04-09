@@ -3,8 +3,7 @@ module.exports = {
 
   includedCommands: function() {
     return {
-      'gh-pages': require('./lib/commands/deploy'),
-      'ghpages': require('./lib/commands/deploy'),
+      'ghpages': require('./deploy'),
     };
   }
 };

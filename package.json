@@ -33,7 +33,8 @@
   ],
   "license": "MIT",
   "dependencies": {
-    "gh-pages": "^0.3.1"
+    "gh-pages": "^0.11.0",
+    "rsvp": "^3.0.14"
   },
   "keywords": ["ember-addon", "angular2", "angular-cli", "git", "gh-pages", "ghpages"]
 }

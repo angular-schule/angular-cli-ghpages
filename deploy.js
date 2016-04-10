@@ -36,6 +36,11 @@ module.exports = {
     type:         String,
     default:      undefined,  // using gh-pages default -- see readme
     description:  'The git user-email which is associated with this commit'
+  }, {
+    name:         'silent',
+    type:         Boolean,
+    default:      false,
+    description:  'Suppress console logging. This option should be used if the repository URL or other information passed to git commands is sensitive!'
   }],
   run: function(options, rawArgs) {
 
@@ -51,7 +56,7 @@ module.exports = {
       }
     };
     options.dotfiles = true;
-    options.silent = true;  // hides credentials, if provided via repo URL
+    options.logger = function(message) { ui.write(message + "\n"); }
 
     if (process.env.TRAVIS) {
       options.message += '\n\n' +
@@ -62,14 +67,21 @@ module.exports = {
     var access = publish = RSVP.denodeify(fs.access);
     var publish = RSVP.denodeify(ghpages.publish);
 
+
     return access(dir, fs.F_OK)
        .catch(function(error) {
-          ui.writeError('Dist folder does not exist. Can \'t publish anything. Run `ng build` first!');
+          ui.writeError('Dist folder does not exist. Can \'t publish anything. Run `ng build` first!\n');
           return RSVP.reject(error) ;
         })
-      .then(publish(dir, options))
       .then(function() {
-        ui.write('Successfully published!');
+        return publish(dir, options)
+      })
+      .then(function() {
+        ui.write('Successfully published!\n');
+      })
+      .catch(function(error) {
+         ui.writeError('An error occurred!\n');
+         return RSVP.reject(error) ;
       });
   }
 };

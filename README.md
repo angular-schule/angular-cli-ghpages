@@ -1,13 +1,13 @@
 # angular-cli-ghpages
 
 Angular CLI addon. Publish to any gh-pages branch on GitHub (or any other branch on any other remote).  
-This is __NOT__ [IgorMinar/angular-cli-github-pages](https://github.com/IgorMinar/angular-cli-github-pages) - but inspired by it.
+This is __NOT__ [IgorMinar/angular-cli-github-pages](https://github.com/IgorMinar/angular-cli-github-pages).
 
 ## WHY?
 
 [IgorMinar/angular-cli-github-pages](https://github.com/IgorMinar/angular-cli-github-pages) is fixed to the `gh-pages` branch of the same repository. In my oponion it is also trying to do too much.
 In contrast to this, the [Angular2Buch/angular-cli-ghpages](https://github.com/Angular2Buch/angular-cli-ghpages) addon is much more simple. It pushes to any branch on any repository, by utilizing [tschaub/gh-pages](https://github.com/tschaub/gh-pages). Nothing more.
-This addon works perfectly on Travis-CI.
+This addon works great on Travis-CI.
 
 ## Installation & Setup
 
@@ -31,9 +31,17 @@ Then execute `ng ghpages` in order to deploy it.
 Usage:
 
 ```sh
-ng build --environment=production
+ng build
 ng ghpages [OPTIONS]
 ```
+
+The following command runs on our Travis-CI:
+
+```sh
+ng build --environment=production
+ng ghpages --repo=https://TheBuildbot:PASS@github.com/Angular2Buch/book-monkey2-public.git --name="The Buildbot" --email=buildbot@haushoppe-its.de
+```
+
 
 ## Options
 
@@ -70,6 +78,13 @@ The name of the branch you'll be pushing to.  The default uses GitHub's `gh-page
 If you are running the command in a repository without a `user.name` or `user.email` git config properties (or on a machine without these global config properties), you must provide user info before git allows you to commit. In this case provide both `name` and `email` string values to identify the committer.
 
 
+#### <a id="silent">--silent</a>
+ * optional
+ * default: `true` (boolean)
+
+Suppress logging. With silent `true` log messages are suppressed and error messages are sanitized.
+
+> This option should be used if the repository URL or other information passed to git commands is sensitive and should not be logged.
 
 
 

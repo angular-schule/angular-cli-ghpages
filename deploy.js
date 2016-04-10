@@ -63,6 +63,15 @@ module.exports = {
         'Triggered by commit: https://github.com/' + process.env.TRAVIS_REPO_SLUG + '/commit/' + process.env.TRAVIS_COMMIT + '\n' +
         'Travis build: https://travis-ci.org/'     + process.env.TRAVIS_REPO_SLUG + '/builds/' + process.env.TRAVIS_BUILD_ID;
     }
+    
+    // for your convenience - here you can hack credentials into the repository URL
+    if (process.env.REPO_USER_AND_PASS && options.repo) {
+      options.repo = options.repo.replace('REPO_USER_AND_PASS', process.env.REPO_USER_AND_PASS); 
+    }    
+    
+    // always clean the cache directory.
+    // avoids "Error: Remote url mismatch."
+    ghpages.clean();
 
     var access = publish = RSVP.denodeify(fs.access);
     var publish = RSVP.denodeify(ghpages.publish);

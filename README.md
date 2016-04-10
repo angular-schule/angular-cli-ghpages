@@ -1,13 +1,15 @@
 # angular-cli-ghpages
 
 Angular CLI addon. Publish to any gh-pages branch on GitHub (or any other branch on any other remote).  
-This is __NOT__ [IgorMinar/angular-cli-github-pages](https://github.com/IgorMinar/angular-cli-github-pages).
+This is __NOT__ [IgorMinar/angular-cli-github-pages](https://github.com/IgorMinar/angular-cli-github-pages). Brought to you by the [angular2buch.de](https://angular2buch.de/) team! 
 
 ## WHY?
 
-[IgorMinar/angular-cli-github-pages](https://github.com/IgorMinar/angular-cli-github-pages) is fixed to the `gh-pages` branch of the same repository. In my oponion it is also trying to do too much.
-In contrast to this, the [Angular2Buch/angular-cli-ghpages](https://github.com/Angular2Buch/angular-cli-ghpages) addon is much more simple. It pushes to any branch on any repository, by utilizing [tschaub/gh-pages](https://github.com/tschaub/gh-pages). Nothing more.
-This addon works great on Travis-CI.
+[IgorMinar/angular-cli-github-pages](https://github.com/IgorMinar/angular-cli-github-pages) is limited to the `gh-pages` branch of the same repository.
+
+In contrast to this, the [Angular2Buch/angular-cli-ghpages](https://github.com/Angular2Buch/angular-cli-ghpages) addon is able to push to any branch on any repository. It's build on top of [tschaub/gh-pages](https://github.com/tschaub/gh-pages).
+
+__This addon works great on [Travis-CI](https://travis-ci.org/).__
 
 ## Installation & Setup
 
@@ -34,14 +36,6 @@ Usage:
 ng build
 ng ghpages [OPTIONS]
 ```
-
-The following command runs on our Travis-CI:
-
-```sh
-ng build --environment=production
-ng ghpages --repo=https://TheBuildbot:PASS@github.com/Angular2Buch/book-monkey2-public.git --name="The Buildbot" --email=buildbot@haushoppe-its.de
-```
-
 
 ## Options
 
@@ -84,9 +78,20 @@ If you are running the command in a repository without a `user.name` or `user.em
 
 Suppress logging. With silent `true` log messages are suppressed and error messages are sanitized.
 
-> This option should be used if the repository URL or other information passed to git commands is sensitive and should not be logged.
+> This option should be used if the repository URL or other information passed to git commands is sensitive and should not be logged. By default the silent mode is enabled to avoid sensitive data exposure.
 
 
+## Extra
+
+For your convenience, the addon will recognize the [environment variable](https://docs.travis-ci.com/user/environment-variables/#Defining-Variables-in-Repository-Settings) `REPO_USER_AND_PASS` and will replace this pattern in the `--repo` string. Please __do NOT disable the silent mode__ if you have credentials in the repository URL!
+
+In example, the following command runs [on our Travis-CI](https://travis-ci.org/Angular2Buch/book-monkey2):
+
+```sh
+ng build --environment=production
+ng ghpages --repo=https://REPO_USER_AND_PASS@github.com/Angular2Buch/book-monkey2-public.git --name="The Buildbot" --email=buildbot@angular2buch.de
+```
+> REPO_USER_AND_PASS stores credentials in the format `username:password`. Special charcaters must be [percent-encoded](https://en.wikipedia.org/wiki/Percent-encoding).
 
 ## License
 Code released under the [MIT license](https://opensource.org/licenses/MIT).

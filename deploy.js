@@ -39,7 +39,7 @@ module.exports = {
   }, {
     name:         'silent',
     type:         Boolean,
-    default:      false,
+    default:      true,
     description:  'Suppress console logging. This option should be used if the repository URL or other information passed to git commands is sensitive!'
   }],
   run: function(options, rawArgs) {

@@ -1,4 +1,5 @@
 # angular-cli-ghpages
+[![NPM version][npm-image]][npm-url]
 
 <hr>
 
@@ -24,7 +25,7 @@ This addon has the following prerequisites:
 - Git 1.7.6 or higher
 - Angular project created via [angular-cli](https://github.com/angular/angular-cli)
 
-To install this addon all you need to do is install `angular-cli-github-pages` via npm:
+To install this addon run the following command:
 
 ```sh
 npm install --save-dev angular-cli-ghpages
@@ -59,7 +60,7 @@ Hardcoded additional text is always added, if the environment variable `process.
 
 Example:
 ```sh
-ng ghpages --message "What could possibly go wrong?"
+ng ghpages --message="What could possibly go wrong?"
 ```
 
 
@@ -130,3 +131,6 @@ The special extra option `--` is used to delimit the end of the command. npm wil
 
 ## License
 Code released under the [MIT license](https://opensource.org/licenses/MIT).
+
+[npm-url]: https://www.npmjs.com/package/angular-cli-ghpages
+[npm-image]: https://badge.fury.io/js/angular-cli-ghpages.svg

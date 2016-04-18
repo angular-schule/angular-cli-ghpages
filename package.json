@@ -1,6 +1,6 @@
 {
   "name": "angular-cli-ghpages",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "description": "Angular CLI addon. Publish to any gh-pages branch on GitHub (or any other branch on any other remote).",
   "repository": {
     "type": "git",
@@ -36,5 +36,5 @@
     "gh-pages": "^0.11.0",
     "rsvp": "^3.0.14"
   },
-  "keywords": ["ember-addon", "angular2", "angular-cli", "git", "gh-pages", "ghpages"]
+  "keywords": ["ember-addon", "angular2", "angular-cli", "git", "github pages", "gh-pages", "ghpages", "angular-cli-ghpages", "angular-cli-github-pages"]
 }

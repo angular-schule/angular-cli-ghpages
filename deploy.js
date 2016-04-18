@@ -41,12 +41,17 @@ module.exports = {
     type:         Boolean,
     default:      true,
     description:  'Suppress console logging. This option should be used if the repository URL or other information passed to git commands is sensitive!'
+  }, {
+    name:         'dir',
+    type:         String,
+    default:      'dist',
+    description:  'Directory for all sources, relative to the project-root. Monst probably no change is required here.'
   }],
   run: function(options, rawArgs) {
 
     var ui = this.ui;
     var root = this.project.root;
-    var dir = path.join(root, 'dist');
+    var dir = path.join(root, options.dir);
 
     options = options || {};
     if (options['name'] && options['email']) {

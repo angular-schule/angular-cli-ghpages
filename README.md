@@ -27,7 +27,7 @@ This addon has the following prerequisites:
 To install this addon all you need to do is install `angular-cli-github-pages` via npm:
 
 ```sh
-npm i angular-cli-ghpages --saveDev
+npm install --save-dev angular-cli-ghpages
 ```
 
 ## Usage
@@ -84,6 +84,16 @@ If you are running the command in a repository without a `user.name` or `user.em
 Suppress logging. With silent `true` log messages are suppressed and error messages are sanitized.
 
 > This option should be used if the repository URL or other information passed to git commands is sensitive and should not be logged. By default the silent mode is enabled to avoid sensitive data exposure.
+
+
+#### <a id="dir">--dir</a>
+ * optional
+ * default: `dist`
+
+Directory for all sources, relative to the project-root.  
+Monst probably no change is required here.
+
+
 
 
 ## Extra

@@ -70,8 +70,8 @@ module.exports = {
     }
     
     // for your convenience - here you can hack credentials into the repository URL
-    if (process.env.REPO_USER_AND_PASS && options.repo) {
-      options.repo = options.repo.replace('REPO_USER_AND_PASS', process.env.REPO_USER_AND_PASS); 
+    if (process.env.GH_TOKEN && options.repo) {
+      options.repo = options.repo.replace('GH_TOKEN', process.env.GH_TOKEN); 
     }    
     
     // always clean the cache directory.

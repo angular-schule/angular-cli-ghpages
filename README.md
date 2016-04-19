@@ -99,15 +99,15 @@ Monst probably no change is required here.
 
 ## Extra
 
-For your convenience, the addon will recognize the [environment variable](https://docs.travis-ci.com/user/environment-variables/#Defining-Variables-in-Repository-Settings) `REPO_USER_AND_PASS` and will replace this pattern in the `--repo` string. Please __do NOT disable the silent mode__ if you have credentials in the repository URL!
+For your convenience, the addon will recognize the [environment variable](https://docs.travis-ci.com/user/environment-variables/#Defining-Variables-in-Repository-Settings) `GH_TOKEN` and will replace this pattern in the `--repo` string. Please __do NOT disable the silent mode__ if you have credentials in the repository URL! Read more about [Github tokens here](https://help.github.com/articles/creating-an-access-token-for-command-line-use/).
 
 In example, the following command runs [on our Travis-CI](https://travis-ci.org/Angular2Buch/book-monkey2):
 
 ```sh
 ng build --environment=production
-ng ghpages --repo=https://REPO_USER_AND_PASS@github.com/Angular2Buch/book-monkey2-public.git --name="The Buildbot" --email=buildbot@angular2buch.de
+ng ghpages --repo=https://username:GH_TOKEN@github.com/organisation/your-repo.git --name="Displayed Username" --email=mail@example.orf
 ```
-> REPO_USER_AND_PASS stores credentials in the format `username:password`. Special charcaters must be [percent-encoded](https://en.wikipedia.org/wiki/Percent-encoding).
+> GH_TOKEN is just like a password!
 
 ### A hint for angular-cli
 

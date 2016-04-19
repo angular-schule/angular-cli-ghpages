@@ -105,9 +105,9 @@ In example, the following command runs [on our Travis-CI](https://travis-ci.org/
 
 ```sh
 ng build --environment=production
-ng ghpages --repo=https://username:GH_TOKEN@github.com/organisation/your-repo.git --name="Displayed Username" --email=mail@example.orf
+ng ghpages --repo=https://GH_TOKEN@github.com/organisation/your-repo.git --name="Displayed Username" --email=mail@example.orf
 ```
-> GH_TOKEN is just like a password!
+> You have to treat the GH_TOKEN as secure as a password!
 
 ### A hint for angular-cli
 

@@ -36,5 +36,5 @@
     "gh-pages": "^0.11.0",
     "rsvp": "^3.0.14"
   },
-  "keywords": ["ember-addon", "angular2", "angular-cli", "git", "github pages", "gh-pages", "ghpages", "angular-cli-ghpages", "angular-cli-github-pages"]
+  "keywords": ["angular2", "angular-cli", "git", "github pages", "gh-pages", "ghpages", "angular-cli-ghpages", "angular-cli-github-pages"]
 }

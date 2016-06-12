@@ -109,24 +109,6 @@ ng ghpages --repo=https://GH_TOKEN@github.com/organisation/your-repo.git --name=
 ```
 > You have to treat the GH_TOKEN as secure as a password!
 
-### A hint for angular-cli
-
-Your build can break if `angular-cli` from package.json and the global `ng` command have different versions.  
-You might want to define a run-script like this: 
-
-```js
-  "scripts": {
-    "start": "ng server",
-    "ng": "ng"
-  }
-```
-
-Now you can avoid a gloabl `ng` like this:
-
-```npm run ng -- ghpages --repo=https://XXX```
-
-The special extra option `--` is used to delimit the end of the command. npm will pass all the arguments after the -- directly to your script. __Happy building!__
-
 
 
 ## License

@@ -1,11 +1,14 @@
 'use strict';
 
+var Command = require('ember-cli/lib/models/command');
+var Promise = require('ember-cli/lib/ext/promise');
+var BuildTask = require('ember-cli/lib/tasks/build');
+
 var path = require('path');
 var fs = require('fs');
 var ghpages = require('gh-pages');
-var RSVP = require('rsvp');
 
-module.exports = {
+module.exports =  Command.extend({
   name: 'ghpages',
   aliases: ['gh-pages'],
   description: 'Publish to any gh-pages branch on GitHub (or any other branch on any other remote). Build the project before publishing!',
@@ -45,14 +48,24 @@ module.exports = {
     name:         'dir',
     type:         String,
     default:      'dist',
-    description:  'Directory for all sources, relative to the project-root. Monst probably no change is required here.'
+    description:  'Directory for all sources, relative to the project-root. Most probably no change is required here.'
+  }, {
+      name: 'environment',
+      type: String,
+      default: 'production',
+      description: 'The Angular environment to create a build for'
+  }, {
+      name: 'skip-build',
+      type: Boolean,
+      default: false,
+      description: 'Skip building the project before deploying, usefull together with --dir'
   }],
   run: function(options, rawArgs) {
 
     var ui = this.ui;
     var root = this.project.root;
     var dir = path.join(root, options.dir);
-
+    
     options = options || {};
     if (options['name'] && options['email']) {
       options.user = {
@@ -72,21 +85,35 @@ module.exports = {
     // for your convenience - here you can hack credentials into the repository URL
     if (process.env.GH_TOKEN && options.repo) {
       options.repo = options.repo.replace('GH_TOKEN', process.env.GH_TOKEN); 
-    }    
-    
+    }       
+
     // always clean the cache directory.
     // avoids "Error: Remote url mismatch."
     ghpages.clean();
 
-    var access = publish = RSVP.denodeify(fs.access);
-    var publish = RSVP.denodeify(ghpages.publish);
+    var access = publish = Promise.denodeify(fs.access);
+    var publish = Promise.denodeify(ghpages.publish);
 
+    function build() {
+      if (options.skipBuild) return Promise.resolve();
+      
+      var buildTask = new BuildTask({
+        ui: this.ui,
+        analytics: this.analytics,
+        project: this.project
+      });
+      
+      return buildTask.run(buildOptions);
+    }    
 
-    return access(dir, fs.F_OK)
-       .catch(function(error) {
-          ui.writeError('Dist folder does not exist. Can \'t publish anything. Run `ng build` first!\n');
-          return RSVP.reject(error) ;
-        })
+    return build()
+      .then(function() {
+        return access(dir, fs.F_OK)
+      })        
+      .catch(function(error) {
+        ui.writeError('Dist folder does not exist. Check the dir --dir parameter or build the project first!\n');
+        return Promise.reject(error) ;
+      })
       .then(function() {
         return publish(dir, options)
       })
@@ -95,7 +122,7 @@ module.exports = {
       })
       .catch(function(error) {
          ui.writeError('An error occurred!\n');
-         return RSVP.reject(error) ;
+         return Promise.reject(error) ;
       });
   }
-};
+});

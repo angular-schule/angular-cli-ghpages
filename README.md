@@ -10,12 +10,13 @@
 Angular CLI addon. Publish to any gh-pages branch on GitHub (or any other branch on any other remote).  
 Made for Travis-CI. Brought to you by the [angular2buch.de](https://angular2buch.de/) team! 
 
-## WHY?
+## About
 
-This is __NOT__ [IgorMinar/angular-cli-github-pages](https://github.com/IgorMinar/angular-cli-github-pages). That addon is limited to the `gh-pages` branch of the same repository.
+This is similar to the normal `github-pages:deploy` command.
+But by design, the command is limited to the `gh-pages` branch of the same repository.
 
 In contrast to this, the [Angular2Buch/angular-cli-ghpages](https://github.com/Angular2Buch/angular-cli-ghpages) addon is able to push to any branch on any repository. It's build on top of [tschaub/gh-pages](https://github.com/tschaub/gh-pages).
-__This addon works great on [Travis-CI](https://travis-ci.org/).__ No git credentials must be set up in before. Specific environment variables of Travis-CI are evaluated, too.
+__This addon works great on [Travis-CI](https://travis-ci.org/).__ No git credentials must be set up in before. Specific environment variables of Travis-CI are evaluated, too. You will like it!
 
 ## Installation & Setup
 
@@ -33,13 +34,11 @@ npm install --save-dev angular-cli-ghpages
 
 ## Usage
 
-Run `ng build` to fill the `dist` folder.
-Then execute `ng ghpages` in order to deploy it.
+Execute `ng ghpages` in order to deploy the project with a `production` build.
 
 Usage:
 
 ```sh
-ng build
 ng ghpages [OPTIONS]
 ```
 
@@ -49,14 +48,14 @@ ng ghpages [OPTIONS]
  * optional
  * default: url of the origin remote of the current dir (assumes a git repository)
 
-By default, [tschaub/gh-pages](https://github.com/tschaub/gh-pages) assumes that the current working directory is a git repository, and that you want to push changes to the `origin` remote. If instead your script is not in a git repository, or if you want to push to another repository, you can provide the repository URL in the `repo` option.
+By default, __gh-pages__ assumes that the current working directory is a git repository, and that you want to push changes to the `origin` remote. If instead your script is not in a git repository, or if you want to push to another repository, you can provide the repository URL in the `repo` option.
 
 #### <a id="message">--message</a>
  * optional
  * default: `Auto-generated commit`
 
 The commit message, __must be wrapped in quotes__.  
-Hardcoded additional text is always added, if the environment variable `process.env.TRAVIS` exists (for Travis CI). 
+Some handy additional text is always added, if the environment variable `process.env.TRAVIS` exists (for Travis CI).
 
 Example:
 ```sh
@@ -84,7 +83,7 @@ If you are running the command in a repository without a `user.name` or `user.em
 
 Suppress logging. With silent `true` log messages are suppressed and error messages are sanitized.
 
-> This option should be used if the repository URL or other information passed to git commands is sensitive and should not be logged. By default the silent mode is enabled to avoid sensitive data exposure.
+> This option should be used if the repository URL or other information passed to git commands is sensitive and should not be logged (== you have a public build server). By default the silent mode is enabled to avoid sensitive data exposure.
 
 
 #### <a id="dir">--dir</a>
@@ -92,7 +91,23 @@ Suppress logging. With silent `true` log messages are suppressed and error messa
  * default: `dist`
 
 Directory for all sources, relative to the project-root.  
-Monst probably no change is required here.
+Most probably no change is required here, usefull together with --skip-build.
+This option can be used to deploy completely different folders, which are note related at all to angular.
+
+
+#### <a id="environment">--environment</a>
+ * optional
+ * default: `production`
+
+The Angular environment to create a build for.
+
+
+#### <a id="skip-build">--skip-build</a>
+ * optional
+ * default: `false` (boolean)
+
+Skip building the project before deploying, usefull together with --dir.
+
 
 
 

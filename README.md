@@ -18,6 +18,9 @@ But by design, the command is limited to the `gh-pages` branch of the same repos
 In contrast to this, the [Angular2Buch/angular-cli-ghpages](https://github.com/Angular2Buch/angular-cli-ghpages) addon is able to push to any branch on any repository. It's build on top of [tschaub/gh-pages](https://github.com/tschaub/gh-pages).
 __This addon works great on [Travis-CI](https://travis-ci.org/).__ No git credentials must be set up in before. Specific environment variables of Travis-CI are evaluated, too. You will like it!
 
+angular-cli-ghpages was successfully tested against `angular-cli: 1.0.0-beta.11-webpack.2`. 
+
+
 ## Installation & Setup
 
 This addon has the following prerequisites:
@@ -90,8 +93,8 @@ Suppress logging. With silent `true` log messages are suppressed and error messa
  * optional
  * default: `dist`
 
-Directory for all sources, relative to the project-root.  
-Most probably no change is required here, usefull together with --skip-build.
+Directory for all published sources, relative to the project-root.  
+Most probably no change is required here, useful together with --skip-build.
 This option can be used to deploy completely different folders, which are note related at all to angular.
 
 
@@ -100,26 +103,33 @@ This option can be used to deploy completely different folders, which are note r
  * default: `production`
 
 The Angular environment to create a build for.
+The build artifacts are always placed into the path `dist/`.
+The option `--dir` has no effect on the output path.
 
 
 #### <a id="skip-build">--skip-build</a>
  * optional
  * default: `false` (boolean)
 
-Skip building the project before deploying, usefull together with --dir.
+Skip building the project before deploying, useful together with --dir.
 
 
+
+#### <a id="dotfiles">--dotfiles</a>
+ * optional
+ * default: `true` (boolean)
+
+Includes dotfiles by default. When set to `false` files starting with `.` are ignored.
 
 
 
 ## Extra
 
-For your convenience, the addon will recognize the [environment variable](https://docs.travis-ci.com/user/environment-variables/#Defining-Variables-in-Repository-Settings) `GH_TOKEN` and will replace this pattern in the `--repo` string. Please __do NOT disable the silent mode__ if you have credentials in the repository URL! Read more about [Github tokens here](https://help.github.com/articles/creating-an-access-token-for-command-line-use/).
+For your convenience, the addon will recognize the [environment variable](https://docs.travis-ci.com/user/environment-variables/#Defining-Variables-in-Repository-Settings) `GH_TOKEN` and will replace this pattern in the `--repo` string. Please __do NOT disable the silent mode__ if you have any credentials in the repository URL! Read more about [Github tokens here](https://help.github.com/articles/creating-an-access-token-for-command-line-use/).
 
 In example, the following command runs [on our Travis-CI](https://travis-ci.org/Angular2Buch/book-monkey2):
 
 ```sh
-ng build --environment=production
 ng ghpages --repo=https://GH_TOKEN@github.com/organisation/your-repo.git --name="Displayed Username" --email=mail@example.orf
 ```
 > You have to treat the GH_TOKEN as secure as a password!

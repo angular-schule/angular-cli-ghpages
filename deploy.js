@@ -48,7 +48,7 @@ module.exports =  Command.extend({
     name:         'dir',
     type:         String,
     default:      'dist',
-    description:  'Directory for all sources, relative to the project-root. Most probably no change is required here.'
+    description:  'Directory for all published sources, relative to the project-root. Most probably no change is required here.'
   }, {
       name: 'environment',
       type: String,
@@ -58,7 +58,12 @@ module.exports =  Command.extend({
       name: 'skip-build',
       type: Boolean,
       default: false,
-      description: 'Skip building the project before deploying, usefull together with --dir'
+      description: 'Skip building the project before deploying, useful together with --dir'
+  }, {
+      name: 'dotfiles',
+      type: Boolean,
+      default: true,
+      description: 'Includes dotfiles by default. When set to `false` files starting with `.` are ignored.'
   }],
   run: function(options, rawArgs) {
 
@@ -73,8 +78,20 @@ module.exports =  Command.extend({
         email: options['email']
       }
     };
-    options.dotfiles = true;
+
+    // gh-pages: forwards  messages to ui
     options.logger = function(message) { ui.write(message + "\n"); }
+        
+    var buildTask = new BuildTask({
+      ui: this.ui,
+      analytics: this.analytics,
+      project: this.project
+    });
+    
+    var buildOptions = {
+      environment: options.environment,
+      outputPath: 'dist/'
+    };
 
     if (process.env.TRAVIS) {
       options.message += '\n\n' +
@@ -95,14 +112,7 @@ module.exports =  Command.extend({
     var publish = Promise.denodeify(ghpages.publish);
 
     function build() {
-      if (options.skipBuild) return Promise.resolve();
-      
-      var buildTask = new BuildTask({
-        ui: this.ui,
-        analytics: this.analytics,
-        project: this.project
-      });
-      
+      if (options.skipBuild) return Promise.resolve();  
       return buildTask.run(buildOptions);
     }    
 

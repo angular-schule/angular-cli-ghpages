@@ -96,15 +96,24 @@ Suppress logging. With silent `true` log messages are suppressed and error messa
 Directory for all published sources, relative to the project-root.  
 Most probably no change is required here, useful together with --skip-build.
 This option can be used to deploy completely different folders, which are note related at all to angular.
+(Hint: usual angular-cli config is ignored here!)
+
+AND ALSO: Output path for the build, if a build is done.
+
+#### <a id="target">--target</a>
+ * optional
+ * default: `production`
+ * alias: `t`
+
+Build target (`development` or `production`), see [Build Targets and Environment Files](https://github.com/angular/angular-cli/#build-targets-and-environment-files).
 
 
 #### <a id="environment">--environment</a>
  * optional
- * default: `production`
+ * default: `prod`
+  * alias: `e`
 
-The Angular environment to create a build for.
-The build artifacts are always placed into the path `dist/`.
-The option `--dir` has no effect on the output path.
+Environment file to be used with that build (`dev`, `prod` or own), see [Build Targets and Environment Files](https://github.com/angular/angular-cli/#build-targets-and-environment-files).
 
 
 #### <a id="skip-build">--skip-build</a>

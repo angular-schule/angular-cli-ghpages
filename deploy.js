@@ -1,8 +1,14 @@
 'use strict';
 
-var Command = require('ember-cli/lib/models/command');
-var Promise = require('ember-cli/lib/ext/promise');
-var BuildTask = require('ember-cli/lib/tasks/build');
+// `require.main.require` so that plugin even works when linked with `npm link`
+// see https://github.com/npm/npm/issues/5875 / http://stackoverflow.com/a/25800501
+//
+// hint:
+// this asumes a flat node_modules structure with ember-cli and angular-cli on top
+// and does not work in NPM 2 until ember-cli is directly in package.json
+var Command = require.main.require('ember-cli/lib/models/command');
+var Promise = require.main.require('ember-cli/lib/ext/promise');
+var WebpackBuild = require.main.require('angular-cli/addon/ng2/tasks/build-webpack.ts'); // see angular-cli/lib/cli/index.js which hooks up on require calls to transpile TypeScript.
 
 var path = require('path');
 var fs = require('fs');
@@ -49,21 +55,28 @@ module.exports =  Command.extend({
     type:         String,
     default:      'dist',
     description:  'Directory for all published sources, relative to the project-root. Most probably no change is required here.'
+  }, { 
+    name:         'target',
+    type:         String,
+    default:      'production', 
+    aliases:      ['t', { 'dev': 'development' }, { 'prod': 'production' }],
+    description:  'Build target (`development` or `production`)'
+  }, { 
+    name:         'environment',
+    type:         String,
+    default:      'prod',
+    aliases:      ['e'],
+    description:  'Environment file to be used with that build (`dev`, `prod` or own)'
   }, {
-      name: 'environment',
-      type: String,
-      default: 'production',
-      description: 'The Angular environment to create a build for'
+    name:         'skip-build',
+    type:         Boolean,
+    default:      false,
+    description: 'Skip building the project before deploying, useful together with --dir'
   }, {
-      name: 'skip-build',
-      type: Boolean,
-      default: false,
-      description: 'Skip building the project before deploying, useful together with --dir'
-  }, {
-      name: 'dotfiles',
-      type: Boolean,
-      default: true,
-      description: 'Includes dotfiles by default. When set to `false` files starting with `.` are ignored.'
+    name:        'dotfiles',
+    type:         Boolean,
+    default:      true,
+    description:  'Includes dotfiles by default. When set to `false` files starting with `.` are ignored.'
   }],
   run: function(options, rawArgs) {
 
@@ -82,15 +95,19 @@ module.exports =  Command.extend({
     // gh-pages: forwards  messages to ui
     options.logger = function(message) { ui.write(message + "\n"); }
         
-    var buildTask = new BuildTask({
+    var buildTask = new WebpackBuild({
       ui: this.ui,
       analytics: this.analytics,
-      project: this.project
+      cliProject: this.project,
+      target: options.target,
+      environment: options.environment,
+      outputPath: dir
     });
     
     var buildOptions = {
+      target: options.target,
       environment: options.environment,
-      outputPath: 'dist/'
+      outputPath: dir
     };
 
     if (process.env.TRAVIS) {

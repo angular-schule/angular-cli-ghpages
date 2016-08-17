@@ -34,7 +34,7 @@
   "license": "MIT",
   "dependencies": {
     "gh-pages": "^0.11.0"
-  }
+  },
   "peerDependencies": {
     "ember-cli": "^2.5.0"
   },

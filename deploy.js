@@ -8,7 +8,7 @@
 // and does not work in NPM 2 until ember-cli is directly in package.json
 var Command = require.main.require('ember-cli/lib/models/command');
 var Promise = require.main.require('ember-cli/lib/ext/promise');
-var WebpackBuild = require.main.require('angular-cli/addon/ng2/tasks/build-webpack.ts'); // see angular-cli/lib/cli/index.js which hooks up on require calls to transpile TypeScript.
+var WebpackBuild = require.main.require('angular-cli/tasks/build-webpack');
 
 var path = require('path');
 var fs = require('fs');
@@ -95,7 +95,7 @@ module.exports =  Command.extend({
     // gh-pages: forwards  messages to ui
     options.logger = function(message) { ui.write(message + "\n"); }
         
-    var buildTask = new WebpackBuild({
+    var buildTask = new WebpackBuild.default({
       ui: this.ui,
       analytics: this.analytics,
       cliProject: this.project,

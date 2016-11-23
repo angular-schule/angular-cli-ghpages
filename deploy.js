@@ -2,13 +2,8 @@
 
 // `require.main.require` so that plugin even works when linked with `npm link`
 // see https://github.com/npm/npm/issues/5875 / http://stackoverflow.com/a/25800501
-//
-// hint:
-// this asumes a flat node_modules structure with ember-cli and angular-cli on top
-// and does not work in NPM 2 until ember-cli is directly in package.json
-var Command = require.main.require('ember-cli/lib/models/command');
-var Promise = require.main.require('ember-cli/lib/ext/promise');
-var WebpackBuild = require.main.require('angular-cli/tasks/build-webpack');
+var Command = require.main.require('../../ember-cli/lib/models/command');
+var Promise = require.main.require('../../ember-cli/lib/ext/promise');
 
 var path = require('path');
 var fs = require('fs');

@@ -8,17 +8,17 @@
 <hr>
 
 Angular CLI addon. Publish to any gh-pages branch on GitHub (or any other branch on any other remote).  
-Made for Travis-CI. Brought to you by the [angular2buch.de](https://angular2buch.de/) team! 
+Made for Travis-CI. Brought to you by the [angular-buch.com](https://angular-buch.com/) team! 
 
 ## About
 
 This is similar to the normal `github-pages:deploy` command.
 But by design, the command is limited to the `gh-pages` branch of the same repository.
 
-In contrast to this, the [Angular2Buch/angular-cli-ghpages](https://github.com/Angular2Buch/angular-cli-ghpages) addon is able to push to any branch on any repository. It's build on top of [tschaub/gh-pages](https://github.com/tschaub/gh-pages).
+In contrast to this, the [angular-buch/angular-cli-ghpages](https://github.com/angular-buch/angular-cli-ghpages) addon is able to push to any branch on any repository. It's made on top of [tschaub/gh-pages](https://github.com/tschaub/gh-pages).
 __This addon works great on [Travis-CI](https://travis-ci.org/).__ No git credentials must be set up in before. Specific environment variables of Travis-CI are evaluated, too. You will like it!
 
-angular-cli-ghpages was sucessfully tested against __`angular-cli: 1.0.0-beta.17`__. 
+angular-cli-ghpages was sucessfully tested against __`angular-cli: 1.0.0-beta.21`__. 
 
 
 ## Installation & Setup
@@ -113,7 +113,7 @@ Includes dotfiles by default. When set to `false` files starting with `.` are ig
 
 For your convenience, the addon will recognize the [environment variable](https://docs.travis-ci.com/user/environment-variables/#Defining-Variables-in-Repository-Settings) `GH_TOKEN` and will replace this pattern in the `--repo` string. Please __do NOT disable the silent mode__ if you have any credentials in the repository URL! Read more about [Github tokens here](https://help.github.com/articles/creating-an-access-token-for-command-line-use/).
 
-In example, the following command runs [on our Travis-CI](https://travis-ci.org/Angular2Buch/book-monkey2):
+In example, the following command runs [on our Travis-CI](https://travis-ci.org/angular-buch/book-monkey2):
 
 ```sh
 ng ghpages --repo=https://GH_TOKEN@github.com/organisation/your-repo.git --name="Displayed Username" --email=mail@example.orf

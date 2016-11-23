@@ -1,16 +1,16 @@
 {
   "name": "angular-cli-ghpages",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "Angular CLI addon. Publish to any gh-pages branch on GitHub (or any other branch on any other remote).",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/Angular2Buch/angular-cli-ghpages.git"
+    "url": "git+https://github.com/angular-buch/angular-cli-ghpages.git"
   },
   "bugs": {
-    "url": "https://github.com/Angular2Buch/angular-cli-ghpages/issues"
+    "url": "https://github.com/angular-buch/angular-cli-ghpages/issues"
   },
   "author": {
-    "name": "Angular2Buch Team",
+    "name": "Angular-Buch Team",
     "email": "team@angular2buch.de"
   },
   "maintainers": [

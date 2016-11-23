@@ -55,23 +55,6 @@ module.exports =  Command.extend({
     type:         String,
     default:      'dist',
     description:  'Directory for all published sources, relative to the project-root. Most probably no change is required here.'
-  }, { 
-    name:         'target',
-    type:         String,
-    default:      'production', 
-    aliases:      ['t', { 'dev': 'development' }, { 'prod': 'production' }],
-    description:  'Build target (`development` or `production`)'
-  }, { 
-    name:         'environment',
-    type:         String,
-    default:      'prod',
-    aliases:      ['e'],
-    description:  'Environment file to be used with that build (`dev`, `prod` or own)'
-  }, {
-    name:         'skip-build',
-    type:         Boolean,
-    default:      false,
-    description: 'Skip building the project before deploying, useful together with --dir'
   }, {
     name:        'dotfiles',
     type:         Boolean,
@@ -95,21 +78,6 @@ module.exports =  Command.extend({
     // gh-pages: forwards  messages to ui
     options.logger = function(message) { ui.write(message + "\n"); }
         
-    var buildTask = new WebpackBuild.default({
-      ui: this.ui,
-      analytics: this.analytics,
-      cliProject: this.project,
-      target: options.target,
-      environment: options.environment,
-      outputPath: dir
-    });
-    
-    var buildOptions = {
-      target: options.target,
-      environment: options.environment,
-      outputPath: dir
-    };
-
     if (process.env.TRAVIS) {
       options.message += '\n\n' +
         'Triggered by commit: https://github.com/' + process.env.TRAVIS_REPO_SLUG + '/commit/' + process.env.TRAVIS_COMMIT + '\n' +
@@ -128,12 +96,11 @@ module.exports =  Command.extend({
     var access = publish = Promise.denodeify(fs.access);
     var publish = Promise.denodeify(ghpages.publish);
 
-    function build() {
-      if (options.skipBuild) return Promise.resolve();  
-      return buildTask.run(buildOptions);
+    function go() {
+      return Promise.resolve();  
     }    
 
-    return build()
+    return go()
       .then(function() {
         return access(dir, fs.F_OK)
       })        

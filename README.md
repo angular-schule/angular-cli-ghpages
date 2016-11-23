@@ -38,7 +38,8 @@ npm install angular-cli-ghpages --save-dev
 
 ## Usage
 
-Execute `ng ghpages` in order to deploy the project with a `production` build.
+Execute `ng ghpages` in order to deploy the project with a build from `dist` folder.
+Note: you have to create the folder in before (e.g. `ng build --prod`)
 
 Usage:
 
@@ -95,33 +96,8 @@ Suppress logging. With silent `true` log messages are suppressed and error messa
  * default: `dist`
 
 Directory for all published sources, relative to the project-root.  
-Most probably no change is required here, useful together with --skip-build.
+Most probably no change is required here.
 This option can be used to deploy completely different folders, which are note related at all to angular.
-(Hint: usual angular-cli config is ignored here!)
-
-AND ALSO: Output path for the build, if a build is done.
-
-#### <a id="target">--target</a>
- * optional
- * default: `production`
- * alias: `t`
-
-Build target (`development` or `production`), see [Build Targets and Environment Files](https://github.com/angular/angular-cli/#build-targets-and-environment-files).
-
-
-#### <a id="environment">--environment</a>
- * optional
- * default: `prod`
-  * alias: `e`
-
-Environment file to be used with that build (`dev`, `prod` or own), see [Build Targets and Environment Files](https://github.com/angular/angular-cli/#build-targets-and-environment-files).
-
-
-#### <a id="skip-build">--skip-build</a>
- * optional
- * default: `false` (boolean)
-
-Skip building the project before deploying, useful together with --dir.
 
 
 

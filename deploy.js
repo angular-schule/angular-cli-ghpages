@@ -1,15 +1,11 @@
 'use strict';
 
-// `require.main.require` so that plugin even works when linked with `npm link`
-// see https://github.com/npm/npm/issues/5875 / http://stackoverflow.com/a/25800501
-var Command = require.main.require('../../ember-cli/lib/models/command');
-var Promise = require.main.require('../../ember-cli/lib/ext/promise');
+var path = require('path'),
+    fs = require('fs'),
+    ghpages = require('gh-pages'),
+    denodeify = require('denodeify');
 
-var path = require('path');
-var fs = require('fs');
-var ghpages = require('gh-pages');
-
-module.exports =  Command.extend({
+module.exports =  {
   name: 'ghpages',
   aliases: ['gh-pages'],
   description: 'Publish to any gh-pages branch on GitHub (or any other branch on any other remote). Build the project before publishing!',
@@ -61,7 +57,7 @@ module.exports =  Command.extend({
     var ui = this.ui;
     var root = this.project.root;
     var dir = path.join(root, options.dir);
-    
+
     options = options || {};
     if (options['name'] && options['email']) {
       options.user = {
@@ -72,33 +68,33 @@ module.exports =  Command.extend({
 
     // gh-pages: forwards  messages to ui
     options.logger = function(message) { ui.write(message + "\n"); }
-        
+
     if (process.env.TRAVIS) {
       options.message += '\n\n' +
         'Triggered by commit: https://github.com/' + process.env.TRAVIS_REPO_SLUG + '/commit/' + process.env.TRAVIS_COMMIT + '\n' +
         'Travis build: https://travis-ci.org/'     + process.env.TRAVIS_REPO_SLUG + '/builds/' + process.env.TRAVIS_BUILD_ID;
     }
-    
+
     // for your convenience - here you can hack credentials into the repository URL
     if (process.env.GH_TOKEN && options.repo) {
-      options.repo = options.repo.replace('GH_TOKEN', process.env.GH_TOKEN); 
-    }       
+      options.repo = options.repo.replace('GH_TOKEN', process.env.GH_TOKEN);
+    }
 
     // always clean the cache directory.
     // avoids "Error: Remote url mismatch."
     ghpages.clean();
 
-    var access = publish = Promise.denodeify(fs.access);
-    var publish = Promise.denodeify(ghpages.publish);
+    var access = publish = denodeify(fs.access);
+    var publish = denodeify(ghpages.publish);
 
     function go() {
-      return Promise.resolve();  
-    }    
+      return Promise.resolve();
+    }
 
     return go()
       .then(function() {
         return access(dir, fs.F_OK)
-      })        
+      })
       .catch(function(error) {
         ui.writeError('Dist folder does not exist. Check the dir --dir parameter or build the project first!\n');
         return Promise.reject(error) ;
@@ -114,4 +110,4 @@ module.exports =  Command.extend({
          return Promise.reject(error) ;
       });
   }
-});
+};

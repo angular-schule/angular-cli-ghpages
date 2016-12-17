@@ -18,7 +18,7 @@ But by design, the command is limited to the `gh-pages` branch of the same repos
 In contrast to this, the [angular-buch/angular-cli-ghpages](https://github.com/angular-buch/angular-cli-ghpages) addon is able to push to any branch on any repository. It's made on top of [tschaub/gh-pages](https://github.com/tschaub/gh-pages).
 __This addon works great on [Travis-CI](https://travis-ci.org/).__ No git credentials must be set up in before. Specific environment variables of Travis-CI are evaluated, too. You will like it!
 
-angular-cli-ghpages was sucessfully tested against __`angular-cli: 1.0.0-beta.21`__. 
+angular-cli-ghpages was sucessfully tested against __`angular-cli@1.0.0-beta.22-1`__. 
 
 
 ## Installation & Setup

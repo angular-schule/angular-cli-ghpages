@@ -1,6 +1,6 @@
 {
   "name": "angular-cli-ghpages",
-  "version": "0.3.2",
+  "version": "0.3.3",
   "description": "Angular CLI addon. Publish to any gh-pages branch on GitHub (or any other branch on any other remote).",
   "repository": {
     "type": "git",

@@ -2,7 +2,8 @@
 
 var path = require('path'),
     fs = require('fs'),
-    ghpages = require('gh-pages'),
+    // If we require the gh-pages package on top, then the `ng build` is completely screwed, see below!
+    // ghpages = require('gh-pages')
     denodeify = require('denodeify');
 
 module.exports =  {
@@ -53,6 +54,19 @@ module.exports =  {
     description:  'Includes dotfiles by default. When set to `false` files starting with `.` are ignored.'
   }],
   run: function(options, rawArgs) {
+
+    /*
+    If we require the gh-pages package on top, then the `ng build` is completely screwed:
+
+      > can't resolve module @angular/core/src/di/opaque_token from [project-dir]\src\index.ts
+      > symbol.getDeclarations is not a function
+      > TypeError: symbol.getDeclarations is not a function
+
+    I have no clue why this happens but this late require works around the problem.
+    This issue started to occur with angular-cli@1.0.0-beta.22-1.
+    */
+    var ghpages = require('gh-pages');
+
 
     var ui = this.ui;
     var root = this.project.root;

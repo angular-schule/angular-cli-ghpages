@@ -7,18 +7,19 @@
 
 <hr>
 
-Angular CLI addon. Publish to any gh-pages branch on GitHub (or any other branch on any other remote).  
+This __was__ an angular CLI addon (until they [removed addon support](https://github.com/angular/angular-cli/pull/3695)).
+Now it's just a wrapper around [tschaub/gh-pages](https://github.com/tschaub/gh-pages).
+
+Publish to any gh-pages branch on GitHub (or any other branch on any other remote).  
 Made for Travis-CI. Brought to you by the [angular-buch.com](https://angular-buch.com/) team! 
 
 ## About
 
-This is similar to the normal `github-pages:deploy` command.
+This script is similar to the normal `github-pages:deploy` command.
 But by design, the command is limited to the `gh-pages` branch of the same repository.
 
-In contrast to this, the [angular-buch/angular-cli-ghpages](https://github.com/angular-buch/angular-cli-ghpages) addon is able to push to any branch on any repository. It's made on top of [tschaub/gh-pages](https://github.com/tschaub/gh-pages).
-__This addon works great on [Travis-CI](https://travis-ci.org/).__ No git credentials must be set up in before. Specific environment variables of Travis-CI are evaluated, too. You will like it!
-
-angular-cli-ghpages was sucessfully tested against __`angular-cli@1.0.0-beta.22-1`__. 
+In contrast to this, the [angular-buch/angular-cli-ghpages](https://github.com/angular-buch/angular-cli-ghpages) script is able to push to any branch on any repository. It's made on top of [tschaub/gh-pages](https://github.com/tschaub/gh-pages).
+__This script works great on [Travis-CI](https://travis-ci.org/).__ No git credentials must be set up in before. Specific environment variables of Travis-CI are evaluated, too. You will like it!
 
 
 ## Installation & Setup
@@ -27,24 +28,29 @@ This addon has the following prerequisites:
 
 - Node.js 4.x
 - Git 1.7.6 or higher
-- Angular project created via [angular-cli](https://github.com/angular/angular-cli)
+- Optional: Angular project created via [angular-cli](https://github.com/angular/angular-cli)
 
 To install this addon run the following command:
 
 ```sh
-cd <your-angular-cli-project>
-npm install angular-cli-ghpages --save-dev 
+npm i -g angular-cli-ghpages
 ```
 
 ## Usage
 
-Execute `ng ghpages` in order to deploy the project with a build from `dist` folder.
+Execute `angular-cli-ghpages` in order to deploy the project with a build from `dist` folder.
 Note: you have to create the folder in before (e.g. `ng build --prod`)
 
 Usage:
 
 ```sh
-ng ghpages [OPTIONS]
+angular-cli-ghpages [OPTIONS]
+```
+
+there is also a shorter `ngh` command available
+
+```sh
+ngh [OPTIONS]
 ```
 
 ## Options
@@ -64,7 +70,7 @@ Some handy additional text is always added, if the environment variable `process
 
 Example:
 ```sh
-ng ghpages --message="What could possibly go wrong?"
+angular-cli-ghpages --message="What could possibly go wrong?"
 ```
 
 
@@ -116,7 +122,7 @@ For your convenience, the addon will recognize the [environment variable](https:
 In example, the following command runs [on our Travis-CI](https://travis-ci.org/angular-buch/book-monkey2):
 
 ```sh
-ng ghpages --repo=https://GH_TOKEN@github.com/organisation/your-repo.git --name="Displayed Username" --email=mail@example.orf
+angular-cli-ghpages --repo=https://GH_TOKEN@github.com/organisation/your-repo.git --name="Displayed Username" --email=mail@example.orf
 ```
 > You have to treat the GH_TOKEN as secure as a password!
 

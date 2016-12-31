@@ -1,3 +1,5 @@
+#!/usr/bin/env node
+
 var index = require('../index'),
   pjson = require('../package.json'),
   program = require('commander');

@@ -53,6 +53,7 @@ angular-cli-ghpages [OPTIONS]
 there is also a shorter `ngh` command available
 
 ```sh
+ng build
 ngh [OPTIONS]
 ```
 

@@ -40,7 +40,7 @@ npm i -g angular-cli-ghpages
 
 ## Usage
 
-Execute `angular-cli-ghpages` in order to deploy the project with a build from `dist` folder.
+Execute `angular-cli-ghpages` in order to deploy the project with a build from `dist` folder.  
 __Note: you have to create the  `dist` folder in before (e.g. `ng build --prod`)__
 
 Usage:

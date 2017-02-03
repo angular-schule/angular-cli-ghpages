@@ -16,7 +16,9 @@ Made for Travis-CI. Brought to you by the [angular-buch.com](https://angular-buc
 ## About
 
 This script is similar to the normal `github-pages:deploy` command.
-But by design, the command is limited to the `gh-pages` branch of the same repository.
+But by design, the command is limited to the `gh-pages` branch of the same repository.  
+__New: The deploy command is being removed from the core of the CLI very soon! [#4385](https://github.com/angular/angular-cli/pull/4385)__
+
 
 In contrast to this, the [angular-buch/angular-cli-ghpages](https://github.com/angular-buch/angular-cli-ghpages) script is able to push to any branch on any repository. It's made on top of [tschaub/gh-pages](https://github.com/tschaub/gh-pages).
 __This script works great on [Travis-CI](https://travis-ci.org/).__ No git credentials must be set up in before. Specific environment variables of Travis-CI are evaluated, too. You will like it!
@@ -39,11 +41,12 @@ npm i -g angular-cli-ghpages
 ## Usage
 
 Execute `angular-cli-ghpages` in order to deploy the project with a build from `dist` folder.
-Note: you have to create the folder in before (e.g. `ng build --prod`)
+__Note: you have to create the  `dist` folder in before (e.g. `ng build --prod`)__
 
 Usage:
 
 ```sh
+ng build
 angular-cli-ghpages [OPTIONS]
 ```
 
@@ -52,6 +55,8 @@ there is also a shorter `ngh` command available
 ```sh
 ngh [OPTIONS]
 ```
+
+If you want to push to `gh-pages` on the same repository with your default credentials, then just enter `ngh` without any options.
 
 ## Options
 

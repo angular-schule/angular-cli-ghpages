@@ -135,8 +135,10 @@ angular-cli-ghpages --repo=https://GH_TOKEN@github.com/organisation/your-repo.gi
 
 ## About the 404 page (specific to github pages only)
 
-The old `github-pages:deploy` command created a `404.html` in the `dist` folder.
-This was required to fully support the router [`PathLocationStrategy`](https://angular.io/docs/ts/latest/api/common/index/PathLocationStrategy-class.html). Right now you have to copy `index.html` to `404.html` on your own. Please submit an [issue](https://github.com/angular-buch/angular-cli-ghpages/issues) if you really want this feature back.
+The old `github-pages:deploy` command created a `404.html` file in the `dist` folder.
+This was required to fully support the router [`PathLocationStrategy`](https://angular.io/docs/ts/latest/api/common/index/PathLocationStrategy-class.html).
+Right now you have to copy `index.html` to `404.html` on your own.
+Please submit an [issue](https://github.com/angular-buch/angular-cli-ghpages/issues) if you really want this feature back.
 
 Example:
 ```sh

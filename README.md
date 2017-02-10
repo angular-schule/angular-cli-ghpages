@@ -133,7 +133,7 @@ angular-cli-ghpages --repo=https://GH_TOKEN@github.com/organisation/your-repo.gi
 > You have to treat the GH_TOKEN as secure as a password!
 
 
-# Known issues
+## Known issues
 
 The old `github-pages:deploy` command created a `404.html` in the `dist` folder.
 This was required to fully support the router [`PathLocationStrategy`](https://angular.io/docs/ts/latest/api/common/index/PathLocationStrategy-class.html). Right now you have to copy `index.html` to `404.html` on your own. Please submit an [issue](https://github.com/angular-buch/angular-cli-ghpages/issues) if you want this feature back.

@@ -109,7 +109,7 @@ Suppress logging. With silent `true` log messages are suppressed and error messa
 
 Directory for all published sources, relative to the project-root.  
 Most probably no change is required here.
-This option can be used to deploy completely different folders, which are note related at all to angular.
+This option can be used to deploy completely different folders, which are not related at all to angular.
 
 
 

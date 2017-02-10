@@ -133,10 +133,17 @@ angular-cli-ghpages --repo=https://GH_TOKEN@github.com/organisation/your-repo.gi
 > You have to treat the GH_TOKEN as secure as a password!
 
 
-## Known issues
+## About the 404 page (specific to github pages only)
 
 The old `github-pages:deploy` command created a `404.html` in the `dist` folder.
-This was required to fully support the router [`PathLocationStrategy`](https://angular.io/docs/ts/latest/api/common/index/PathLocationStrategy-class.html). Right now you have to copy `index.html` to `404.html` on your own. Please submit an [issue](https://github.com/angular-buch/angular-cli-ghpages/issues) if you want this feature back.
+This was required to fully support the router [`PathLocationStrategy`](https://angular.io/docs/ts/latest/api/common/index/PathLocationStrategy-class.html). Right now you have to copy `index.html` to `404.html` on your own. Please submit an [issue](https://github.com/angular-buch/angular-cli-ghpages/issues) if you really want this feature back.
+
+Example:
+```sh
+ng build
+cp dist/index.html dist/404.html
+angular-cli-ghpages [OPTIONS]
+```
 
 
 ## License

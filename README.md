@@ -7,34 +7,29 @@
 
 <hr>
 
-This __was__ an angular CLI addon (until they [removed addon support](https://github.com/angular/angular-cli/pull/3695)).
-Now it's just a wrapper around [tschaub/gh-pages](https://github.com/tschaub/gh-pages).
-
 Publish to any gh-pages branch on GitHub (or any other branch on any other remote).  
-Made for Travis-CI. Brought to you by the [angular-buch.com](https://angular-buch.com/) team! 
+Made for angular-cli users.  
+Made with Travis-CI in mind.  
+Brought to you by the [angular-buch.com](https://angular-buch.com/) team! 
 
 ## About
 
-This script is similar to the normal `github-pages:deploy` command.
-But by design, the command is limited to the `gh-pages` branch of the same repository.  
-__New: The deploy command is being removed from the core of the CLI very soon! [#4385](https://github.com/angular/angular-cli/pull/4385)__
-
-
-In contrast to this, the [angular-buch/angular-cli-ghpages](https://github.com/angular-buch/angular-cli-ghpages) script is able to push to any branch on any repository. It's made on top of [tschaub/gh-pages](https://github.com/tschaub/gh-pages).
-__This script works great on [Travis-CI](https://travis-ci.org/).__ No git credentials must be set up in before. Specific environment variables of Travis-CI are evaluated, too. You will like it!
+This command is similar to the old `github-pages:deploy` command of @angular/cli which was removed in [#4385](https://github.com/angular/angular-cli/pull/4385).
+The [angular-cli-ghpages](https://github.com/angular-buch/angular-cli-ghpages) command is able to push to any branch on any repository. It's made on top of [tschaub/gh-pages](https://github.com/tschaub/gh-pages).
+**This script works great on [Travis-CI](https://travis-ci.org/).** No git credentials must be set up in before. Specific environment variables of Travis-CI are evaluated, too. You will like it!
 
 
 ## Installation & Setup
 
-This addon has the following prerequisites:
+This command has the following prerequisites:
 
 - Node.js 4.x
 - Git 1.7.6 or higher
-- Optional: Angular project created via [angular-cli](https://github.com/angular/angular-cli)
+- __optional__: Angular project created via [angular-cli](https://github.com/angular/angular-cli)
 
-To install this addon run the following command:
+To install the command run the following:
 
-```sh
+```bash
 npm i -g angular-cli-ghpages
 ```
 
@@ -45,14 +40,14 @@ __Note: you have to create the  `dist` folder in before (e.g. `ng build --prod`)
 
 Usage:
 
-```sh
+```bash
 ng build --prod --base-href "https://USERNAME.github.io/REPOSITORY/"
 angular-cli-ghpages [OPTIONS]
 ```
 
 there is also a shorter `ngh` command available
 
-```sh
+```bash
 ng build --prod --base-href "https://USERNAME.github.io/REPOSITORY/"
 ngh [OPTIONS]
 ```
@@ -61,73 +56,106 @@ If you want to push to `gh-pages` on the same repository with your default crede
 
 ## Options
 
-#### <a id="repo">--repo</a>
- * optional
- * default: url of the origin remote of the current dir (assumes a git repository)
 
-By default, __gh-pages__ assumes that the current working directory is a git repository, and that you want to push changes to the `origin` remote. If instead your script is not in a git repository, or if you want to push to another repository, you can provide the repository URL in the `repo` option.
+#### <a id="help">--help</a>
+ * Example: `ngh --help`
+
+Output usage information.
+
+
+#### <a id="version">--version</a>
+ * Example: `ngh --version`
+
+Output the version number. Please provide the version number on any bug report!
+
+
+#### <a id="repo">--repo</a>
+ * __optional__
+ * Default: url of the origin remote of the current dir (assumes a git repository)
+ * Example: `ngh --repo=https://GH_TOKEN@github.com/organisation/your-repo.git`
+
+By default, __gh-pages__ assumes that the current working directory is a git repository,
+and that you want to push changes to the `origin` remote.
+If instead your files are not in a git repository, or if you want to push to another repository,
+you can provide the repository URL in the `repo` option.
+
 
 #### <a id="message">--message</a>
- * optional
- * default: `Auto-generated commit`
+ * __optional__
+ * Default: `Auto-generated commit`
+ * Example: `ngh --message="What could possibly go wrong?"`
 
 The commit message, __must be wrapped in quotes__.  
-Some handy additional text is always added, if the environment variable `process.env.TRAVIS` exists (for Travis CI).
-
-Example:
-```sh
-angular-cli-ghpages --message="What could possibly go wrong?"
-```
+Some handy additional text is always added,
+if the environment variable `process.env.TRAVIS` exists (for Travis CI).
 
 
 #### <a id="branch">--branch</a>
- * optional
- * default: `gh-pages`
+ * __optional__
+ * Default: `gh-pages`
+ * Example: `ngh --branch=other-branch`
  
-The name of the branch you'll be pushing to.  The default uses GitHub's `gh-pages` branch, but this can be configured to push to any branch on any remote.
+The name of the branch you'll be pushing to.
+The default uses GitHub's `gh-pages` branch,
+but this can be configured to push to any branch on any remote.
 
 
 #### <a id="name">--name & --email</a>
- * optional
- * default: value of `git config user.name` and `git config user.email`
+ * __optional__
+ * Default: value of `git config user.name` and `git config user.email`
+ * Example: `ngh --name="Displayed Username" --email=mail@example.org`
 
-If you are running the command in a repository without a `user.name` or `user.email` git config properties (or on a machine without these global config properties), you must provide user info before git allows you to commit. In this case provide both `name` and `email` string values to identify the committer.
+If you are running the command in a repository without a `user.name` or `user.email` git config properties
+(or on a machine without these global config properties),
+you must provide user info before git allows you to commit.
+In this case provide both `name` and `email` string values to identify the committer.
 
 
-#### <a id="silent">--silent</a>
- * optional
- * default: `true` (boolean)
+#### <a id="no-silent">--no-silent</a>
+ * __optional__
+ * Default: silent `true` (boolean)
+ * Example:
+    * `ngh` -- Logging is in silent mode by default.
+    * `ngh --no-silent` -- Logging shows extended information.
 
-Suppress logging. With silent `true` log messages are suppressed and error messages are sanitized.
+Logging is in silent mode by default.
+In silent mode log messages are suppressed and error messages are sanitized.
 
-> This option should be used if the repository URL or other information passed to git commands is sensitive and should not be logged (== you have a public build server). By default the silent mode is enabled to avoid sensitive data exposure.
+The `--no-silent` option enables extended console logging.
+Keep this untouched if the repository URL or other information passed to git commands is sensitive!
+
+> WARNING: This option should kept like it is if the repository URL or other information passed to git commands is sensitive and should not be logged (== you have a public build server). By default the silent mode is enabled to avoid sensitive data exposure.
 
 
 #### <a id="dir">--dir</a>
- * optional
- * default: `dist`
+ * __optional__
+ * Default: `dist`
 
 Directory for all published sources, relative to the project-root.  
 Most probably no change is required here.
-This option can be used to deploy completely different folders, which are not related at all to angular.
+This option can be used to deploy completely different folders,
+which are not related at all to angular.
 
 
 
-#### <a id="dotfiles">--dotfiles</a>
- * optional
- * default: `true` (boolean)
+#### <a id="no-dotfiles">--no-dotfiles</a>
+ * __optional__
+ * Default: dotfiles `true` (boolean)
+ * Example:
+    * `ngh` -- Dotfiles are included by default.
+    * `ngh --no-dotfiles` -- Dotfiles are ignored.
 
-Includes dotfiles by default. When set to `false` files starting with `.` are ignored.
-
+The command includes dotfiles by default (e.g `.htaccess` will be committed)
+With `--no-dotfiles` files starting with `.` are ignored.
 
 
 ## Extra
 
-For your convenience, the addon will recognize the [environment variable](https://docs.travis-ci.com/user/environment-variables/#Defining-Variables-in-Repository-Settings) `GH_TOKEN` and will replace this pattern in the `--repo` string. Please __do NOT disable the silent mode__ if you have any credentials in the repository URL! Read more about [Github tokens here](https://help.github.com/articles/creating-an-access-token-for-command-line-use/).
+For your convenience, the command will recognize the [environment variable](https://docs.travis-ci.com/user/environment-variables/#Defining-Variables-in-Repository-Settings) `GH_TOKEN` and will replace this pattern in the `--repo` string. Please __do NOT disable the silent mode__ if you have any credentials in the repository URL! Read more about [Github tokens here](https://help.github.com/articles/creating-an-access-token-for-command-line-use/).
 
 In example, the following command runs [on our Travis-CI](https://travis-ci.org/angular-buch/book-monkey2):
 
-```sh
+```bash
 angular-cli-ghpages --repo=https://GH_TOKEN@github.com/organisation/your-repo.git --name="Displayed Username" --email=mail@example.orf
 ```
 > You have to treat the GH_TOKEN as secure as a password!
@@ -141,12 +169,27 @@ Right now you have to copy `index.html` to `404.html` on your own.
 Please submit an [issue](https://github.com/angular-buch/angular-cli-ghpages/issues) if you really want this feature back.
 
 Example:
-```sh
+```bash
 ng build
 cp dist/index.html dist/404.html
 angular-cli-ghpages [OPTIONS]
 ```
 
+
+## Development Hints for hacking on angular-cli-ghpages
+
+```bash
+git clone https://github.com/angular-buch/angular-cli-ghpages.git
+cd angular-cli-ghpages
+npm link
+```
+
+`npm link` is very similar to `npm install -g` except that instead of downloading the package
+from the NPM repo, the just cloned `angular-cli-ghpages/` folder becomes the global package.
+
+Now you can use `ngh` via the command line.
+Please read the official [npm-link documentation](https://www.npmjs.org/doc/cli/npm-link.html)
+and the [npm-link cheatsheet](http://browsenpm.org/help#linkinganynpmpackagelocally) for more information.
 
 ## License
 Code released under the [MIT license](https://opensource.org/licenses/MIT).

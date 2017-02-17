@@ -160,36 +160,9 @@ angular-cli-ghpages --repo=https://GH_TOKEN@github.com/organisation/your-repo.gi
 ```
 > You have to treat the GH_TOKEN as secure as a password!
 
+## FAQ
 
-## About the 404 page (specific to github pages only)
-
-The old `github-pages:deploy` command created a `404.html` file in the `dist` folder.
-This was required to fully support the router [`PathLocationStrategy`](https://angular.io/docs/ts/latest/api/common/index/PathLocationStrategy-class.html).
-Right now you have to copy `index.html` to `404.html` on your own.
-Please submit an [issue](https://github.com/angular-buch/angular-cli-ghpages/issues) if you really want this feature back.
-
-Example:
-```bash
-ng build
-cp dist/index.html dist/404.html
-angular-cli-ghpages [OPTIONS]
-```
-
-
-## Development Hints for hacking on angular-cli-ghpages
-
-```bash
-git clone https://github.com/angular-buch/angular-cli-ghpages.git
-cd angular-cli-ghpages
-npm link
-```
-
-`npm link` is very similar to `npm install -g` except that instead of downloading the package
-from the NPM repo, the just cloned `angular-cli-ghpages/` folder becomes the global package.
-
-Now you can use `ngh` via the command line.
-Please read the official [npm-link documentation](https://www.npmjs.org/doc/cli/npm-link.html)
-and the [npm-link cheatsheet](http://browsenpm.org/help#linkinganynpmpackagelocally) for more information.
+Before posting any issue, [please read the FAQ first](https://github.com/angular-buch/angular-cli-ghpages/wiki/FAQ).
 
 ## License
 Code released under the [MIT license](https://opensource.org/licenses/MIT).

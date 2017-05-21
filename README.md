@@ -41,7 +41,21 @@ __Note: you have to create the  `dist` folder in before (e.g. `ng build --prod`)
 Usage:
 
 ```bash
-ng build --prod --base-href "https://USERNAME.github.io/REPOSITORY/"
+ng build --prod --base-href "https://USERNAME.github.io/REPOSITORY_NAME/"
+angular-cli-ghpages [OPTIONS]
+```
+
+or
+
+```bash
+ng build --prod --base-href "/REPOSITORY_NAME/"
+angular-cli-ghpages [OPTIONS]
+```
+
+or (`<base href="">` stays untouched)
+
+```bash
+ng build --prod
 angular-cli-ghpages [OPTIONS]
 ```
 

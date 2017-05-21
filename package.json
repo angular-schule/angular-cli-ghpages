@@ -1,6 +1,6 @@
 {
   "name": "angular-cli-ghpages",
-  "version": "0.5.0",
+  "version": "0.5.1",
   "description": "Wrapper around gh-pages, made for angular-cli users. Publish to any gh-pages branch on GitHub (or any other branch on any other remote).",
   "main": "index.js",
   "bin": {

@@ -7,13 +7,14 @@ exports.run = function (options) {
 
   options = options || {};
 
-  //console.log('SILENT:', options.silent);
-  //console.log('DOTFILES:', options.dotfiles);
+  if (options.dryRun) {
+    console.log('*** Dry-run: No changes are applied at all. ***')
+  }
 
-  if (options['name'] && options['email']) {
+  if (options.name && options.email) {
     options.user = {
-      name: options['name'],
-      email: options['email']
+      name: options.name,
+      email: options.email
     }
   };
 
@@ -35,7 +36,11 @@ exports.run = function (options) {
 
   // always clean the cache directory.
   // avoids "Error: Remote url mismatch."
-  ghpages.clean();
+  if (!options.dryRun) {
+    ghpages.clean();
+  } else {
+    console.info('Dry-run / SKIPPED: cleaning of the cache directory');
+  }
 
   var access = publish = denodeify(fs.access);
   var publish = denodeify(ghpages.publish);
@@ -53,7 +58,20 @@ exports.run = function (options) {
       return Promise.reject(error);
     })
     .then(function () {
-      return publish(dir, options)
+      if (!options.dryRun) {
+        return publish(dir, options)
+      } else {
+        console.info('Dry-run / SKIPPED: publishing to "' + dir+ '" with the following options:', {
+          dir: dir,
+          repo: options.repo || 'undefined: current working directory (which must be a git repo in this case) will be used to commit & push',
+          message: options.message,
+          branch: options.branch,
+          user: options.user || 'undefined: local or gloabl git username & email properties will be taken',
+          noSilent: options.noSilent || 'undefined: logging is in silent mode by default',
+          noDotfiles: options.noDotfiles || 'undefined: dotfiles are included by default',
+          dryRun: options.dryRun
+        });
+      }
     })
     .then(function () {
       console.log('Successfully published!\n');

@@ -163,6 +163,16 @@ The command includes dotfiles by default (e.g `.htaccess` will be committed)
 With `--no-dotfiles` files starting with `.` are ignored.
 
 
+
+#### <a id="dry-run">--dry-run</a>
+ * __optional__
+ * Default: `undefined`
+ * Example:
+    * `ngh` -- Normal behaviour: Changes are applied.
+    * `ngh --dry-run` -- No changes are applied at all.
+
+Run through without making any changes. This can be very usefull, because it outputs what would happend without doing anything.
+
 ## Extra
 
 For your convenience, the command will recognize the [environment variable](https://docs.travis-ci.com/user/environment-variables/#Defining-Variables-in-Repository-Settings) `GH_TOKEN` and will replace this pattern in the `--repo` string. Please __do NOT disable the silent mode__ if you have any credentials in the repository URL! Read more about [Github tokens here](https://help.github.com/articles/creating-an-access-token-for-command-line-use/).

@@ -10,7 +10,7 @@
 Publish to any gh-pages branch on GitHub (or any other branch on any other remote).  
 Made for angular-cli users.  
 Made with Travis-CI in mind.  
-Brought to you by the [angular-buch.com](https://angular-buch.com/) team! 
+Brought to you by the [angular-buch.com](https://angular-buch.com/) / [angular.schule](https://angular.schule/) team! 
 
 ## About
 

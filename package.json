@@ -16,13 +16,14 @@
   },
   "author": {
     "name": "Angular-Buch Team",
-    "email": "team@angular2buch.de"
+    "email": "team@angular-buch.com"
   },
   "license": "MIT",
   "dependencies": {
-    "gh-pages": "~0.12.0",
-    "denodeify": "~1.2.1",
-    "commander": "~2.9.0"
+    "gh-pages": "0.12.0",
+    "denodeify": "1.2.1",
+    "commander": "2.9.0",
+    "fs-extra": "3.0.1"
   },
-  "keywords": ["angular2", "angular-cli", "git", "github pages", "gh-pages", "ghpages", "angular-cli-ghpages", "angular-cli-github-pages"]
+  "keywords": ["angular", "angular2", "angular-cli", "git", "github pages", "gh-pages", "ghpages", "angular-cli-ghpages", "angular-cli-github-pages"]
 }

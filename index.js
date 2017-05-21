@@ -1,5 +1,6 @@
 var path = require('path'),
   fs = require('fs'),
+  fse = require('fs-extra'),
   ghpages = require('gh-pages'),
   denodeify = require('denodeify');
 
@@ -36,10 +37,10 @@ exports.run = function (options) {
 
   // always clean the cache directory.
   // avoids "Error: Remote url mismatch."
-  if (!options.dryRun) {
-    ghpages.clean();
-  } else {
+  if (options.dryRun) {
     console.info('Dry-run / SKIPPED: cleaning of the cache directory');
+  } else {
+    ghpages.clean();
   }
 
   var access = publish = denodeify(fs.access);
@@ -50,18 +51,35 @@ exports.run = function (options) {
   }
 
   return go()
-    .then(function () {
+    .then(function checkIfDistFolderExists() {
       return access(dir, fs.F_OK)
     })
-    .catch(function (error) {
+    .catch(function handleMissingDistFolder(error) {
       console.error('Dist folder does not exist. Check the dir --dir parameter or build the project first!\n');
       return Promise.reject(error);
     })
-    .then(function () {
-      if (!options.dryRun) {
-        return publish(dir, options)
-      } else {
-        console.info('Dry-run / SKIPPED: publishing to "' + dir+ '" with the following options:', {
+    .then(function createNotFoundPage() {
+
+      if (options.dryRun) {
+        console.info('Dry-run / SKIPPED: copying of index.html to 404.html');
+        return;
+      }
+
+      // Note:
+      // There is no guarantee that there will be an index.html file,
+      // as the developer may specify a custom index file.
+      const indexHtml = path.join(dir, 'index.html');
+      const notFoundPage = path.join(dir, '404.html');
+
+      return fse.copy(indexHtml, notFoundPage).
+        catch(function () {
+          console.info('index.html could not be copied to 404.html. Continuing without an error.');
+          return;
+        })
+    })
+    .then(function publishViaGhPages() {
+      if (options.dryRun) {
+        console.info('Dry-run / SKIPPED: publishing to "' + dir + '" with the following options:', {
           dir: dir,
           repo: options.repo || 'undefined: current working directory (which must be a git repo in this case) will be used to commit & push',
           message: options.message,
@@ -71,12 +89,15 @@ exports.run = function (options) {
           noDotfiles: options.noDotfiles || 'undefined: dotfiles are included by default',
           dryRun: options.dryRun
         });
+        return;
       }
+
+      return publish(dir, options)
     })
-    .then(function () {
+    .then(function showSuccess() {
       console.log('Successfully published!\n');
     })
-    .catch(function (error) {
+    .catch(function showError(error) {
       console.error('An error occurred!\n', error);
       return Promise.reject(error);
     });

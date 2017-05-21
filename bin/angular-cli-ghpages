@@ -17,4 +17,7 @@ program
   .option('-T, --no-dotfiles', 'Includes dotfiles by default. When set files starting with `.` are ignored.')
   .parse(process.argv);
 
-index.run(program);
+index.run(program)
+  .catch(function(error) {
+    process.exit(1);
+  })

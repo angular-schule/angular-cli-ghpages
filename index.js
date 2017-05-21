@@ -59,7 +59,7 @@ exports.run = function (options) {
       console.log('Successfully published!\n');
     })
     .catch(function (error) {
-      console.error('An error occurred!\n');
+      console.error('An error occurred!\n', error);
       return Promise.reject(error);
     });
 };

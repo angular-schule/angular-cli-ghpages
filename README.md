@@ -180,7 +180,7 @@ For your convenience, the command will recognize the [environment variable](http
 In example, the following command runs [on our Travis-CI](https://travis-ci.org/angular-buch/book-monkey2):
 
 ```bash
-angular-cli-ghpages --repo=https://GH_TOKEN@github.com/organisation/your-repo.git --name="Displayed Username" --email=mail@example.orf
+angular-cli-ghpages --repo=https://GH_TOKEN@github.com/organisation/your-repo.git --name="Displayed Username" --email=mail@example.org
 ```
 > You have to treat the GH_TOKEN as secure as a password!
 

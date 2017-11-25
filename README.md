@@ -189,11 +189,12 @@ angular-cli-ghpages --repo=https://GH_TOKEN@github.com/organisation/your-repo.gi
 Before posting any issue, [please read the FAQ first](https://github.com/angular-buch/angular-cli-ghpages/wiki/FAQ).
 
 ## License
-Code released under the [MIT license](https://opensource.org/licenses/MIT).
+Code released under the [MIT license](LICENSE).
 
 <hr>
 
-<img src="http://assets.angular.schule/logo-angular-schule.png" height="60">
+<img src="http://assets.angular.schule/logo-angular-schule.png" height="60">  
+
 ### &copy; 2017 https://angular.schule
 
 [npm-url]: https://www.npmjs.com/package/angular-cli-ghpages

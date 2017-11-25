@@ -191,5 +191,10 @@ Before posting any issue, [please read the FAQ first](https://github.com/angular
 ## License
 Code released under the [MIT license](https://opensource.org/licenses/MIT).
 
+<hr>
+
+<img src="http://assets.angular.schule/logo-angular-schule.png" height="60">
+### &copy; 2017 https://angular.schule
+
 [npm-url]: https://www.npmjs.com/package/angular-cli-ghpages
 [npm-image]: https://badge.fury.io/js/angular-cli-ghpages.svg

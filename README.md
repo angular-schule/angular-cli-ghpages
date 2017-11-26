@@ -15,7 +15,7 @@ Brought to you by the [angular.schule](https://angular.schule/) team!
 ## About
 
 This command is similar to the old `github-pages:deploy` command of @angular/cli which was removed in [#4385](https://github.com/angular/angular-cli/pull/4385).
-The [angular-cli-ghpages](https://github.com/angular-buch/angular-cli-ghpages) command is able to push to any branch on any repository. It's made on top of [tschaub/gh-pages](https://github.com/tschaub/gh-pages).
+The [angular-cli-ghpages](https://github.com/angular-schule/angular-cli-ghpages) command is able to push to any branch on any repository. It's made on top of [tschaub/gh-pages](https://github.com/tschaub/gh-pages).
 **This script works great on [Travis-CI](https://travis-ci.org/).** No git credentials must be set up in before. Specific environment variables of Travis-CI are evaluated, too. You will like it!
 
 ## Changelog

@@ -1,7 +1,7 @@
 {
   "name": "angular-cli-ghpages",
-  "version": "0.5.1",
-  "description": "Wrapper around gh-pages, made for angular-cli users. Publish to any gh-pages branch on GitHub (or any other branch on any other remote).",
+  "version": "0.5.2",
+  "description": "Publish to any gh-pages branch on GitHub (or any other branch on any other remote). Made for angular-cli users.",
   "main": "index.js",
   "bin": {
     "angular-cli-ghpages": "bin/angular-cli-ghpages",
@@ -9,14 +9,14 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/angular-buch/angular-cli-ghpages.git"
+    "url": "git+https://github.com/angular-schule/angular-cli-ghpages.git"
   },
   "bugs": {
-    "url": "https://github.com/angular-buch/angular-cli-ghpages/issues"
+    "url": "https://github.com/angular-schule/angular-cli-ghpages/issues"
   },
   "author": {
-    "name": "Angular-Buch Team",
-    "email": "team@angular-buch.com"
+    "name": "Angular.Schule Team",
+    "email": "team@angular.schule"
   },
   "license": "MIT",
   "dependencies": {
@@ -25,5 +25,5 @@
     "commander": "2.9.0",
     "fs-extra": "3.0.1"
   },
-  "keywords": ["angular", "angular2", "angular-cli", "git", "github pages", "gh-pages", "ghpages", "angular-cli-ghpages", "angular-cli-github-pages"]
+  "keywords": ["angular", "angular-cli", "git", "github pages", "gh-pages", "ghpages", "angular-cli-ghpages", "angular-cli-github-pages"]
 }

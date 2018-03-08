@@ -204,7 +204,7 @@ Code released under the [MIT license](LICENSE).
 
 <img src="http://assets.angular.schule/logo-angular-schule.png" height="60">  
 
-### &copy; 2017 https://angular.schule
+### &copy; 2018 https://angular.schule
 
 [npm-url]: https://www.npmjs.com/package/angular-cli-ghpages
 [npm-image]: https://badge.fury.io/js/angular-cli-ghpages.svg

@@ -72,8 +72,22 @@ ngh [OPTIONS]
 
 If you want to push to `gh-pages` on the same repository with your default credentials, then just enter `ngh` without any options.
 
-## Options
 
+
+## Extra
+
+For your convenience, the command will recognize the [environment variable](https://docs.travis-ci.com/user/environment-variables/#Defining-Variables-in-Repository-Settings) `GH_TOKEN` and will replace this pattern in the `--repo` string. Please __do NOT disable the silent mode__ if you have any credentials in the repository URL! Read more about [Github tokens here](https://help.github.com/articles/creating-an-access-token-for-command-line-use/).
+
+In example, the following command runs [on our Travis-CI](https://travis-ci.org/angular-buch/book-monkey2):
+
+```bash
+angular-cli-ghpages --repo=https://GH_TOKEN@github.com/organisation/your-repo.git --name="Displayed Username" --email=mail@example.org
+```
+> You have to treat the GH_TOKEN as secure as a password!
+
+
+
+## Options
 
 #### <a id="help">--help</a>
  * Example: `ngh --help`
@@ -177,16 +191,7 @@ With `--no-dotfiles` files starting with `.` are ignored.
 
 Run through without making any changes. This can be very usefull, because it outputs what would happend without doing anything.
 
-## Extra
 
-For your convenience, the command will recognize the [environment variable](https://docs.travis-ci.com/user/environment-variables/#Defining-Variables-in-Repository-Settings) `GH_TOKEN` and will replace this pattern in the `--repo` string. Please __do NOT disable the silent mode__ if you have any credentials in the repository URL! Read more about [Github tokens here](https://help.github.com/articles/creating-an-access-token-for-command-line-use/).
-
-In example, the following command runs [on our Travis-CI](https://travis-ci.org/angular-buch/book-monkey2):
-
-```bash
-angular-cli-ghpages --repo=https://GH_TOKEN@github.com/organisation/your-repo.git --name="Displayed Username" --email=mail@example.org
-```
-> You have to treat the GH_TOKEN as secure as a password!
 
 ## FAQ
 

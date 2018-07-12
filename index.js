@@ -95,7 +95,7 @@ exports.run = function (options) {
 
       if (options.cname) {
         console.log('CNAME option is present with value: ' + options.cname);
-        fs.writeFile(dir + '/CNAME', options.cname, function (err) {
+        fs.writeFile(path.join(dir, 'CNAME'), options.cname, function (err) {
           if (err) {
             console.log(err);
           } else {

@@ -191,7 +191,13 @@ With `--no-dotfiles` files starting with `.` are ignored.
 
 Run through without making any changes. This can be very usefull, because it outputs what would happend without doing anything.
 
+#### <a id="cname">--cname</a>
+ * __optional__
+ * Default: `No CNAME file is generated`
+ * Example:
+    * `ngh --cname=example.com`
 
+A CNAME file will be created enabling you to use a custom domain. [More information on Github Pages using a custom domain](https://help.github.com/articles/using-a-custom-domain-with-github-pages/). 
 
 ## FAQ
 

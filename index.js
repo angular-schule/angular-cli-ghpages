@@ -87,9 +87,21 @@ exports.run = function (options) {
           user: options.user || 'undefined: local or gloabl git username & email properties will be taken',
           noSilent: options.noSilent || 'undefined: logging is in silent mode by default',
           noDotfiles: options.noDotfiles || 'undefined: dotfiles are included by default',
-          dryRun: options.dryRun
+          dryRun: options.dryRun,
+          cname: options.cname || 'undefined: no CNAME file will be created',
         });
         return;
+      }
+
+      if (options.cname) {
+        console.log('CNAME option is present with value: ' + options.cname);
+        fs.writeFile(dir + '/CNAME', options.cname, function (err) {
+          if (err) {
+            console.log(err);
+          } else {
+            console.log('CNAME file created');
+          }
+        })
       }
 
       return publish(dir, options)

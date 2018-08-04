@@ -2,6 +2,7 @@
   "name": "angular-cli-ghpages",
   "version": "0.5.2",
   "description": "Publish to any gh-pages branch on GitHub (or any other branch on any other remote). Made for angular-cli users.",
+  "homepage": "https://angular.schule",
   "main": "index.js",
   "bin": {
     "angular-cli-ghpages": "bin/angular-cli-ghpages",

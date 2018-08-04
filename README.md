@@ -69,8 +69,21 @@ there is also a shorter `ngh` command available
 ng build --prod --base-href "https://USERNAME.github.io/REPOSITORY/"
 ngh [OPTIONS]
 ```
-
 If you want to push to `gh-pages` on the same repository with your default credentials, then just enter `ngh` without any options.
+
+
+### Usage with Angular CLI 6 or higher
+
+With Angular CLI 6 the build artifacts will be put in a subfolder under `dist`.
+Please take a look at the `dist` folder to see whether there is a subfolder with your project's name or not.
+If yes, you need to specify the deploy directory manually then when using this tool:
+
+```bash
+ngh --dir dist/[PROJECTNAME]
+```
+
+I most cases, the `[PROJECTNAME]` can be found in the `angular.json` file at `defaultProject`.
+
 
 
 

@@ -171,7 +171,9 @@ Keep this untouched if the repository URL or other information passed to git com
  * Default: `dist`
 
 Directory for all published sources, relative to the project-root.  
-Most probably no change is required here.
+__Starting with Angular CLI 6 the build artifacts will be put in a subfolder under `dist`.
+Please take a look at the `dist` folder to see whether there is a subfolder with your project's name or not.__
+
 This option can be used to deploy completely different folders,
 which are not related at all to angular.
 

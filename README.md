@@ -9,14 +9,14 @@
 
 Publish to any gh-pages branch on GitHub (or any other branch on any other remote).  
 Made for angular-cli users.  
-Made with Travis-CI in mind.  
+Made with Travis CI, CircleCi and Co. in mind.  
 Brought to you by the [angular.schule](https://angular.schule/) team! 
 
 ## About
 
 This command is similar to the old `github-pages:deploy` command of @angular/cli which was removed in [#4385](https://github.com/angular/angular-cli/pull/4385).
 The [angular-cli-ghpages](https://github.com/angular-schule/angular-cli-ghpages) command is able to push to any branch on any repository. It's made on top of [tschaub/gh-pages](https://github.com/tschaub/gh-pages).
-**This script works great on [Travis-CI](https://travis-ci.org/).** No git credentials must be set up in before. Specific environment variables of Travis-CI are evaluated, too. You will like it!
+**This script works great on Travis CI and  CircleCi.** No git credentials must be set up in before. Specific environment variables of Travis-CI are evaluated, too. You will like it!
 
 ## Changelog
 
@@ -27,49 +27,43 @@ A detailed changelog is available in the [releases](https://github.com/angular-s
 
 This command has the following prerequisites:
 
-- Node.js 4.x
+- `Node.js 8.2.0` or higher which brings you `npm 5.2.0` which brings you [`npx`](https://medium.com/@maybekatz/introducing-npx-an-npm-package-runner-55f7d4bd282b) 
 - Git 1.7.6 or higher
 - __optional__: Angular project created via [angular-cli](https://github.com/angular/angular-cli)
 
 To install the command run the following:
 
 ```bash
-npm i -g angular-cli-ghpages
+npm i angular-cli-ghpages --save-dev
 ```
 
 ## Usage
 
-Execute `angular-cli-ghpages` in order to deploy the project with a build from `dist` folder.  
+Execute `npx ngh` in order to deploy the project with a build from `dist` folder.  
 __Note: you have to create the  `dist` folder in before (e.g. `ng build --prod`)__
 
 Usage:
 
 ```bash
 ng build --prod --base-href "https://USERNAME.github.io/REPOSITORY_NAME/"
-angular-cli-ghpages [OPTIONS]
+npx ngh [OPTIONS]
 ```
 
 or
 
 ```bash
 ng build --prod --base-href "/REPOSITORY_NAME/"
-angular-cli-ghpages [OPTIONS]
+npx ngh [OPTIONS]
 ```
 
 or (`<base href="">` stays untouched)
 
 ```bash
 ng build --prod
-angular-cli-ghpages [OPTIONS]
+npx ngh [OPTIONS]
 ```
 
-there is also a shorter `ngh` command available
-
-```bash
-ng build --prod --base-href "https://USERNAME.github.io/REPOSITORY/"
-ngh [OPTIONS]
-```
-If you want to push to `gh-pages` on the same repository with your default credentials, then just enter `ngh` without any options.
+If you want to push to `gh-pages` on the same repository with your default credentials, then just enter `npx ngh` without any options.
 
 
 ### Usage with Angular CLI 6 or higher
@@ -79,7 +73,7 @@ Please take a look at the `dist` folder to see whether there is a subfolder with
 If yes, you need to specify the deploy directory manually then when using this tool:
 
 ```bash
-ngh --dir dist/[PROJECTNAME]
+npx ngh --dir dist/[PROJECTNAME]
 ```
 
 I most cases, the `[PROJECTNAME]` can be found in the `angular.json` file at `defaultProject`.
@@ -94,7 +88,7 @@ For your convenience, the command will recognize the [environment variable](http
 In example, the following command runs [on our Travis-CI](https://travis-ci.org/angular-buch/book-monkey2):
 
 ```bash
-angular-cli-ghpages --repo=https://GH_TOKEN@github.com/organisation/your-repo.git --name="Displayed Username" --email=mail@example.org
+npx ngh --repo=https://GH_TOKEN@github.com/organisation/your-repo.git --name="Displayed Username" --email=mail@example.org
 ```
 > You have to treat the GH_TOKEN as secure as a password!
 
@@ -103,13 +97,13 @@ angular-cli-ghpages --repo=https://GH_TOKEN@github.com/organisation/your-repo.gi
 ## Options
 
 #### <a id="help">--help</a>
- * Example: `ngh --help`
+ * Example: `npx ngh --help`
 
 Output usage information.
 
 
 #### <a id="version">--version</a>
- * Example: `ngh --version`
+ * Example: `npx ngh --version`
 
 Output the version number. Please provide the version number on any bug report!
 
@@ -117,7 +111,7 @@ Output the version number. Please provide the version number on any bug report!
 #### <a id="repo">--repo</a>
  * __optional__
  * Default: url of the origin remote of the current dir (assumes a git repository)
- * Example: `ngh --repo=https://GH_TOKEN@github.com/organisation/your-repo.git`
+ * Example: `npx ngh --repo=https://GH_TOKEN@github.com/organisation/your-repo.git`
 
 By default, __gh-pages__ assumes that the current working directory is a git repository,
 and that you want to push changes to the `origin` remote.
@@ -128,7 +122,7 @@ you can provide the repository URL in the `repo` option.
 #### <a id="message">--message</a>
  * __optional__
  * Default: `Auto-generated commit`
- * Example: `ngh --message="What could possibly go wrong?"`
+ * Example: `npx ngh --message="What could possibly go wrong?"`
 
 The commit message, __must be wrapped in quotes__.  
 Some handy additional text is always added,
@@ -138,7 +132,7 @@ if the environment variable `process.env.TRAVIS` exists (for Travis CI).
 #### <a id="branch">--branch</a>
  * __optional__
  * Default: `gh-pages`
- * Example: `ngh --branch=other-branch`
+ * Example: `npx ngh --branch=other-branch`
  
 The name of the branch you'll be pushing to.
 The default uses GitHub's `gh-pages` branch,
@@ -148,7 +142,7 @@ but this can be configured to push to any branch on any remote.
 #### <a id="name">--name & --email</a>
  * __optional__
  * Default: value of `git config user.name` and `git config user.email`
- * Example: `ngh --name="Displayed Username" --email=mail@example.org`
+ * Example: `npx ngh --name="Displayed Username" --email=mail@example.org`
 
 If you are running the command in a repository without a `user.name` or `user.email` git config properties
 (or on a machine without these global config properties),
@@ -160,8 +154,8 @@ In this case provide both `name` and `email` string values to identify the commi
  * __optional__
  * Default: silent `true` (boolean)
  * Example:
-    * `ngh` -- Logging is in silent mode by default.
-    * `ngh --no-silent` -- Logging shows extended information.
+    * `npx ngh` -- Logging is in silent mode by default.
+    * `npx ngh --no-silent` -- Logging shows extended information.
 
 Logging is in silent mode by default.
 In silent mode log messages are suppressed and error messages are sanitized.
@@ -187,8 +181,8 @@ which are not related at all to angular.
  * __optional__
  * Default: dotfiles `true` (boolean)
  * Example:
-    * `ngh` -- Dotfiles are included by default.
-    * `ngh --no-dotfiles` -- Dotfiles are ignored.
+    * `npx ngh` -- Dotfiles are included by default.
+    * `npx ngh --no-dotfiles` -- Dotfiles are ignored.
 
 The command includes dotfiles by default (e.g `.htaccess` will be committed)
 With `--no-dotfiles` files starting with `.` are ignored.
@@ -199,8 +193,8 @@ With `--no-dotfiles` files starting with `.` are ignored.
  * __optional__
  * Default: `undefined`
  * Example:
-    * `ngh` -- Normal behaviour: Changes are applied.
-    * `ngh --dry-run` -- No changes are applied at all.
+    * `npx ngh` -- Normal behaviour: Changes are applied.
+    * `npx ngh --dry-run` -- No changes are applied at all.
 
 Run through without making any changes. This can be very usefull, because it outputs what would happend without doing anything.
 

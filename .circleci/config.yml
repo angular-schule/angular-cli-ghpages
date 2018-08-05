@@ -2,7 +2,7 @@ version: 2
 
 jobs:
 
-  deploy:
+  build:
 
     environment:
       GITHUB_ORG: https://GH_TOKEN@github.com/angular-schule

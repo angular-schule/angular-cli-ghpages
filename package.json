@@ -1,6 +1,6 @@
 {
   "name": "angular-cli-ghpages",
-  "version": "0.5.2",
+  "version": "0.5.3",
   "description": "Publish to any gh-pages branch on GitHub (or any other branch on any other remote). Made for angular-cli users.",
   "homepage": "https://angular.schule",
   "main": "index.js",
@@ -26,5 +26,14 @@
     "commander": "2.9.0",
     "fs-extra": "3.0.1"
   },
-  "keywords": ["angular", "angular-cli", "git", "github pages", "gh-pages", "ghpages", "angular-cli-ghpages", "angular-cli-github-pages"]
+  "keywords": [
+    "angular",
+    "angular-cli",
+    "git",
+    "github pages",
+    "gh-pages",
+    "ghpages",
+    "angular-cli-ghpages",
+    "angular-cli-github-pages"
+  ]
 }

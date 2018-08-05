@@ -1,0 +1,38 @@
+version: 2
+
+jobs:
+
+  deploy:
+
+    environment:
+      GITHUB_ORG: https://GH_TOKEN@github.com/angular-schule
+      GITHUB_NAME: The Buildbot
+      GITHUB_EMAIL: buildbot@angular2buch.de
+      NAME: angular-cli-ghpages
+
+    docker:
+      - image: circleci/node:10-browsers
+    steps:
+      - checkout
+
+
+      - restore_cache:
+          key: dependency-cache-{{ checksum "package.json" }}
+      - run: npm i --silent
+      - save_cache:
+          key: dependency-cache-{{ checksum "package.json" }}
+          paths:
+            - node_modules
+
+
+      - run: cd angular-testdrive
+      - restore_cache:
+          key: dependency-cache-{{ checksum "package.json" }}
+      - run: npm i --silent
+      - save_cache:
+          key: dependency-cache-{{ checksum "package.json" }}
+          paths:
+            - node_modules
+      - run: npm run build
+      - run: ../bin/angular-cli-ghpages --repo "$GITHUB_ORG/$NAME.git" --name "$GITHUB_NAME" --email "$GITHUB_EMAIL" --dir=dist/angular-testdrive --cname=angular-cli-ghpages.angular.schule
+

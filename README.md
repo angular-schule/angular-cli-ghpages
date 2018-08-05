@@ -56,7 +56,7 @@ ng build --prod --base-href "/REPOSITORY_NAME/"
 npx ngh [OPTIONS]
 ```
 
-or (`<base href="">` stays untouched)
+or (`<base href="/">` stays untouched)
 
 ```bash
 ng build --prod
@@ -73,7 +73,7 @@ Please take a look at the `dist` folder to see whether there is a subfolder with
 If yes, you need to specify the deploy directory manually then when using this tool:
 
 ```bash
-npx ngh --dir dist/[PROJECTNAME]
+npx ngh --dir=dist/[PROJECTNAME]
 ```
 
 I most cases, the `[PROJECTNAME]` can be found in the `angular.json` file at `defaultProject`.
@@ -200,7 +200,7 @@ With `--no-dotfiles` files starting with `.` are ignored.
 
 Run through without making any changes. This can be very usefull, because it outputs what would happend without doing anything.
 
-#### <a id="cname">--cname</a> (will be released soon with v0.5.3)
+#### <a id="cname">--cname</a>
  * __optional__
  * Default: `No CNAME file is generated`
  * Example:

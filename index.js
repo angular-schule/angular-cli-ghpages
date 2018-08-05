@@ -9,7 +9,7 @@ exports.run = function (options) {
   options = options || {};
 
   if (options.dryRun) {
-    console.log('*** Dry-run: No changes are applied at all. ***')
+    console.log('*** Dry-run: No changes are applied at all.')
   }
 
   if (options.name && options.email) {
@@ -44,7 +44,7 @@ exports.run = function (options) {
   // always clean the cache directory.
   // avoids "Error: Remote url mismatch."
   if (options.dryRun) {
-    console.info('Dry-run / SKIPPED: cleaning of the cache directory');
+    console.info('*** Dry-run / SKIPPED: cleaning of the cache directory');
   } else {
     ghpages.clean();
   }
@@ -61,13 +61,13 @@ exports.run = function (options) {
       return access(dir, fs.F_OK)
     })
     .catch(function handleMissingDistFolder(error) {
-      console.error('Dist folder does not exist. Check the dir --dir parameter or build the project first!\n');
+      console.error('*** Dist folder does not exist. Check the dir --dir parameter or build the project first!\n');
       return Promise.reject(error);
     })
     .then(function createNotFoundPage() {
 
       if (options.dryRun) {
-        console.info('Dry-run / SKIPPED: copying of index.html to 404.html');
+        console.info('*** Dry-run / SKIPPED: copying of index.html to 404.html');
         return;
       }
 
@@ -78,14 +78,37 @@ exports.run = function (options) {
       const notFoundPage = path.join(dir, '404.html');
 
       return fse.copy(indexHtml, notFoundPage).
-        catch(function () {
+        catch(function (err) { 
           console.info('index.html could not be copied to 404.html. Continuing without an error.');
+          console.info('(Hint: are you sure that you have setup the --dir parameter correctly?)');
+          console.dir(err);
           return;
+        })
+    })
+    .then(function createCnameFile() {
+
+      if (!options.cname) {
+        return;
+      }
+
+      const cnameFile = path.join(dir, 'CNAME');
+      if (options.dryRun) {
+        console.info('*** Dry-run / SKIPPED: creating of CNAME file with content: ' + options.cname);
+        return;
+      }
+
+      return fse.writeFile(cnameFile, options.cname)
+        .then(function () {
+          console.log('*** CNAME file created');
+        })
+        .catch(function (err) { 
+          console.info('*** CNAME file could not be created. Stopping execution.');
+          throw err;
         })
     })
     .then(function publishViaGhPages() {
       if (options.dryRun) {
-        console.info('Dry-run / SKIPPED: publishing to "' + dir + '" with the following options:', {
+        console.info('*** Dry-run / SKIPPED: publishing to "' + dir + '" with the following options:', {
           dir: dir,
           repo: options.repo || 'undefined: current working directory (which must be a git repo in this case) will be used to commit & push',
           message: options.message,
@@ -99,24 +122,14 @@ exports.run = function (options) {
         return;
       }
 
-      if (options.cname) {
-        console.log('CNAME option is present with value: ' + options.cname);
-        fs.writeFile(path.join(dir, 'CNAME'), options.cname, function (err) {
-          if (err) {
-            console.log(err);
-          } else {
-            console.log('CNAME file created');
-          }
-        })
-      }
-
       return publish(dir, options)
     })
     .then(function showSuccess() {
-      console.log('Successfully published!\n');
+      console.log('*** Successfully published!\n');
     })
     .catch(function showError(error) {
-      console.error('An error occurred!\n', error);
+      console.error('*** An error occurred!\n');
+      console.dir(error);
       return Promise.reject(error);
     });
 };

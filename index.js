@@ -32,7 +32,7 @@ exports.run = function (options) {
 
   if (process.env.CIRCLECI) {
     options.message += ' -- \n\n' +
-      'Triggered by commit: https://github.com/' + process.env.CIRCLE_PROJECT_USERNAME + '/' + CIRCLE_PROJECT_REPONAME + '/commit/' + process.env.CIRCLE_SHA1 + '\n' +
+      'Triggered by commit: https://github.com/' + process.env.CIRCLE_PROJECT_USERNAME + '/' + process.env.CIRCLE_PROJECT_REPONAME + '/commit/' + process.env.CIRCLE_SHA1 + '\n' +
       'CircleCI build: ' + CIRCLE_BUILD_URL;
   }
 

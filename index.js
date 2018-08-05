@@ -27,7 +27,13 @@ exports.run = function (options) {
   if (process.env.TRAVIS) {
     options.message += ' -- ' + process.env.TRAVIS_COMMIT_MESSAGE + ' \n\n' +
       'Triggered by commit: https://github.com/' + process.env.TRAVIS_REPO_SLUG + '/commit/' + process.env.TRAVIS_COMMIT + '\n' +
-      'Travis build: https://travis-ci.org/' + process.env.TRAVIS_REPO_SLUG + '/builds/' + process.env.TRAVIS_BUILD_ID;
+      'Travis CI build: https://travis-ci.org/' + process.env.TRAVIS_REPO_SLUG + '/builds/' + process.env.TRAVIS_BUILD_ID;
+  }
+
+  if (process.env.CIRCLECI) {
+    options.message += ' -- \n\n' +
+      'Triggered by commit: https://github.com/' + process.env.CIRCLE_PROJECT_USERNAME + '/' + CIRCLE_PROJECT_REPONAME + '/commit/' + process.env.CIRCLE_SHA1 + '\n' +
+      'CircleCI build: ' + CIRCLE_BUILD_URL;
   }
 
   // for your convenience - here you can hack credentials into the repository URL

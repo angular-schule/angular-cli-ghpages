@@ -17,22 +17,16 @@ jobs:
 
 
       - restore_cache:
-          key: dependency-cache-{{ checksum "package.json" }}
+          key: dependency-cache-{{ checksum "package.json" }}-{{ checksum "angular-testdrive/package.json" }}
       - run: npm i --silent
+      - run: cd angular-testdrive && npm i --silent
       - save_cache:
-          key: dependency-cache-{{ checksum "package.json" }}
+          key: dependency-cache-{{ checksum "package.json" }}-{{ checksum "angular-testdrive/package.json" }}
           paths:
             - node_modules
+            - angular-testdrive/node_modules
 
 
-      - run: cd angular-testdrive
-      - restore_cache:
-          key: dependency-cache-{{ checksum "package.json" }}
-      - run: npm i --silent
-      - save_cache:
-          key: dependency-cache-{{ checksum "package.json" }}
-          paths:
-            - node_modules
-      - run: npm run build
-      - run: ../bin/angular-cli-ghpages --repo "$GITHUB_ORG/$NAME.git" --name "$GITHUB_NAME" --email "$GITHUB_EMAIL" --dir=dist/angular-testdrive --cname=angular-cli-ghpages.angular.schule
+      - run: cd angular-testdrive && npm run build
+      - run: cd angular-testdrive && ../bin/angular-cli-ghpages --repo "$GITHUB_ORG/$NAME.git" --name "$GITHUB_NAME" --email "$GITHUB_EMAIL" --dir=dist/angular-testdrive --cname=angular-cli-ghpages.angular.schule
 

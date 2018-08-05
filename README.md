@@ -1,5 +1,6 @@
 # angular-cli-ghpages
 [![NPM version][npm-image]][npm-url]
+[![CircleCI](https://circleci.com/gh/angular-schule/angular-cli-ghpages.svg?style=svg)](https://circleci.com/gh/angular-schule/angular-cli-ghpages)
 
 <hr>
 

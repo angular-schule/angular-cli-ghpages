@@ -33,7 +33,7 @@ exports.run = function (options) {
   if (process.env.CIRCLECI) {
     options.message += ' -- \n\n' +
       'Triggered by commit: https://github.com/' + process.env.CIRCLE_PROJECT_USERNAME + '/' + process.env.CIRCLE_PROJECT_REPONAME + '/commit/' + process.env.CIRCLE_SHA1 + '\n' +
-      'CircleCI build: ' + CIRCLE_BUILD_URL;
+      'CircleCI build: ' + process.env.CIRCLE_BUILD_URL;
   }
 
   // for your convenience - here you can hack credentials into the repository URL

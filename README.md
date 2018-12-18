@@ -38,33 +38,35 @@ To install the command run the following:
 npm i angular-cli-ghpages --save-dev
 ```
 
+Note: you can skip the permanent installation, too. The command `npx` is also able to install `angular-cli-ghpages` on the first usage, if you want. 
+
 ## Usage
 
-Execute `npx ngh` in order to deploy the project with a build from `dist` folder.  
+Execute `npx angular-cli-ghpages` in order to deploy the project with a build from `dist` folder.  
 __Note: you have to create the  `dist` folder in before (e.g. `ng build --prod`)__
 
 Usage:
 
 ```bash
 ng build --prod --base-href "https://USERNAME.github.io/REPOSITORY_NAME/"
-npx ngh [OPTIONS]
+npx angular-cli-ghpages [OPTIONS]
 ```
 
 or
 
 ```bash
 ng build --prod --base-href "/REPOSITORY_NAME/"
-npx ngh [OPTIONS]
+npx angular-cli-ghpages [OPTIONS]
 ```
 
 or (`<base href="/">` stays untouched)
 
 ```bash
 ng build --prod
-npx ngh [OPTIONS]
+npx angular-cli-ghpages [OPTIONS]
 ```
 
-If you want to push to `gh-pages` on the same repository with your default credentials, then just enter `npx ngh` without any options.
+If you want to push to `gh-pages` on the same repository with your default credentials, then just enter `npx angular-cli-ghpages` without any options.
 
 
 ### Usage with Angular CLI 6 or higher
@@ -74,7 +76,7 @@ Please take a look at the `dist` folder to see whether there is a subfolder with
 If yes, you need to specify the deploy directory manually then when using this tool:
 
 ```bash
-npx ngh --dir=dist/[PROJECTNAME]
+npx angular-cli-ghpages --dir=dist/[PROJECTNAME]
 ```
 
 I most cases, the `[PROJECTNAME]` can be found in the `angular.json` file at `defaultProject`.

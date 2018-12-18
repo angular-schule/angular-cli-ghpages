@@ -91,7 +91,7 @@ For your convenience, the command will recognize the [environment variable](http
 In example, the following command runs [on our Travis-CI](https://travis-ci.org/angular-buch/book-monkey2):
 
 ```bash
-npx ngh --repo=https://GH_TOKEN@github.com/organisation/your-repo.git --name="Displayed Username" --email=mail@example.org
+npx angular-cli-ghpages --repo=https://GH_TOKEN@github.com/organisation/your-repo.git --name="Displayed Username" --email=mail@example.org
 ```
 > You have to treat the GH_TOKEN as secure as a password!
 
@@ -100,13 +100,13 @@ npx ngh --repo=https://GH_TOKEN@github.com/organisation/your-repo.git --name="Di
 ## Options
 
 #### <a id="help">--help</a>
- * Example: `npx ngh --help`
+ * Example: `npx angular-cli-ghpages --help`
 
 Output usage information.
 
 
 #### <a id="version">--version</a>
- * Example: `npx ngh --version`
+ * Example: `npx angular-cli-ghpages --version`
 
 Output the version number. Please provide the version number on any bug report!
 
@@ -114,7 +114,7 @@ Output the version number. Please provide the version number on any bug report!
 #### <a id="repo">--repo</a>
  * __optional__
  * Default: url of the origin remote of the current dir (assumes a git repository)
- * Example: `npx ngh --repo=https://GH_TOKEN@github.com/organisation/your-repo.git`
+ * Example: `npx angular-cli-ghpages --repo=https://GH_TOKEN@github.com/organisation/your-repo.git`
 
 By default, __gh-pages__ assumes that the current working directory is a git repository,
 and that you want to push changes to the `origin` remote.
@@ -125,7 +125,7 @@ you can provide the repository URL in the `repo` option.
 #### <a id="message">--message</a>
  * __optional__
  * Default: `Auto-generated commit`
- * Example: `npx ngh --message="What could possibly go wrong?"`
+ * Example: `npx angular-cli-ghpages --message="What could possibly go wrong?"`
 
 The commit message, __must be wrapped in quotes__.  
 Some handy additional text is always added,
@@ -135,7 +135,7 @@ if the environment variable `process.env.TRAVIS` exists (for Travis CI).
 #### <a id="branch">--branch</a>
  * __optional__
  * Default: `gh-pages`
- * Example: `npx ngh --branch=other-branch`
+ * Example: `npx angular-cli-ghpages --branch=other-branch`
  
 The name of the branch you'll be pushing to.
 The default uses GitHub's `gh-pages` branch,
@@ -145,7 +145,7 @@ but this can be configured to push to any branch on any remote.
 #### <a id="name">--name & --email</a>
  * __optional__
  * Default: value of `git config user.name` and `git config user.email`
- * Example: `npx ngh --name="Displayed Username" --email=mail@example.org`
+ * Example: `npx angular-cli-ghpages --name="Displayed Username" --email=mail@example.org`
 
 If you are running the command in a repository without a `user.name` or `user.email` git config properties
 (or on a machine without these global config properties),
@@ -157,8 +157,8 @@ In this case provide both `name` and `email` string values to identify the commi
  * __optional__
  * Default: silent `true` (boolean)
  * Example:
-    * `npx ngh` -- Logging is in silent mode by default.
-    * `npx ngh --no-silent` -- Logging shows extended information.
+    * `npx angular-cli-ghpages` -- Logging is in silent mode by default.
+    * `npx angular-cli-ghpages --no-silent` -- Logging shows extended information.
 
 Logging is in silent mode by default.
 In silent mode log messages are suppressed and error messages are sanitized.
@@ -186,8 +186,8 @@ which are not related at all to angular.
  * __optional__
  * Default: dotfiles `true` (boolean)
  * Example:
-    * `npx ngh` -- Dotfiles are included by default.
-    * `npx ngh --no-dotfiles` -- Dotfiles are ignored.
+    * `npx angular-cli-ghpages` -- Dotfiles are included by default.
+    * `npx angular-cli-ghpages --no-dotfiles` -- Dotfiles are ignored.
 
 The command includes dotfiles by default (e.g `.htaccess` will be committed)
 With `--no-dotfiles` files starting with `.` are ignored.
@@ -198,8 +198,8 @@ With `--no-dotfiles` files starting with `.` are ignored.
  * __optional__
  * Default: `undefined`
  * Example:
-    * `npx ngh` -- Normal behaviour: Changes are applied.
-    * `npx ngh --dry-run` -- No changes are applied at all.
+    * `npx angular-cli-ghpages` -- Normal behaviour: Changes are applied.
+    * `npx angular-cli-ghpages --dry-run` -- No changes are applied at all.
 
 Run through without making any changes. This can be very usefull, because it outputs what would happend without doing anything.
 
@@ -207,7 +207,7 @@ Run through without making any changes. This can be very usefull, because it out
  * __optional__
  * Default: `No CNAME file is generated`
  * Example:
-    * `npx ngh --cname=example.com`
+    * `npx angular-cli-ghpages --cname=example.com`
 
 A CNAME file will be created enabling you to use a custom domain. [More information on Github Pages using a custom domain](https://help.github.com/articles/using-a-custom-domain-with-github-pages/). 
 

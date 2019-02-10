@@ -82,6 +82,18 @@ npx angular-cli-ghpages --dir=dist/[PROJECTNAME]
 I most cases, the `[PROJECTNAME]` can be found in the `angular.json` file at `defaultProject`.
 
 
+### Usage with Ionic
+
+You can use the tool with Angular based Ionic projects, too. Instead of the ` dist` folder, the Ionic CLI will create a `www` folder you have to point the tool to. Just use the following commands:
+
+```bash
+ionic build --prod -- --base-href=https://USERNAME.github.io/REPOSITORY_NAME/`
+```
+
+```bash
+npx angular-cli-ghpages --dir=www
+```
+
 
 
 ## Extra

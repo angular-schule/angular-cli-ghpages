@@ -113,7 +113,7 @@ exports.run = function (options) {
           repo: options.repo || 'undefined: current working directory (which must be a git repo in this case) will be used to commit & push',
           message: options.message,
           branch: options.branch,
-          user: options.user || 'undefined: local or gloabl git username & email properties will be taken',
+          user: options.user || 'undefined: local or global git username & email properties will be taken',
           noSilent: options.noSilent || 'undefined: logging is in silent mode by default',
           noDotfiles: options.noDotfiles || 'undefined: dotfiles are included by default',
           dryRun: options.dryRun,

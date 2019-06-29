@@ -1,0 +1,61 @@
+{
+  "name": "ng-deploy-gh",
+  "version": "0.0.0",
+  "description": "Deployment from the Angular CLI to GitHub pages",
+  "main": "index.js",
+  "scripts": {
+    "test": "jest"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mgechev/ng-deploy-gh-pages.git"
+  },
+  "keywords": [
+    "angular",
+    "cli",
+    "angular-cli",
+    "ghpages",
+    "github",
+    "pages"
+  ],
+  "author": "Minko Gechev <mgechev@gmail.com>",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/mgechev/ng-deploy-gh-pages/issues"
+  },
+  "homepage": "https://github.com/mgechev/ng-deploy-gh-pages#readme",
+  "devDependencies": {
+    "@angular-devkit/architect": "^0.800.6",
+    "@angular-devkit/core": "^8.0.6",
+    "@angular-devkit/schematics": "^8.0.6",
+    "@types/jest": "^24.0.15",
+    "@types/node": "^12.0.10",
+    "jest": "^24.8.0",
+    "rxjs": "^6.5.2",
+    "ts-jest": "^24.0.2",
+    "typescript": "^3.5.2"
+  },
+  "peerDependencies": {
+    "@angular-devkit/architect": "^0.800.6",
+    "@angular-devkit/core": "^8.0.6",
+    "@angular-devkit/schematics": "^8.0.6",
+    "rxjs": "^6.5.2"
+  },
+  "dependencies": {
+    "gh-pages": "^2.0.1"
+  },
+  "jest": {
+    "transform": {
+      "^.+\\.tsx?$": "ts-jest"
+    },
+    "testRegex": "(/test/.*|(\\.|/)(test|spec))\\.(jsx?|tsx?)$",
+    "moduleFileExtensions": [
+      "ts",
+      "tsx",
+      "js",
+      "jsx",
+      "json",
+      "node"
+    ]
+  }
+}

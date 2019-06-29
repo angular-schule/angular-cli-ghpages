@@ -166,7 +166,7 @@ const initialAngularJson = `{
           }
         },
         \"deploy\": {
-          \"builder\": \"ngx-gh-pages-deploy:deploy\",
+          \"builder\": \"ngx-gh:deploy\",
           \"options\": {}
         }
       }
@@ -198,7 +198,7 @@ const overwriteAngularJson = `{
           }
         },
         \"deploy\": {
-          \"builder\": \"ngx-gh-pages-deploy:deploy\",
+          \"builder\": \"ngx-gh:deploy\",
           \"options\": {}
         }
       }
@@ -230,7 +230,7 @@ const projectAngularJson = `{
           }
         },
         \"deploy\": {
-          \"builder\": \"ngx-gh-pages-deploy:deploy\",
+          \"builder\": \"ngx-gh:deploy\",
           \"options\": {}
         }
       }
@@ -245,7 +245,7 @@ const projectAngularJson = `{
           }
         },
         \"deploy\": {
-          \"builder\": \"ngx-gh-pages-deploy:deploy\",
+          \"builder\": \"ngx-gh:deploy\",
           \"options\": {}
         }
       }

@@ -76,7 +76,7 @@ export function ngAdd(tree: Tree, options: NgAddOptions) {
   }
 
   project.architect['deploy'] = {
-    builder: 'ngx-gh-pages-deploy:deploy',
+    builder: 'ngx-gh:deploy',
     options: {}
   };
 

@@ -20,18 +20,10 @@ export default async function deploy(
   await run.result;
 
   try {
-    const success = ghPages.publish(projectRoot, {}, err => {
-      if (err) {
-        context.logger.error(err);
-        return;
-      }
-      console.log(arguments);
-      context.logger.info(
-        `🚀 Your application is now available at https://${
-          success.hosting.split('/')[1]
-        }.firebaseapp.com/`
-      );
-    });
+    await ghPages.publish(projectRoot, {});
+    context.logger.info(
+      `🚀 Your application is now available at https://${''}.firebaseapp.com/`
+    );
   } catch (e) {
     context.logger.error(e);
   }

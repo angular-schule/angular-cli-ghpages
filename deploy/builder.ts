@@ -26,10 +26,23 @@ export default createBuilder<any>(
       throw new Error('Cannot deploy the application without a target');
     }
 
-    const project = workspace.getProject(context.target.project);
+    const targets = workspace.getProjectTargets(context.target.project);
+
+    if (
+      !targets ||
+      !targets.build ||
+      !targets.build.options ||
+      !targets.build.options.outputPath
+    ) {
+      throw new Error('Cannot find the project output directory');
+    }
 
     try {
-      await deploy(ghpages, context, join(workspace.root, project.root));
+      await deploy(
+        ghpages,
+        context,
+        join(workspace.root, targets.build.options.outputPath)
+      );
     } catch (e) {
       console.error('Error when trying to deploy: ');
       console.error(e.message);

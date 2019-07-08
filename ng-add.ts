@@ -36,7 +36,10 @@ interface DeployOptions {
   project: string;
 }
 
-export function ngAdd(tree: Tree, options: NgAddOptions) {
+export const ngAdd = ({ project: DeployOptions }) => (
+  tree: Tree,
+  options: NgAddOptions
+) => {
   const { path: workspacePath, workspace } = getWorkspace(tree);
 
   if (!options.project) {
@@ -82,4 +85,4 @@ export function ngAdd(tree: Tree, options: NgAddOptions) {
 
   tree.overwrite(workspacePath, JSON.stringify(workspace, null, 2));
   return tree;
-}
+};

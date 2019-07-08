@@ -3,7 +3,7 @@
     "baseUrl": ".",
     "experimentalDecorators": true,
     "emitDecoratorMetadata": true,
-    "module": "es2015",
+    "module": "commonjs",
     "target": "es2015",
     "noImplicitAny": false,
     "outDir": "dist",

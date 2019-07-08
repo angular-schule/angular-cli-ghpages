@@ -1,5 +1,5 @@
 export interface GHPages {
-  publish(dir: string, options: any, callback: any);
+  publish(dir: string, options: any): Promise<any>;
 }
 
 export interface Project {

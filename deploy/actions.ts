@@ -28,9 +28,13 @@ export default async function deploy(
 
   try {
     await ghPages.publish(projectRoot, {});
-    context.logger.info(
-      `🚀 Your application is now available at ${options.deployUrl}`
-    );
+    if (options.deployUrl) {
+      context.logger.info(
+        `🚀 Your application is now available at ${options.deployUrl}`
+      );
+    } else {
+      context.logger.info(`🚀 Your application is now on GitHub pages!`);
+    }
   } catch (e) {
     context.logger.error(e);
   }

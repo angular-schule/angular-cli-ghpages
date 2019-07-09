@@ -1,6 +1,6 @@
 {
   "name": "ngx-gh",
-  "version": "0.0.0",
+  "version": "0.0.1",
   "description": "Deployment from the Angular CLI to GitHub pages",
   "main": "index.js",
   "scripts": {

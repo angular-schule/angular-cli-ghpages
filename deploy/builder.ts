@@ -5,13 +5,19 @@ import {
 } from '@angular-devkit/architect';
 import { NodeJsSyncHost } from '@angular-devkit/core/node';
 import deploy from './actions';
-import { experimental, join, normalize } from '@angular-devkit/core';
+import { experimental, join, normalize, json } from '@angular-devkit/core';
+import { Schema as RealDeployOptions } from './schema';
+type DeployOptions = RealDeployOptions & json.JsonObject;
+
 const ghpages = require('gh-pages');
 
 // Call the createBuilder() function to create a builder. This mirrors
 // createJobHandler() but add typings specific to Architect Builders.
 export default createBuilder<any>(
-  async (_: any, context: BuilderContext): Promise<BuilderOutput> => {
+  async (
+    options: DeployOptions,
+    context: BuilderContext
+  ): Promise<BuilderOutput> => {
     // The project root is added to a BuilderContext.
     const root = normalize(context.workspaceRoot);
     const workspace = new experimental.workspace.Workspace(
@@ -41,11 +47,11 @@ export default createBuilder<any>(
       await deploy(
         ghpages,
         context,
-        join(workspace.root, targets.build.options.outputPath)
+        join(workspace.root, targets.build.options.outputPath),
+        options
       );
     } catch (e) {
-      console.error('Error when trying to deploy: ');
-      console.error(e.message);
+      console.error('Error when trying to deploy: ', e.message);
       return { success: false };
     }
 

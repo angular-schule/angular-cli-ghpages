@@ -6,6 +6,7 @@ app/bower_components
 .bash_history
 *.swp
 *.swo
+*.d.ts
 
 *.classpath
 *.project
@@ -21,4 +22,3 @@ nvim/doc
 nvim/swaps
 nvim/colors
 dist
-

@@ -1,6 +1,15 @@
 {
-  "id": "GHPagesDeploySchema",
-  "title": "GH pages deploy",
-  "description": "TBD",
-  "properties": {}
+  "id": "Schema",
+  "title": "schema",
+  "description": "Deployment of Angular CLI applications to GitHub pages",
+  "properties": {
+    "baseHref": {
+      "type": "string",
+      "description": "Base url for the application being built."
+    },
+    "deployUrl": {
+      "type": "string",
+      "description": "URL where files will be deployed."
+    }
+  }
 }

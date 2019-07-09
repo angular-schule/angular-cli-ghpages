@@ -4,7 +4,7 @@
   "description": "Deployment from the Angular CLI to GitHub pages",
   "main": "index.js",
   "scripts": {
-    "build": "rm -rf dist && tsc && cp builders.json collection.json package.json dist && cp deploy/schema.json dist/deploy",
+    "build": "rm -rf dist && json2ts deploy/schema.json > deploy/schema.d.ts && tsc && cp README.md builders.json collection.json package.json dist && cp deploy/schema.json dist/deploy",
     "test": "jest"
   },
   "schematics": "./collection.json",
@@ -34,13 +34,14 @@
     "@types/jest": "^24.0.15",
     "@types/node": "^12.0.10",
     "jest": "^24.8.0",
+    "json-schema-to-typescript": "^6.1.3",
     "ts-jest": "^24.0.2",
     "typescript": "^3.5.2"
   },
   "peerDependencies": {
-    "@angular-devkit/architect": "^0.800.6",
-    "@angular-devkit/core": "^8.0.6",
-    "@angular-devkit/schematics": "^8.0.6"
+    "@angular-devkit/architect": ">=0.800.0",
+    "@angular-devkit/core": ">=8.0.0",
+    "@angular-devkit/schematics": ">=8.0.0"
   },
   "dependencies": {
     "gh-pages": "^2.0.1"

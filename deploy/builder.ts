@@ -51,7 +51,7 @@ export default createBuilder<any>(
         options
       );
     } catch (e) {
-      console.error('Error when trying to deploy: ', e.message);
+      context.logger.error('Error when trying to deploy: ', e.message);
       return { success: false };
     }
 

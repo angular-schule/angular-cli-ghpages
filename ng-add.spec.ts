@@ -16,28 +16,30 @@ describe('ng-add', () => {
     });
 
     it('generates new files if starting from scratch', async () => {
-      const result = ngAdd(tree, {
+      const result = ngAdd({
         project: PROJECT_NAME
-      });
+      })(tree, {});
       expect(result.read('angular.json')!.toString()).toEqual(
         initialAngularJson
       );
     });
 
     it('uses default project', async () => {
-      const result = ngAdd(tree, {});
+      const result = ngAdd({
+        project: PROJECT_NAME
+      })(tree, {});
       expect(result.read('angular.json')!.toString()).toEqual(
         overwriteAngularJson
       );
     });
 
     it('overrides existing files', async () => {
-      const tempTree = ngAdd(tree, {
+      const tempTree = ngAdd({
         project: PROJECT_NAME
-      });
-      const result = ngAdd(tempTree, {
+      })(tree, {});
+      const result = ngAdd({
         project: OTHER_PROJECT_NAME
-      });
+      })(tempTree, {});
       expect(result.read('angular.json')!.toString()).toEqual(
         projectAngularJson
       );
@@ -51,9 +53,9 @@ describe('ng-add', () => {
       delete angularJSON.defaultProject;
       tree.create('angular.json', JSON.stringify(angularJSON));
       expect(() =>
-        ngAdd(tree, {
+        ngAdd({
           project: ''
-        })
+        })(tree, {})
       ).toThrowError(
         /No Angular project selected and no default project in the workspace/
       );
@@ -61,9 +63,9 @@ describe('ng-add', () => {
 
     it('Should throw if angular.json not found', async () => {
       expect(() =>
-        ngAdd(Tree.empty(), {
+        ngAdd({
           project: PROJECT_NAME
-        })
+        })(Tree.empty(), {})
       ).toThrowError(/Could not find angular.json/);
     });
 
@@ -71,9 +73,9 @@ describe('ng-add', () => {
       const tree = Tree.empty();
       tree.create('angular.json', 'hi');
       expect(() =>
-        ngAdd(tree, {
+        ngAdd({
           project: PROJECT_NAME
-        })
+        })(tree, {})
       ).toThrowError(/Could not parse angular.json/);
     });
 
@@ -81,11 +83,11 @@ describe('ng-add', () => {
       const tree = Tree.empty();
       tree.create('angular.json', JSON.stringify({ projects: {} }));
       expect(() =>
-        ngAdd(tree, {
+        ngAdd({
           project: PROJECT_NAME
-        })
+        })(tree, {})
       ).toThrowError(
-        /The specified Angular project is not defined in this workspace/
+        /No Angular project selected and no default project in the workspace/
       );
     });
 
@@ -98,11 +100,11 @@ describe('ng-add', () => {
         })
       );
       expect(() =>
-        ngAdd(tree, {
+        ngAdd({
           project: PROJECT_NAME
-        })
+        })(tree, {})
       ).toThrowError(
-        /Deploy requires an Angular project type of "application" in angular.json/
+        /No Angular project selected and no default project in the workspace/
       );
     });
 
@@ -115,10 +117,12 @@ describe('ng-add', () => {
         })
       );
       expect(() =>
-        ngAdd(tree, {
+        ngAdd({
           project: PROJECT_NAME
-        })
-      ).toThrowError(/Cannot read the output path/);
+        })(tree, {})
+      ).toThrowError(
+        /No Angular project selected and no default project in the workspace/
+      );
     });
   });
 });
@@ -243,10 +247,6 @@ const projectAngularJson = `{
           \"options\": {
             \"outputPath\": \"dist/ikachu\"
           }
-        },
-        \"deploy\": {
-          \"builder\": \"ngx-gh:deploy\",
-          \"options\": {}
         }
       }
     }

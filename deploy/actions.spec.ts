@@ -18,27 +18,31 @@ describe('Deploy Angular apps', () => {
     const spy = spyOn(context, 'scheduleTarget').and.callThrough();
     await deploy(
       {
-        publish() {}
+        publish: (_: string, __: any) => Promise.resolve()
       },
       context,
-      'host'
+      'host',
+      {}
     );
     expect(spy).toHaveBeenCalled();
-    expect(spy).toHaveBeenCalledWith({
-      target: 'build',
-      configuration: 'production',
-      project: PROJECT
-    });
+    expect(spy).toHaveBeenCalledWith(
+      {
+        target: 'build',
+        configuration: 'production',
+        project: PROJECT
+      },
+      {}
+    );
   });
 
   it('should invoke ghpages.publish', async () => {
     const mock = {
-      publish() {}
+      publish: (_: string, __: any) => Promise.resolve()
     };
     const spy = spyOn(mock, 'publish').and.callThrough();
-    await deploy(mock, context, 'host');
+    await deploy(mock, context, 'host', {});
     expect(spy).toHaveBeenCalled();
-    expect(spy).toHaveBeenCalledWith('host', {}, expect.any(Function));
+    expect(spy).toHaveBeenCalledWith('host', {});
   });
 
   describe('error handling', () => {
@@ -47,10 +51,11 @@ describe('Deploy Angular apps', () => {
       try {
         await deploy(
           {
-            publish() {}
+            publish: (_: string, __: any) => Promise.resolve()
           },
           context,
-          'host'
+          'host',
+          {}
         );
         fail();
       } catch (e) {

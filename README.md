@@ -19,7 +19,13 @@ If you're deploying your application to `https://[USERNAME].github.io/[PROJECT_N
 Sample invocation:
 
 ```
-ng run codelyzer:deploy --baseHref /codelyzer/ --deployUrl https://mgechev.github.io/codelyzer/
+ng run codelyzer:deploy --baseHref /codelyzer/
+```
+
+In Angular CLI 8.2.0, the command would be:
+
+```
+ng deploy --baseHref /codelyzer/
 ```
 
 Deployment to the root of a custom domain may not require any of the listed flags below.
@@ -31,3 +37,4 @@ Since `ng deploy` will automatically invoke the production build of your app, yo
 ## License
 
 MIT
+

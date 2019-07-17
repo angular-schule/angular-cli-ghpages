@@ -19,7 +19,10 @@
     "angular-cli",
     "ghpages",
     "github",
-    "pages"
+    "pages",
+    "deploy",
+    "ng deploy",
+    "ng-deploy"
   ],
   "author": "Minko Gechev <mgechev@gmail.com>",
   "license": "MIT",

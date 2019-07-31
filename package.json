@@ -11,7 +11,7 @@
   "builders": "./builders.json",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/mgechev/ng-deploy-gh-pages.git"
+    "url": "git+https://github.com/mgechev/ngx-gh.git"
   },
   "keywords": [
     "angular",
@@ -27,9 +27,9 @@
   "author": "Minko Gechev <mgechev@gmail.com>",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/mgechev/ng-deploy-gh-pages/issues"
+    "url": "https://github.com/mgechev/ngx-gh.git/issues"
   },
-  "homepage": "https://github.com/mgechev/ng-deploy-gh-pages#readme",
+  "homepage": "https://github.com/mgechev/ngx-gh#readme",
   "devDependencies": {
     "@angular-devkit/architect": "^0.800.6",
     "@angular-devkit/core": "^8.0.6",

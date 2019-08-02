@@ -78,7 +78,7 @@ exports.run = function (options) {
       const notFoundPage = path.join(dir, '404.html');
 
       return fse.copy(indexHtml, notFoundPage).
-        catch(function (err) { 
+        catch(function (err) {
           console.info('index.html could not be copied to 404.html. Continuing without an error.');
           console.info('(Hint: are you sure that you have setup the --dir parameter correctly?)');
           console.dir(err);
@@ -101,7 +101,7 @@ exports.run = function (options) {
         .then(function () {
           console.log('*** CNAME file created');
         })
-        .catch(function (err) { 
+        .catch(function (err) {
           console.info('*** CNAME file could not be created. Stopping execution.');
           throw err;
         })

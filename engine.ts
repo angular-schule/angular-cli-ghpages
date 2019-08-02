@@ -1,10 +1,15 @@
-var path = require('path'),
-  fs = require('fs'),
-  fse = require('fs-extra'),
-  ghpages = require('gh-pages'),
-  denodeify = require('denodeify');
+import * as denodeify from 'denodeify';
+import * as path from 'path';
+import * as fs from 'fs';
+import * as fse from 'fs-extra';
 
-function run(options) {
+import { GHPages } from './interfaces';
+import { Schema as RealDeployOptions } from './deploy/schema';
+
+const ghpages = require('gh-pages');
+var access = denodeify(fs.access);
+
+function run(options: RealDeployOptions) {
 
   options = options || {};
 
@@ -49,84 +54,101 @@ function run(options) {
     ghpages.clean();
   }
 
-  var access = publish = denodeify(fs.access);
+
   var publish = denodeify(ghpages.publish);
 
 
   return Promise.resolve()
-    .then(function checkIfDistFolderExists() {
-      return access(dir, fs.F_OK)
-    })
-    .catch(function handleMissingDistFolder(error) {
-      console.error('*** Dist folder does not exist. Check the dir --dir parameter or build the project first!\n');
-      return Promise.reject(error);
-    })
-    .then(function createNotFoundPage() {
-
-      if (options.dryRun) {
-        console.info('*** Dry-run / SKIPPED: copying of index.html to 404.html');
-        return;
-      }
-
-      // Note:
-      // There is no guarantee that there will be an index.html file,
-      // as the developer may specify a custom index file.
-      const indexHtml = path.join(dir, 'index.html');
-      const notFoundPage = path.join(dir, '404.html');
-
-      return fse.copy(indexHtml, notFoundPage).
-        catch(function (err) {
-          console.info('index.html could not be copied to 404.html. Continuing without an error.');
-          console.info('(Hint: are you sure that you have setup the --dir parameter correctly?)');
-          console.dir(err);
-          return;
-        })
-    })
-    .then(function createCnameFile() {
-
-      if (!options.cname) {
-        return;
-      }
-
-      const cnameFile = path.join(dir, 'CNAME');
-      if (options.dryRun) {
-        console.info('*** Dry-run / SKIPPED: creating of CNAME file with content: ' + options.cname);
-        return;
-      }
-
-      return fse.writeFile(cnameFile, options.cname)
-        .then(function () {
-          console.log('*** CNAME file created');
-        })
-        .catch(function (err) {
-          console.info('*** CNAME file could not be created. Stopping execution.');
-          throw err;
-        })
-    })
-    .then(function publishViaGhPages() {
-      if (options.dryRun) {
-        console.info('*** Dry-run / SKIPPED: publishing to "' + dir + '" with the following options:', {
-          dir: dir,
-          repo: options.repo || 'undefined: current working directory (which must be a git repo in this case) will be used to commit & push',
-          message: options.message,
-          branch: options.branch,
-          user: options.user || 'undefined: local or global git username & email properties will be taken',
-          noSilent: options.noSilent || 'undefined: logging is in silent mode by default',
-          noDotfiles: options.noDotfiles || 'undefined: dotfiles are included by default',
-          dryRun: options.dryRun,
-          cname: options.cname || 'undefined: no CNAME file will be created',
-        });
-        return;
-      }
-
-      return publish(dir, options)
-    })
-    .then(function showSuccess() {
-      console.log('*** Successfully published!\n');
-    })
-    .catch(function showError(error) {
-      console.error('*** An error occurred!\n');
-      console.dir(error);
-      return Promise.reject(error);
-    });
+    .then(() => checkIfDistFolderExists(dir))
+    .catch((error) => handleMissingDistFolder(error))
+    .then(() => createNotFoundPage(dir, options))
+    .then(() => createCnameFile(dir, options))
+    .then(() => publishViaGhPages(ghpages, dir, options))
+    .then(() => showSuccess())
+    .catch((error) => showError(error));
 };
+
+
+function checkIfDistFolderExists(dir: string) {
+  const flag = fs['F_OK'];
+  return access(dir, flag);
+}
+
+function handleMissingDistFolder(error) {
+  console.error('*** Dist folder does not exist. Check the dir --dir parameter or build the project first!\n');
+  return Promise.reject(error);
+}
+
+function createNotFoundPage(dir: string, options: RealDeployOptions) {
+
+  if (options.dryRun) {
+    console.info('*** Dry-run / SKIPPED: copying of index.html to 404.html');
+    return;
+  }
+
+  // Note:
+  // There is no guarantee that there will be an index.html file,
+  // as the developer may specify a custom index file.
+  const indexHtml = path.join(dir, 'index.html');
+  const notFoundPage = path.join(dir, '404.html');
+
+  return fse.copy(indexHtml, notFoundPage).
+    catch(function (err) {
+      console.info('index.html could not be copied to 404.html. Continuing without an error.');
+      console.info('(Hint: are you sure that you have setup the --dir parameter correctly?)');
+      console.dir(err);
+      return;
+    })
+}
+
+function createCnameFile(dir: string, options: RealDeployOptions) {
+
+  if (!options.cname) {
+    return;
+  }
+
+  const cnameFile = path.join(dir, 'CNAME');
+  if (options.dryRun) {
+    console.info('*** Dry-run / SKIPPED: creating of CNAME file with content: ' + options.cname);
+    return;
+  }
+
+  return fse.writeFile(cnameFile, options.cname)
+    .then(function () {
+      console.log('*** CNAME file created');
+    })
+    .catch(function (err) {
+      console.info('*** CNAME file could not be created. Stopping execution.');
+      throw err;
+    })
+}
+
+
+async function publishViaGhPages(ghPages: GHPages, dir: string, options: RealDeployOptions) {
+  if (options.dryRun) {
+    console.info('*** Dry-run / SKIPPED: publishing to "' + dir + '" with the following options:', {
+      dir: dir,
+      repo: options.repo || 'undefined: current working directory (which must be a git repo in this case) will be used to commit & push',
+      message: options.message,
+      branch: options.branch,
+      user: options.user || 'undefined: local or global git username & email properties will be taken',
+      noSilent: options.noSilent || 'undefined: logging is in silent mode by default',
+      noDotfiles: options.noDotfiles || 'undefined: dotfiles are included by default',
+      dryRun: options.dryRun,
+      cname: options.cname || 'undefined: no CNAME file will be created',
+    });
+    return;
+  }
+
+  return await ghPages.publish(dir, options)
+}
+
+function showSuccess() {
+  console.log('*** Successfully published!\n');
+}
+
+function showError(error) {
+  console.error('*** An error occurred!\n');
+  console.dir(error);
+  return Promise.reject(error);
+}

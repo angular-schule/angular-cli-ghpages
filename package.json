@@ -1,9 +1,11 @@
 {
-  "name": "ngx-gh",
-  "version": "0.0.2",
-  "description": "Deployment from the Angular CLI to GitHub pages",
+  "name": "angular-cli-ghpages",
+  "version": "0.6.0",
+  "description": "Deployment from the Angular CLI to GitHub pages (or any other branch on any other remote)",
   "main": "index.js",
   "scripts": {
+    "angular-cli-ghpages": "bin/angular-cli-ghpages",
+    "ngh": "bin/angular-cli-ghpages",
     "build": "rm -rf dist && json2ts deploy/schema.json > deploy/schema.d.ts && tsc && cp README.md builders.json collection.json package.json dist && cp deploy/schema.json dist/deploy",
     "test": "jest"
   },
@@ -11,7 +13,7 @@
   "builders": "./builders.json",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/mgechev/ngx-gh.git"
+    "url": "git+https://github.com/angular-schule/angular-cli-ghpages.git"
   },
   "keywords": [
     "angular",
@@ -19,17 +21,28 @@
     "angular-cli",
     "ghpages",
     "github",
+    "github pages",
     "pages",
     "deploy",
     "ng deploy",
-    "ng-deploy"
+    "ng-deploy",
+    "gh-pages",
+    "ghpages",
+    "angular-cli-ghpages",
+    "angular-cli-github-pages"
   ],
-  "author": "Minko Gechev <mgechev@gmail.com>",
+  "author": {
+    "name": "Angular.Schule Team",
+    "email": "team@angular.schule"
+  },
+  "contributors": [
+    "Minko Gechev <mgechev@gmail.com>"
+  ],
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/mgechev/ngx-gh.git/issues"
+    "url": "https://github.com/angular-schule/angular-cli-ghpages/issues"
   },
-  "homepage": "https://github.com/mgechev/ngx-gh#readme",
+  "homepage": "https://github.com/angular-schule/angular-cli-ghpages/#readme",
   "devDependencies": {
     "@angular-devkit/architect": "^0.800.6",
     "@angular-devkit/core": "^8.0.6",
@@ -47,7 +60,7 @@
     "@angular-devkit/schematics": ">=8.0.0"
   },
   "dependencies": {
-    "gh-pages": "^2.0.1"
+    "gh-pages": "^2.1.0"
   },
   "jest": {
     "transform": {

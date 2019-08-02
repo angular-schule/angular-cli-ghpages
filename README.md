@@ -8,22 +8,14 @@
 
 <hr>
 
-Publish to any gh-pages branch on GitHub (or any other branch on any other remote).  
-Made for angular-cli users.  
-Made with Travis CI, CircleCi and Co. in mind.  
+Deploy your Angular app to GitHub pages directly from the Angular CLI! 🚀
 Brought to you by the [angular.schule](https://angular.schule/) team! 
-
-## About
-
-This command is similar to the old `github-pages:deploy` command of @angular/cli which was removed in [#4385](https://github.com/angular/angular-cli/pull/4385).
-The [angular-cli-ghpages](https://github.com/angular-schule/angular-cli-ghpages) command is able to push to any branch on any repository. It's made on top of [tschaub/gh-pages](https://github.com/tschaub/gh-pages).
-**This script works great on Travis CI and  CircleCi.** No git credentials must be set up in before (use GH_TOKEN instead!). Specific environment variables of Travis-CI are evaluated, too. You will like it!
 
 ## Changelog
 
 A detailed changelog is available in the [releases](https://github.com/angular-schule/angular-cli-ghpages/releases) section.
 
-
+<!--
 ## Installation & Setup
 
 This command has the following prerequisites:
@@ -222,6 +214,8 @@ Run through without making any changes. This can be very usefull, because it out
     * `npx angular-cli-ghpages --cname=example.com`
 
 A CNAME file will be created enabling you to use a custom domain. [More information on Github Pages using a custom domain](https://help.github.com/articles/using-a-custom-domain-with-github-pages/). 
+
+-->
 
 ## FAQ
 

@@ -1,12 +1,12 @@
 export const defaults = {
   dir: 'dist',
   repo: undefined,
-  message: 'Auto- generated commit',
+  message: 'Auto-generated commit',
   branch: 'gh-pages',
   name: undefined,
   email: undefined,
-  noSilent: false,
-  noDotfiles: false,
+  silent: true,
+  dotfiles: true,
   cname: undefined,
   dryRun: false
 };

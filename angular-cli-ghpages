@@ -1,10 +1,14 @@
 #!/usr/bin/env node
 
-var engine = require('../engine/engine'),
+var
+  path = require('path'),
+  engine = require('./engine/engine'),
+  defaults = require('./engine/defaults').defaults,
   pjson = require('../package.json'),
-  defaults = require('../engine/defaults'),
   commander = require('commander');
 
+// unfortunately defaults-file is ignored for --no-silent & --no-dotfiles
+// according to PR it should work (https://github.com/tj/commander.js/issues/928) but it's still completely foobar!?!
 commander
   .version(pjson.version)
   .description(pjson.description)
@@ -14,8 +18,8 @@ commander
   .option('-b, --branch <branch>', 'The git branch to push your pages to.', defaults.branch)
   .option('-n, --name <name>', 'The git user-name which is associated with this commit.', defaults.name)
   .option('-e, --email <email>', 'The git user-email which is associated with this commit.', defaults.email)
-  .option('-S, --no-silent', 'Logging is in silent mode by default. The option enables extended console logging. Keep this untouched if the repository URL or other information passed to git commands is sensitive!', defaults.noSilent)
-  .option('-T, --no-dotfiles', 'Includes dotfiles by default. When set files starting with `.` are ignored.', defaults.noDotfiles)
+  .option('-S, --no-silent', 'Logging is in silent mode by default. The option enables extended console logging. Keep this untouched if the repository URL or other information passed to git commands is sensitive!')
+  .option('-T, --no-dotfiles', 'Includes dotfiles by default. Otherwise files starting with `.` are ignored.')
   .option('-c, --cname <domain>', 'Generate a CNAME file for the specified domain.', defaults.cname)
   .option('--dry-run', 'For testing: Run through without making any changes.', defaults.dryRun)
   .parse(process.argv);
@@ -30,7 +34,7 @@ var consoleLogger = {
   fatal: console.error,
 };
 
-var dir = path.join(process.cwd(), options.dir);
+var dir = path.join(process.cwd(), commander.dir);
 
 engine.run(dir, commander, consoleLogger)
   .catch(function (error) {

@@ -11,6 +11,10 @@
       "type": "string",
       "description": "A named build target, as specified in the `configurations` section of angular.json. Each named target is accompanied by a configuration of option defaults for that target. Same as `ng build --configuration=XXX`."
     },
+    "repo": {
+      "type": "string",
+      "description": "Provide the repository URL. If no value is provided, the `origin` remote of the current working directory is used."
+    },
     "message": {
       "type": "string",
       "description": "The commit message.",
@@ -31,22 +35,22 @@
     },
     "noSilent": {
       "type": "boolean",
-      "description": "Logging is in silent mode by default. The option enables extended console logging. Keep this untouched if the repository URL or other information passed to git commands is sensitive!",
+      "description": "Logging is in silent mode by default. Execute with --no-silent to enable extended console logging. Keep this untouched if the repository URL or other information passed to git commands is sensitive!",
       "default": false
     },
     "noDotfiles": {
       "type": "boolean",
-      "description": "Includes dotfiles by default. When set files starting with `.` are ignored.",
+      "description": "Includes dotfiles by default. Execute with --no-dotfiles to ignore files starting with `.`.",
       "default": false
     },
     "cname": {
       "type": "string",
-      "description": "Includes dotfiles by default. When set files starting with `.` are ignored.",
+      "description": "Generate a CNAME file for the specified domain.",
       "default": false
     },
     "dryRun": {
       "type": "boolean",
-      "description": "For testing: Run through without making any changes.",
+      "description": "For testing: Run through without making any changes. Execute with --dry-run and nothing will happen.",
       "default": false
     }
   }

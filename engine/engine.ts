@@ -1,5 +1,4 @@
 import * as path from 'path';
-import * as fs from 'fs';
 import * as fse from 'fs-extra';
 
 import { logging } from '@angular-devkit/core';
@@ -22,7 +21,7 @@ export async function run(dir: string, options: RealDeployOptions, logger: loggi
   }
 
   try {
-    checkIfDistFolderExists(dir);
+    await checkIfDistFolderExists(dir);
     await createNotFoundPage(dir, options, logger);
     await createCnameFile(dir, options, logger);
     await publishViaGhPages(ghpages, dir, options, logger);
@@ -36,26 +35,34 @@ export async function run(dir: string, options: RealDeployOptions, logger: loggi
 };
 
 
-function prepareOptions(options: RealDeployOptions, logger: logging.LoggerApi) {
+function prepareOptions(origOptions: RealDeployOptions, logger: logging.LoggerApi) {
 
-  options = {
+  const options = {
     ...defaults,
-    options
+    ...origOptions
   };
+
+  if (origOptions.noSilent) {
+    options.silent = !origOptions.noSilent
+  }
+
+  if (origOptions.noDotfiles) {
+    options.dotfiles = !origOptions.noDotfiles
+  }
 
   if (options.dryRun) {
     logger.info('*** Dry-run: No changes are applied at all.');
   }
 
   if (options.name && options.email) {
-    options.user = {
+    options['user'] = {
       name: options.name,
       email: options.email
     };
   };
 
   // gh-pages internal: forwards messages to logger
-  options.logger = function (message) { logger.info(message); };
+  options['logger'] = function (message) { logger.info(message); };
 
   if (process.env.TRAVIS) {
     options.message += ' -- ' + process.env.TRAVIS_COMMIT_MESSAGE + ' \n\n' +
@@ -77,8 +84,8 @@ function prepareOptions(options: RealDeployOptions, logger: logging.LoggerApi) {
   return options;
 }
 
-function checkIfDistFolderExists(dir: string) {
-  if (!fs.existsSync(dir)) {
+async function checkIfDistFolderExists(dir: string) {
+  if (await !fse.pathExists(dir)) {
     throw new Error('*** Dist folder does not exist. Check the dir --dir parameter or build the project first!');
   }
 }
@@ -92,13 +99,13 @@ async function createNotFoundPage(dir: string, options: RealDeployOptions, logge
 
   // Note:
   // There is no guarantee that there will be an index.html file,
-  // as the developer may specify a custom index file.
+  // as we may may specify a custom index file.
   // TODO: respect setting in angular.json
   const indexHtml = path.join(dir, 'index.html');
   const notFoundPage = path.join(dir, '404.html');
 
   try {
-    return fse.copy(indexHtml, notFoundPage);
+    return await fse.copy(indexHtml, notFoundPage);
   }
   catch (err) {
     logger.info('index.html could not be copied to 404.html. This does not look like an angular project?!');
@@ -134,14 +141,13 @@ async function publishViaGhPages(ghPages: GHPages, dir: string, options: RealDep
   if (options.dryRun) {
     logger.info('*** Dry-run / SKIPPED: publishing folder "' + dir + '" with the following options:', {
       dir: dir,
-      repo: options.repo || 'undefined: current working directory (which must be a git repo in this case) will be used to commit & push',
+      repo: options.repo || 'falsy: current working directory (which must be a git repo in this case) will be used to commit & push',
       message: options.message,
       branch: options.branch,
-      user: options.user || 'undefined: local or global git username & email properties will be taken',
-      noSilent: options.noSilent || 'undefined: logging is in silent mode by default',
-      noDotfiles: options.noDotfiles || 'undefined: dotfiles are included by default',
-      dryRun: options.dryRun,
-      cname: options.cname || 'undefined: no CNAME file will be created',
+      user: options.user || 'falsy: local or global git username & email properties will be taken',
+      silent: options.silent || 'falsy: logging is in silent mode by default',
+      dotfiles: options.dotfiles || 'falsy: dotfiles are included by default',
+      cname: options.cname || 'falsy: no CNAME file will be created',
     } as any);
     return;
   }

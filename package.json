@@ -64,7 +64,7 @@
     "@angular-devkit/schematics": ">=8.0.0"
   },
   "dependencies": {
-    "commander": "^2.20.0",
+    "commander": "^3.0.0-0",
     "fs-extra": "^8.1.0",
     "gh-pages": "^2.1.0"
   },

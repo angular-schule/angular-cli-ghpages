@@ -3,9 +3,11 @@
   "version": "0.6.0",
   "description": "Deployment from the Angular CLI to GitHub pages (or any other branch on any other remote)",
   "main": "index.js",
-  "scripts": {
+  "bin": {
     "angular-cli-ghpages": "bin/angular-cli-ghpages",
-    "ngh": "bin/angular-cli-ghpages",
+    "ngh": "bin/angular-cli-ghpages"
+  },
+  "scripts": {
     "build": "rm -rf dist && json2ts deploy/schema.json > deploy/schema.d.ts && tsc && cp README.md builders.json collection.json package.json dist && cp deploy/schema.json dist/deploy",
     "test": "jest"
   },
@@ -60,7 +62,8 @@
     "@angular-devkit/schematics": ">=8.0.0"
   },
   "dependencies": {
-    "gh-pages": "^2.1.0"
+    "gh-pages": "^2.1.0",
+    "commander": "^2.20.0"
   },
   "jest": {
     "transform": {

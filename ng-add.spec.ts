@@ -170,7 +170,7 @@ const initialAngularJson = `{
           }
         },
         \"deploy\": {
-          \"builder\": \"ngx-gh:deploy\",
+          \"builder\": \"@angular-schule/angular-cli-ghpages:deploy\",
           \"options\": {}
         }
       }
@@ -202,7 +202,7 @@ const overwriteAngularJson = `{
           }
         },
         \"deploy\": {
-          \"builder\": \"ngx-gh:deploy\",
+          \"builder\": \"@angular-schule/angular-cli-ghpages:deploy\",
           \"options\": {}
         }
       }
@@ -234,7 +234,7 @@ const projectAngularJson = `{
           }
         },
         \"deploy\": {
-          \"builder\": \"ngx-gh:deploy\",
+          \"builder\": \"@angular-schule/angular-cli-ghpages:deploy\",
           \"options\": {}
         }
       }

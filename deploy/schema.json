@@ -1,7 +1,7 @@
 {
   "id": "Schema",
   "title": "schema",
-  "description": "Deployment of Angular CLI applications to GitHub pages",
+  "description": "Deployment of Angular CLI applications to GitHub pages (angular-cli-ghpages)",
   "properties": {
     "baseHref": {
       "type": "string",

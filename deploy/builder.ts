@@ -1,12 +1,11 @@
-import {
-  BuilderContext,
-  BuilderOutput,
-  createBuilder
-} from '@angular-devkit/architect';
+import { BuilderContext, BuilderOutput, createBuilder } from '@angular-devkit/architect';
 import { NodeJsSyncHost } from '@angular-devkit/core/node';
-import deploy from './actions';
 import { experimental, join, normalize, json } from '@angular-devkit/core';
 import { Schema as RealDeployOptions } from './schema';
+
+import deploy from './actions';
+import * as engine from '../engine/engine';
+
 type DeployOptions = RealDeployOptions & json.JsonObject;
 
 // Call the createBuilder() function to create a builder. This mirrors
@@ -43,6 +42,7 @@ export default createBuilder<any>(
 
     try {
       await deploy(
+        engine,
         context,
         join(workspace.root, targets.build.options.outputPath),
         options

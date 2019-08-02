@@ -1,38 +1,30 @@
 import { BuilderContext } from '@angular-devkit/architect';
-import { GHPages } from '../interfaces';
 import { Schema as RealDeployOptions } from './schema';
-import { json } from '@angular-devkit/core';
+import { json, logging } from '@angular-devkit/core';
+import { run } from '../engine/engine';
+
 type DeployOptions = RealDeployOptions & json.JsonObject;
 
 export default async function deploy(
-  ghPages: GHPages,
   context: BuilderContext,
   projectRoot: string,
   options: DeployOptions
 ) {
+
   if (!context.target) {
     throw new Error('Cannot execute the build target');
   }
 
   context.logger.info(`📦 Building "${context.target.project}"`);
 
-  // TODO: check if it's possible to override production via --configuration=xxx
-  const run = await context.scheduleTarget(
-    {
+  const build = await context.scheduleTarget({
       target: 'build',
       project: context.target.project,
       configuration: 'production'
     },
     options
   );
-  await run.result;
+  await build.result;
 
-  try {
-    await ghPages.publish(projectRoot, {});
-
-    context.logger.info(`🚀 Your application is now deployed. Have a nice day!`);
-
-  } catch (e) {
-    context.logger.error(e);
-  }
+  await run(projectRoot, options, context.logger as unknown as logging.LoggerApi);
 }

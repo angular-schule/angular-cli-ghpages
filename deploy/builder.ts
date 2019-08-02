@@ -9,8 +9,6 @@ import { experimental, join, normalize, json } from '@angular-devkit/core';
 import { Schema as RealDeployOptions } from './schema';
 type DeployOptions = RealDeployOptions & json.JsonObject;
 
-const ghpages = require('gh-pages');
-
 // Call the createBuilder() function to create a builder. This mirrors
 // createJobHandler() but add typings specific to Architect Builders.
 export default createBuilder<any>(
@@ -45,7 +43,6 @@ export default createBuilder<any>(
 
     try {
       await deploy(
-        ghpages,
         context,
         join(workspace.root, targets.build.options.outputPath),
         options

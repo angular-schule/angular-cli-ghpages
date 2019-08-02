@@ -1,11 +1,11 @@
 #!/usr/bin/env node
 
-var index = require('../index'),
+var engine = require('../engine/engine'),
   pjson = require('../package.json'),
-  defaults = require('../defaults'),
-  program = require('commander');
+  defaults = require('../engine/defaults'),
+  commander = require('commander');
 
-program
+commander
   .version(pjson.version)
   .description(pjson.description)
   .option('-d, --dir <dir>', 'Directory for all published sources, relative to the project-root.', defaults.dir)
@@ -20,7 +20,19 @@ program
   .option('--dry-run', 'For testing: Run through without making any changes.', defaults.dryRun)
   .parse(process.argv);
 
-index.run(program)
+var consoleLogger = {
+  createChild: () => consoleLogger,
+  log: console.log,
+  debug: console.debug,
+  info: console.info,
+  warn: console.warn,
+  error: console.error,
+  fatal: console.error,
+};
+
+var dir = path.join(process.cwd(), options.dir);
+
+engine.run(dir, commander, consoleLogger)
   .catch(function (error) {
     process.exit(1);
   })

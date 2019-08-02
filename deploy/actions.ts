@@ -16,6 +16,7 @@ export default async function deploy(
 
   context.logger.info(`📦 Building "${context.target.project}"`);
 
+  // TODO: check if it's possible to override production via --configuration=xxx
   const run = await context.scheduleTarget(
     {
       target: 'build',
@@ -28,13 +29,9 @@ export default async function deploy(
 
   try {
     await ghPages.publish(projectRoot, {});
-    if (options.deployUrl) {
-      context.logger.info(
-        `🚀 Your application is now available at ${options.deployUrl}`
-      );
-    } else {
-      context.logger.info(`🚀 Your application is now on GitHub pages!`);
-    }
+
+    context.logger.info(`🚀 Your application is now deployed. Have a nice day!`);
+
   } catch (e) {
     context.logger.error(e);
   }

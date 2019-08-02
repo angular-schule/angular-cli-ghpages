@@ -28,7 +28,7 @@ jobs:
 
       - run: cd angular-testdrive && npm run build
       - run: chmod +x bin/angular-cli-ghpages
-      - run: cd angular-testdrive && ../bin/angular-cli-ghpages --repo "$GITHUB_ORG/$NAME.git" --name "$GITHUB_NAME" --email "$GITHUB_EMAIL" --dir=dist/angular-testdrive --cname=angular-cli-ghpages.angular.schule
+      - run: cd angular-testdrive && ../angular-cli-ghpages --repo "$GITHUB_ORG/$NAME.git" --name "$GITHUB_NAME" --email "$GITHUB_EMAIL" --dir=dist/angular-testdrive --cname=angular-cli-ghpages.angular.schule
 
     branches:
       only:

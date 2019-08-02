@@ -9,7 +9,7 @@
             "request": "launch",
             "name": "Launch Program",
             "cwd": "${workspaceRoot}/angular-testdrive",
-            "program": "${workspaceFolder}/bin/angular-cli-ghpages",
+            "program": "${workspaceFolder}/angular-cli-ghpages",
             "args": [
                 "--dir=dist/angular-testdrive",
                 "--cname=angular-cli-ghpages.angular.schule"

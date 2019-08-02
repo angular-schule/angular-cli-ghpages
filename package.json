@@ -4,11 +4,11 @@
   "description": "Deployment from the Angular CLI to GitHub pages (or any other branch on any other remote)",
   "main": "index.js",
   "bin": {
-    "angular-cli-ghpages": "bin/angular-cli-ghpages",
-    "ngh": "bin/angular-cli-ghpages"
+    "angular-cli-ghpages": "angular-cli-ghpages",
+    "ngh": "angular-cli-ghpages"
   },
   "scripts": {
-    "build": "rm -rf dist && json2ts deploy/schema.json > deploy/schema.d.ts && tsc && cp README.md builders.json collection.json package.json dist && cp deploy/schema.json dist/deploy",
+    "build": "rm -rf dist && json2ts deploy/schema.json > deploy/schema.d.ts && tsc && cp README.md builders.json collection.json package.json angular-cli-ghpages dist && cp deploy/schema.json dist/deploy",
     "test": "jest"
   },
   "schematics": "./collection.json",

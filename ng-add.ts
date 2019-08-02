@@ -79,7 +79,7 @@ export const ngAdd = ({ project: DeployOptions }) => (
   }
 
   project.architect['deploy'] = {
-    builder: '@angular-schule/angular-cli-ghpages:deploy',
+    builder: 'angular-cli-ghpages:deploy',
     options: {}
   };
 

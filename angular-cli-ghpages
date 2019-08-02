@@ -1,0 +1,26 @@
+#!/usr/bin/env node
+
+var index = require('../index'),
+  pjson = require('../package.json'),
+  defaults = require('../defaults'),
+  program = require('commander');
+
+program
+  .version(pjson.version)
+  .description(pjson.description)
+  .option('-d, --dir <dir>', 'Directory for all published sources, relative to the project-root.', defaults.dir)
+  .option('-r, --repo <repo>', 'Provide the repository URL. If no value is provided, the `origin` remote of the current working directory is used.', defaults.repo)
+  .option('-m, --message <message>', 'The commit message, must be wrapped in quotes.', defaults.message)
+  .option('-b, --branch <branch>', 'The git branch to push your pages to.', defaults.branch)
+  .option('-n, --name <name>', 'The git user-name which is associated with this commit.', defaults.name)
+  .option('-e, --email <email>', 'The git user-email which is associated with this commit.', defaults.email)
+  .option('-S, --no-silent', 'Logging is in silent mode by default. The option enables extended console logging. Keep this untouched if the repository URL or other information passed to git commands is sensitive!', defaults.noSilent)
+  .option('-T, --no-dotfiles', 'Includes dotfiles by default. When set files starting with `.` are ignored.', defaults.noDotfiles)
+  .option('-c, --cname <domain>', 'Generate a CNAME file for the specified domain.', defaults.cname)
+  .option('--dry-run', 'For testing: Run through without making any changes.', defaults.dryRun)
+  .parse(process.argv);
+
+index.run(program)
+  .catch(function (error) {
+    process.exit(1);
+  })

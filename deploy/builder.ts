@@ -1,18 +1,16 @@
 import { BuilderContext, BuilderOutput, createBuilder } from '@angular-devkit/architect';
 import { NodeJsSyncHost } from '@angular-devkit/core/node';
 import { experimental, join, normalize, json } from '@angular-devkit/core';
-import { Schema as RealDeployOptions } from './schema';
+import { Schema } from './schema';
 
 import deploy from './actions';
 import * as engine from '../engine/engine';
-
-type DeployOptions = RealDeployOptions & json.JsonObject;
 
 // Call the createBuilder() function to create a builder. This mirrors
 // createJobHandler() but add typings specific to Architect Builders.
 export default createBuilder<any>(
   async (
-    options: DeployOptions,
+    options: Schema,
     context: BuilderContext
   ): Promise<BuilderOutput> => {
     // The project root is added to a BuilderContext.

@@ -14,7 +14,6 @@ describe('Deploy Angular apps', () => {
     const spy = spyOn(context, 'scheduleTarget').and.callThrough();
     await deploy(mockEngine, context, 'host', {});
 
-    expect(spy).toHaveBeenCalled();
     expect(spy).toHaveBeenCalledWith({
         target: 'build',
         configuration: 'production',
@@ -24,11 +23,23 @@ describe('Deploy Angular apps', () => {
     );
   });
 
+  it('should invoke the builder with the baseHref', async () => {
+    const spy = spyOn(context, 'scheduleTarget').and.callThrough();
+    await deploy(mockEngine, context, 'host', { baseHref: '/folder'});
+
+    expect(spy).toHaveBeenCalledWith({
+        target: 'build',
+        configuration: 'production',
+        project: PROJECT
+      },
+      { baseHref: '/folder' }
+    );
+  });
+
   it('should invoke engine.run', async () => {
     const spy = spyOn(mockEngine, 'run').and.callThrough();
     await deploy(mockEngine, context, 'host', {});
 
-    expect(spy).toHaveBeenCalled();
     expect(spy).toHaveBeenCalledWith('host', {}, context.logger);
   });
 

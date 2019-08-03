@@ -1,14 +1,13 @@
 import { BuilderContext } from '@angular-devkit/architect';
-import { Schema as RealDeployOptions } from './schema';
+import { Schema } from './schema';
 import { json, logging } from '@angular-devkit/core';
 
-type DeployOptions = RealDeployOptions & json.JsonObject;
 
 export default async function deploy(
-  engine: { run: (dir: string, options: RealDeployOptions, logger: logging.LoggerApi) => Promise<void> },
+  engine: { run: (dir: string, options: Schema, logger: logging.LoggerApi) => Promise<void> },
   context: BuilderContext,
   projectRoot: string,
-  options: DeployOptions
+  options: Schema
 ) {
 
   if (!context.target) {
@@ -16,6 +15,9 @@ export default async function deploy(
   }
 
   const configuration = options.configuration ? options.configuration : 'production'
+  const overrides = {
+    ...(options.baseHref && {baseHref: options.baseHref})
+  };
 
   context.logger.info(`📦 Building "${ context.target.project }". Configuration: "${ configuration }".${ options.baseHref ? ' Your base-href: "' + options.baseHref + '"' : '' }`);
 
@@ -23,9 +25,7 @@ export default async function deploy(
     target: 'build',
     project: context.target.project,
     configuration
-  }, {
-    baseHref: options.baseHref ? options.baseHref : null
-  });
+  }, overrides as json.JsonObject);
   await build.result;
 
   await engine.run(

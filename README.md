@@ -31,7 +31,7 @@ This command has the following prerequisites:
 - Angular project created via [Angular CLI](https://github.com/angular/angular-cli)
 
 
-## 🚀 Quick-start <a name="quickstart"></a>
+## 🚀 Quick-start (local development) <a name="quickstart-local"></a>
 
 This quickstart assumes that you are starting from scratch.
 If you alreay have an existing Angular project on GitHub, skip step 1 and 2.
@@ -41,8 +41,8 @@ If you alreay have an existing Angular project on GitHub, skip step 1 and 2.
 
    ```sh
    npm install -g @angular/cli@next
-   ng new hello-world --defaults
-   cd hello-world
+   ng new your-angular-project --defaults
+   cd your-angular-project
    ```
 
 2. By default the Angular CLI initializes a git repository for you.  
@@ -68,11 +68,32 @@ If you alreay have an existing Angular project on GitHub, skip step 1 and 2.
    Your project will be automatically build in production mode.
 
    ```sh
-   ng run hello-world:deploy
+   ng run your-angular-project:deploy
    ```
 
 5. Your project should be available at `http(s)://<username>.github.io/<projectname>`.
    Learn more about GitHub pages on the [official website](https://pages.github.com/).
+
+
+## 🚀 Continuous Delivery <a name="continuous-delivery"></a>
+
+If you run this command on a CI/CD environment, the deployment will most likely not work out of the box.
+For security reasons, those environments usually have read-only privileges.
+Therefore you should take a look at [Github tokens](https://help.github.com/articles/creating-an-access-token-for-command-line-use/).
+In short: a Github token replaces username and password and can be invalidated at any time.
+
+All you need to do is set an environment variable called `GH_TOKEN` in our CI/CD environment.
+You should also set the URL to the repository using the `--repo` option.
+The URL must use the HTTPS scheme.
+
+```sh
+ng run your-angular-project:deploy --repo=https://github.com/<username>/<repositoryname>.git --name="Your Git Username" --email=your.mail@example.org
+```
+
+(replace `<username>` and `<repositoryname>` with your username from GitHub and the name of your repository)
+
+> Please __do NOT disable the silent mode__ if you have any credentials in the repository URL!
+> You have to treat the GH_TOKEN as secure as a password!
 
 
 ## Options

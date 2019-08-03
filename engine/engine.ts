@@ -4,11 +4,11 @@ import * as fse from 'fs-extra';
 import { logging } from '@angular-devkit/core';
 import { defaults } from './defaults';
 import { GHPages } from '../interfaces';
-import { Schema as RealDeployOptions } from '../deploy/schema';
+import { Schema } from '../deploy/schema';
 
 const ghpages = require('gh-pages');
 
-export async function run(dir: string, options: RealDeployOptions, logger: logging.LoggerApi) {
+export async function run(dir: string, options: Schema, logger: logging.LoggerApi) {
 
   options = prepareOptions(options, logger);
 
@@ -35,7 +35,7 @@ export async function run(dir: string, options: RealDeployOptions, logger: loggi
 };
 
 
-function prepareOptions(origOptions: RealDeployOptions, logger: logging.LoggerApi) {
+export function prepareOptions(origOptions: Schema, logger: logging.LoggerApi) {
 
   const options = {
     ...defaults,
@@ -76,10 +76,12 @@ function prepareOptions(origOptions: RealDeployOptions, logger: logging.LoggerAp
       'CircleCI build: ' + process.env.CIRCLE_BUILD_URL;
   }
 
-  // for your convenience - here you can hack credentials into the repository URL
   if (process.env.GH_TOKEN && options.repo) {
+    options.repo = options.repo.replace('http://github.com/', 'http://GH_TOKEN@github.com/');
+    options.repo = options.repo.replace('https://github.com/', 'https://GH_TOKEN@github.com/');
     options.repo = options.repo.replace('GH_TOKEN', process.env.GH_TOKEN);
   }
+
 
   return options;
 }
@@ -90,7 +92,7 @@ async function checkIfDistFolderExists(dir: string) {
   }
 }
 
-async function createNotFoundPage(dir: string, options: RealDeployOptions, logger: logging.LoggerApi) {
+async function createNotFoundPage(dir: string, options: Schema, logger: logging.LoggerApi) {
 
   if (options.dryRun) {
     logger.info('Dry-run / SKIPPED: copying of index.html to 404.html');
@@ -115,7 +117,7 @@ async function createNotFoundPage(dir: string, options: RealDeployOptions, logge
   }
 }
 
-async function createCnameFile(dir: string, options: RealDeployOptions, logger: logging.LoggerApi) {
+async function createCnameFile(dir: string, options: Schema, logger: logging.LoggerApi) {
 
   if (!options.cname) {
     return;
@@ -137,7 +139,7 @@ async function createCnameFile(dir: string, options: RealDeployOptions, logger: 
   }
 }
 
-async function publishViaGhPages(ghPages: GHPages, dir: string, options: RealDeployOptions, logger: logging.LoggerApi) {
+async function publishViaGhPages(ghPages: GHPages, dir: string, options: Schema, logger: logging.LoggerApi) {
   if (options.dryRun) {
     logger.info(`Dry-run / SKIPPED: publishing folder "${ dir }" with the following options: ` + JSON.stringify({
       dir: dir,
@@ -148,7 +150,7 @@ async function publishViaGhPages(ghPages: GHPages, dir: string, options: RealDep
       silent: options.silent || 'falsy: logging is in silent mode by default',
       dotfiles: options.dotfiles || 'falsy: dotfiles are included by default',
       cname: options.cname || 'falsy: no CNAME file will be created',
-    }) as any);
+    }, null, '  '));
     return;
   }
 

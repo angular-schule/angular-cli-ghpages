@@ -46,17 +46,16 @@
   },
   "homepage": "https://github.com/angular-schule/angular-cli-ghpages/#readme",
   "devDependencies": {
-    "@angular-devkit/architect": "^0.800.6",
-    "@angular-devkit/core": "^8.0.6",
-    "@angular-devkit/schematics": "^8.0.6",
-    "@types/denodeify": "^1.2.31",
+    "@angular-devkit/architect": "^0.803.0-next.0",
+    "@angular-devkit/core": "^8.3.0-next.0",
+    "@angular-devkit/schematics": "^8.3.0-next.0",
     "@types/fs-extra": "^8.0.0",
-    "@types/jest": "^24.0.15",
+    "@types/jest": "^24.0.16",
     "@types/node": "^12.6.9",
     "jest": "^24.8.0",
-    "json-schema-to-typescript": "^6.1.3",
+    "json-schema-to-typescript": "^7.0.0",
     "ts-jest": "^24.0.2",
-    "typescript": "^3.5.2"
+    "typescript": "^3.5.3"
   },
   "peerDependencies": {
     "@angular-devkit/architect": ">=0.800.0",

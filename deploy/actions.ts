@@ -15,13 +15,17 @@ export default async function deploy(
     throw new Error('Cannot execute the build target');
   }
 
-  context.logger.info(`📦 Building "${context.target.project}"`);
+  const configuration = options.configuration ? options.configuration : 'production'
+
+  context.logger.info(`📦 Building "${ context.target.project }". Configuration: "${ configuration }".${ options.baseHref ? ' Your base-href: "' + options.baseHref + '"' : '' }`);
 
   const build = await context.scheduleTarget({
     target: 'build',
     project: context.target.project,
-    configuration: 'production'
-  }, options);
+    configuration
+  }, {
+    baseHref: options.baseHref ? options.baseHref : null
+  });
   await build.result;
 
   await engine.run(

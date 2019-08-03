@@ -15,7 +15,7 @@ export async function run(dir: string, options: RealDeployOptions, logger: loggi
   // always clean the cache directory.
   // avoids "Error: Remote url mismatch."
   if (options.dryRun) {
-    logger.info('*** Dry-run / SKIPPED: cleaning of the cache directory');
+    logger.info('Dry-run / SKIPPED: cleaning of the cache directory');
   } else {
     ghpages.clean();
   }
@@ -26,10 +26,10 @@ export async function run(dir: string, options: RealDeployOptions, logger: loggi
     await createCnameFile(dir, options, logger);
     await publishViaGhPages(ghpages, dir, options, logger);
 
-    logger.info('*** 🚀 Successfully published! Have a nice day!');
+    logger.info('🚀 Successfully published via angular-cli-ghpages! Have a nice day!');
   }
   catch (error) {
-    logger.error('*** An error occurred!', error);
+    logger.error('❌ An error occurred!');
     throw error;
   }
 };
@@ -51,7 +51,7 @@ function prepareOptions(origOptions: RealDeployOptions, logger: logging.LoggerAp
   }
 
   if (options.dryRun) {
-    logger.info('*** Dry-run: No changes are applied at all.');
+    logger.info('Dry-run: No changes are applied at all.');
   }
 
   if (options.name && options.email) {
@@ -86,14 +86,14 @@ function prepareOptions(origOptions: RealDeployOptions, logger: logging.LoggerAp
 
 async function checkIfDistFolderExists(dir: string) {
   if (await !fse.pathExists(dir)) {
-    throw new Error('*** Dist folder does not exist. Check the dir --dir parameter or build the project first!');
+    throw new Error('Dist folder does not exist. Check the dir --dir parameter or build the project first!');
   }
 }
 
 async function createNotFoundPage(dir: string, options: RealDeployOptions, logger: logging.LoggerApi) {
 
   if (options.dryRun) {
-    logger.info('*** Dry-run / SKIPPED: copying of index.html to 404.html');
+    logger.info('Dry-run / SKIPPED: copying of index.html to 404.html');
     return;
   }
 
@@ -108,7 +108,7 @@ async function createNotFoundPage(dir: string, options: RealDeployOptions, logge
     return await fse.copy(indexHtml, notFoundPage);
   }
   catch (err) {
-    logger.info('index.html could not be copied to 404.html. This does not look like an angular project?!');
+    logger.info('index.html could not be copied to 404.html. This does not look like an angular-cli project?!');
     logger.info('(Hint: are you sure that you have setup the directory correctly?)');
     logger.debug('Diagnostic info', err);
     return;
@@ -123,23 +123,23 @@ async function createCnameFile(dir: string, options: RealDeployOptions, logger: 
 
   const cnameFile = path.join(dir, 'CNAME');
   if (options.dryRun) {
-    logger.info('*** Dry-run / SKIPPED: creating of CNAME file with content: ' + options.cname);
+    logger.info('Dry-run / SKIPPED: creating of CNAME file with content: ' + options.cname);
     return;
   }
 
   try {
     await fse.writeFile(cnameFile, options.cname);
-    logger.info('*** CNAME file created');
+    logger.info('CNAME file created');
   }
   catch (err) {
-    logger.error('*** CNAME file could not be created. Stopping execution.');
+    logger.error('CNAME file could not be created. Stopping execution.');
     throw err;
   }
 }
 
 async function publishViaGhPages(ghPages: GHPages, dir: string, options: RealDeployOptions, logger: logging.LoggerApi) {
   if (options.dryRun) {
-    logger.info('*** Dry-run / SKIPPED: publishing folder "' + dir + '" with the following options:', {
+    logger.info(`Dry-run / SKIPPED: publishing folder "${ dir }" with the following options: ` + JSON.stringify({
       dir: dir,
       repo: options.repo || 'falsy: current working directory (which must be a git repo in this case) will be used to commit & push',
       message: options.message,
@@ -148,7 +148,7 @@ async function publishViaGhPages(ghPages: GHPages, dir: string, options: RealDep
       silent: options.silent || 'falsy: logging is in silent mode by default',
       dotfiles: options.dotfiles || 'falsy: dotfiles are included by default',
       cname: options.cname || 'falsy: no CNAME file will be created',
-    } as any);
+    }) as any);
     return;
   }
 

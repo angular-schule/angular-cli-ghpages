@@ -9,14 +9,14 @@
             "request": "launch",
             "name": "Launch Standalone Program",
             //"cwd": "${workspaceRoot}",
-            "program": "${workspaceFolder}/dist/angular-cli-ghpages",
+            "program": "${workspaceFolder}/src/dist/angular-cli-ghpages",
             "outFiles": [
-              "${workspaceFolder}/dist/**/*.js"
+              "${workspaceFolder}/src/dist/**/*.js"
             ],
             "args": [
                 //"--no-silent",
                 //"--dry-run",
-                "--dir=angular-testdrive",
+                "--dir=/src/mini-testdrive",
                 "--cname=angular-cli-ghpages.angular.schule"
             ],
             "stopOnEntry": true,

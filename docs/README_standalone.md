@@ -86,19 +86,19 @@ npx angular-cli-ghpages --repo=https://GH_TOKEN@github.com/organisation/your-rep
 
 ## Options
 
-#### <a id="help">--help</a>
+#### --help <a name="help"></a>
  * Example: `npx angular-cli-ghpages --help`
 
 Output usage information.
 
 
-#### <a id="version">--version</a>
+#### --version <a name="version"></a>
  * Example: `npx angular-cli-ghpages --version`
 
 Output the version number. Please provide the version number on any bug report!
 
 
-#### <a id="repo">--repo</a>
+#### --repo <a name="repo"></a>
  * __optional__
  * Default: url of the origin remote of the current dir (assumes a git repository)
  * Example: `npx angular-cli-ghpages --repo=https://GH_TOKEN@github.com/organisation/your-repo.git`
@@ -109,7 +109,7 @@ If instead your files are not in a git repository, or if you want to push to ano
 you can provide the repository URL in the `repo` option.
 
 
-#### <a id="message">--message</a>
+#### --message <a name="message"></a>
  * __optional__
  * Default: `Auto-generated commit`
  * Example: `npx angular-cli-ghpages --message="What could possibly go wrong?"`
@@ -119,7 +119,7 @@ Some handy additional text is always added,
 if the environment variable `process.env.TRAVIS` exists (for Travis CI).
 
 
-#### <a id="branch">--branch</a>
+#### --branch <a name="branch"></a>
  * __optional__
  * Default: `gh-pages`
  * Example: `npx angular-cli-ghpages --branch=other-branch`
@@ -129,7 +129,7 @@ The default uses GitHub's `gh-pages` branch,
 but this can be configured to push to any branch on any remote.
 
 
-#### <a id="name">--name & --email</a>
+#### --name & --email <a name="name"></a>
  * __optional__
  * Default: value of `git config user.name` and `git config user.email`
  * Example: `npx angular-cli-ghpages --name="Displayed Username" --email=mail@example.org`
@@ -140,7 +140,7 @@ you must provide user info before git allows you to commit.
 In this case provide both `name` and `email` string values to identify the committer.
 
 
-#### <a id="no-silent">--no-silent</a>
+#### --no-silent <a name="no-silent"></a>
  * __optional__
  * Default: silent `true` (boolean)
  * Example:
@@ -156,7 +156,7 @@ Keep this untouched if the repository URL or other information passed to git com
 > WARNING: This option should kept like it is if the repository URL or other information passed to git commands is sensitive and should not be logged (== you have a public build server). By default the silent mode is enabled to avoid sensitive data exposure.
 
 
-#### <a id="dir">--dir</a>
+#### --dir <a name="dir"></a>
  * __optional__
  * Default: `dist`
 
@@ -169,7 +169,7 @@ which are not related at all to angular.
 
 
 
-#### <a id="no-dotfiles">--no-dotfiles</a>
+#### --no-dotfiles <a name="no-dotfiles"></a>
  * __optional__
  * Default: dotfiles `true` (boolean)
  * Example:
@@ -181,7 +181,7 @@ With `--no-dotfiles` files starting with `.` are ignored.
 
 
 
-#### <a id="dry-run">--dry-run</a>
+#### --dry-run <a name="dry-run"></a>
  * __optional__
  * Default: `undefined`
  * Example:
@@ -190,7 +190,7 @@ With `--no-dotfiles` files starting with `.` are ignored.
 
 Run through without making any changes. This can be very usefull, because it outputs what would happend without doing anything.
 
-#### <a id="cname">--cname</a>
+#### --cname <a name="cname"></a>
  * __optional__
  * Default: `No CNAME file is generated`
  * Example:

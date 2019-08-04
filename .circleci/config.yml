@@ -16,19 +16,19 @@ jobs:
 
 
       - restore_cache:
-          key: dependency-cache-{{ checksum "package.json" }}-{{ checksum "angular-testdrive/package.json" }}
+          key: dependency-cache-{{ checksum "package.json" }}-{{ checksum "mini-testdrive/package.json" }}
       - run: npm i --silent
-      - run: cd angular-testdrive && npm i --silent
+      - run: cd mini-testdrive && npm i --silent
       - save_cache:
-          key: dependency-cache-{{ checksum "package.json" }}-{{ checksum "angular-testdrive/package.json" }}
+          key: dependency-cache-{{ checksum "package.json" }}-{{ checksum "mini-testdrive/package.json" }}
           paths:
             - node_modules
-            - angular-testdrive/node_modules
+            - mini-testdrive/node_modules
 
 
-      - run: cd angular-testdrive && npm run build
+      - run: cd mini-testdrive && npm run build
       - run: chmod +x bin/angular-cli-ghpages
-      - run: cd angular-testdrive && ../angular-cli-ghpages --repo "$GITHUB_ORG/$NAME.git" --name "$GITHUB_NAME" --email "$GITHUB_EMAIL" --dir=dist/angular-testdrive --cname=angular-cli-ghpages.angular.schule
+      - run: cd mini-testdrive && ../angular-cli-ghpages --repo "$GITHUB_ORG/$NAME.git" --name "$GITHUB_NAME" --email "$GITHUB_EMAIL" --dir=dist/mini-testdrive --cname=angular-cli-ghpages.angular.schule
 
     branches:
       only:

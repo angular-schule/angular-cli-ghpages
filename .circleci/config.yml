@@ -4,6 +4,7 @@ jobs:
   build:
 
     environment:
+      NG_CLI_ANALYTICS: ci
       GITHUB_ORG: https://github.com/angular-schule
       GITHUB_NAME: The Buildbot
       GITHUB_EMAIL: buildbot@angular2buch.de
@@ -11,8 +12,7 @@ jobs:
 
     docker:
       - image: circleci/node:12-browsers
-        environment:
-          NG_CLI_ANALYTICS: ci
+
     steps:
       - checkout
 
@@ -27,7 +27,7 @@ jobs:
       - run: cd src && npm run test
       - run: cd src/dist && sudo npm link
 
-      - run: sudo npm install -g @angular/cli@next
+      - run: sudo -E npm install -g @angular/cli@next
       - run: ng new your-angular-project --defaults
       - run: cd new your-angular-project && npm link angular-cli-ghpages
       - run: cd new your-angular-project && ng add angular-cli-ghpages

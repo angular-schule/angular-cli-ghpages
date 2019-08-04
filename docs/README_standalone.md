@@ -78,7 +78,7 @@ For your convenience, the command will recognize the [environment variable](http
 In example, the following command runs [on our Travis-CI](https://travis-ci.org/angular-buch/book-monkey2):
 
 ```bash
-npx angular-cli-ghpages --repo=https://GH_TOKEN@github.com/organisation/your-repo.git --name="Displayed Username" --email=mail@example.org
+npx angular-cli-ghpages --repo=https://GH_TOKEN@github.com/<username>/<repositoryname>.git --name="Displayed Username" --email=mail@example.org
 ```
 > You have to treat the GH_TOKEN as secure as a password!
 
@@ -101,7 +101,7 @@ Output the version number. Please provide the version number on any bug report!
 #### --repo <a name="repo"></a>
  * __optional__
  * Default: url of the origin remote of the current dir (assumes a git repository)
- * Example: `npx angular-cli-ghpages --repo=https://GH_TOKEN@github.com/organisation/your-repo.git`
+ * Example: `npx angular-cli-ghpages --repo=https://GH_TOKEN@github.com/<username>/<repositoryname>.git`
 
 By default, __gh-pages__ assumes that the current working directory is a git repository,
 and that you want to push changes to the `origin` remote.

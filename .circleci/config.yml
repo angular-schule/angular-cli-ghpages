@@ -15,10 +15,10 @@ jobs:
       - checkout
 
       - restore_cache:
-          key: dependency-cache-{{ checksum "package.json" }}-{{ checksum "src/package.json" }}
+          key: dependency-cache-{{ checksum "src/package.json" }}
       - run: cd src && npm i --silent
       - save_cache:
-          key: dependency-cache-{{ checksum "package.json" }}-{{ checksum "src/package.json" }}
+          key: dependency-cache-{{ checksum "src/package.json" }}
           paths:
             - src/node_modules
       - run: cd src && npm run build

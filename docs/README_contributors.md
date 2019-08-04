@@ -107,8 +107,7 @@ Testing is done with [Jest](https://jestjs.io/).
 To run the tests:
 
 ```sh
-cd angular-cli-ghpages
-cd src
+cd angular-cli-ghpages/src
 npm test
 ```
 
@@ -125,8 +124,8 @@ Use VSCode and debug the task `Launch Standalone Program"`.
 ## Publish to npm
 
 ```
-cd angular-cli-ghpages
-cd src
+cd angular-cli-ghpages/src
 npm run build
 npm run test
+npm publish dist
 ```

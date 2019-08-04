@@ -5,6 +5,7 @@
 tl;dr – execute this:
 
 ```
+cd src
 npm i
 npm run build
 npm test
@@ -50,6 +51,7 @@ Use the following instructions to make `angular-cli-ghpages` available locally v
 2. Install the dependencies
 
    ```sh
+   cd src
    npm install
    ```
 
@@ -106,5 +108,25 @@ To run the tests:
 
 ```sh
 cd angular-cli-ghpages
+cd src
 npm test
+```
+
+
+
+
+
+## Testing the standalone CLI
+
+To quickly test the file `engine.ts` directly, the standalone mode is the best option.
+Use VSCode and debug the task `Launch Standalone Program"`.
+
+
+## Publish to npm
+
+```
+cd angular-cli-ghpages
+cd src
+npm run build
+npm run test
 ```

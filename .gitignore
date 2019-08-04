@@ -22,6 +22,6 @@ nvim/swaps
 nvim/colors
 dist
 
-/src/angular-testdrive/404.html
-/src/angular-testdrive/CNAME
+/src/mini-testdrive/404.html
+/src/mini-testdrive/CNAME
 .angulardoc.json

@@ -8,7 +8,7 @@
             "type": "node",
             "request": "launch",
             "name": "Launch Standalone Program",
-            //"cwd": "${workspaceRoot}",
+            "cwd": "${workspaceRoot}/src",
             "program": "${workspaceFolder}/src/dist/angular-cli-ghpages",
             "outFiles": [
               "${workspaceFolder}/src/dist/**/*.js"
@@ -16,12 +16,12 @@
             "args": [
                 //"--no-silent",
                 //"--dry-run",
-                "--dir=/src/mini-testdrive",
+                "--dir=mini-testdrive",
                 "--cname=angular-cli-ghpages.angular.schule"
             ],
             "stopOnEntry": true,
             "sourceMaps": true,
-            "preLaunchTask": "npm: build",
+            "preLaunchTask": "npm build",
         }
     ]
 }

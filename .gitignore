@@ -1,7 +1,6 @@
 node_modules
 .tmp
 .sass-cache
-app/bower_components
 .DS_Store
 .bash_history
 *.swp

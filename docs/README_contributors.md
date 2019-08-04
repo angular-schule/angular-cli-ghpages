@@ -1,4 +1,4 @@
-# angular-cli-ghpages
+# angular-cli-ghpages: README for contributors
 
 ## How to start <a name="start"></a>
 
@@ -27,7 +27,7 @@ Follow the instructions for [checking and updating the Angular CLI version](#ang
    npm install -g @angular/cli@next
    ```
 
-2. Run `ng --version`, make sure you have angular CLI version v8.3.0-next.0 or greater.
+2. Run `ng --version`, make sure you have angular CLI v8.3.0-next.0 or greater.
 
 3. Update your existing project using the command:
 

@@ -1,6 +1,7 @@
-# angular-cli-ghpages
+# angular-cli-ghpages: README for the standalone program
 
-In the past this project was a standalone program. This is still possible.
+In the past this project was a standalone program.
+This is still possible.
 
 ## Installation & Setup
 

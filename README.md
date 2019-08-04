@@ -20,7 +20,7 @@ A detailed changelog is available in the [releases](https://github.com/angular-s
 
 In the past this project was a standalone program.
 This is still possible.  
-See the documentation at [README_standalone](README_standalone).
+See the documentation at [README_standalone](docs/README_standalone).
 
 
 ## ⚠️ Prerequisites <a name="prerequisites"></a>
@@ -28,7 +28,7 @@ See the documentation at [README_standalone](README_standalone).
 This command has the following prerequisites:
 
 - Git 1.9 or higher (execute `git --version` to check your version)
-- Angular project created via [Angular CLI](https://github.com/angular/angular-cli)
+- Angular project created via [Angular CLI](https://github.com/angular/angular-cli) v8.3.0-next.0 or greater (execute `ng update @angular/cli @angular/core --next=true` to upgrade your project if necessary)
 
 
 ## 🚀 Quick-start (local development) <a name="quickstart-local"></a>
@@ -116,7 +116,7 @@ We look forward to any help. PRs are welcome! 😃
 ## ⁉️ FAQ <a name="faq"></a>
 
 Before posting any issue, [please read the FAQ first](https://github.com/angular-schule/angular-cli-ghpages/wiki/FAQ).
-See the contributors documentation at [README_contributors](README_contributors) if you want to debug and test this project.
+See the contributors documentation at [README_contributors](docs/README_contributors) if you want to debug and test this project.
 
 
 ## License

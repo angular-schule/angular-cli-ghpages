@@ -11,6 +11,8 @@ jobs:
 
     docker:
       - image: circleci/node:12-browsers
+        environment:
+          NG_CLI_ANALYTICS: ci
     steps:
       - checkout
 

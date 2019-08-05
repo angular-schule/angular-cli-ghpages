@@ -5,12 +5,7 @@
 
 Deploy your Angular app to GitHub pages directly from the Angular CLI! 🚀
 
-
-<!--
-TODO: cool screenshot with animated gif
-<hr>
- ![Screenshot](screenshotgif)
- -->
+![Screenshot](docs/angular-cli-ghpages-deploy.gif)
 
 **Table of contents:**  
 
@@ -94,7 +89,7 @@ If you alreay have an existing Angular project on GitHub, skip step 1 and 2.
    Your project will be automatically build in production mode.
 
    ```sh
-   ng run deploy
+   ng deploy
    ```
 
    Which is the same as:
@@ -120,7 +115,7 @@ You should also set the URL to the repository using the `--repo` option.
 The URL must use the HTTPS scheme.
 
 ```sh
-ng run deploy --repo=https://github.com/<username>/<repositoryname>.git --name="Your Git Username" --email=your.mail@example.org
+ng deploy --repo=https://github.com/<username>/<repositoryname>.git --name="Your Git Username" --email=your.mail@example.org
 ```
 
 (replace `<username>` and `<repositoryname>` with your username from GitHub and the name of your repository)

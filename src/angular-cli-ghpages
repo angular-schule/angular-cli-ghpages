@@ -4,7 +4,7 @@ var
   path = require('path'),
   engine = require('./engine/engine'),
   defaults = require('./engine/defaults').defaults,
-  pjson = require('../package.json'),
+  pjson = require('./package.json'),
   commander = require('commander');
 
 // unfortunately defaults-file is ignored for --no-silent & --no-dotfiles

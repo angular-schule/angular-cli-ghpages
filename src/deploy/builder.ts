@@ -1,7 +1,9 @@
 import { BuilderContext, BuilderOutput, createBuilder } from '@angular-devkit/architect';
 import { NodeJsSyncHost } from '@angular-devkit/core/node';
-import { experimental, join, normalize, json } from '@angular-devkit/core';
+import { experimental, normalize, asWindowsPath } from '@angular-devkit/core';
 import { Schema } from './schema';
+import os from 'os';
+import * as path from 'path';
 
 import deploy from './actions';
 import * as engine from '../engine/engine';
@@ -38,11 +40,18 @@ export default createBuilder<any>(
       throw new Error('Cannot find the project output directory');
     }
 
+    // console.log('***', workspace.root)
+    // console.log('***', targets.build.options.outputPath)
+    // console.log('***', asWindowsPath( workspace.root))
+
+    const isWin = os.platform() === 'win32';
+    const workspaceRoot = !isWin ? workspace.root : asWindowsPath(workspace.root);
+
     try {
       await deploy(
         engine,
         context,
-        join(workspace.root, targets.build.options.outputPath),
+        path.join(workspaceRoot, targets.build.options.outputPath),
         options
       );
     } catch (e) {

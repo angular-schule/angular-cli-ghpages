@@ -106,6 +106,9 @@ async function createNotFoundPage(dir: string, options: Schema, logger: logging.
   const indexHtml = path.join(dir, 'index.html');
   const notFoundPage = path.join(dir, '404.html');
 
+  // console.log('***', indexHtml)
+  // console.log('***', notFoundPage)
+
   try {
     return await fse.copy(indexHtml, notFoundPage);
   }

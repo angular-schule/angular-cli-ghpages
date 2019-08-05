@@ -14,8 +14,8 @@ npm test
 
 ## Local development <a name="local-dev"></a>
 
-If you want to try the latest package locally without installing it from npm, use the following instructions.
-This may be useful when you want to try the latest non published version of this library or you want to make a contribution.
+If you want to try the latest package locally without installing it from NPM, use the following instructions.
+This may be useful when you want to try the latest non-published version of this library or you want to make a contribution.
 
 Follow the instructions for [checking and updating the Angular CLI version](#angular-cli) and then link the package.
 
@@ -28,7 +28,7 @@ Follow the instructions for [checking and updating the Angular CLI version](#ang
    npm install -g @angular/cli@next
    ```
 
-2. Run `ng --version`, make sure you have angular CLI v8.3.0-next.0 or greater.
+2. Run `ng version`, make sure you have installed Angular CLI v8.3.0-next.0 or greater.
 
 3. Update your existing project using the command:
 
@@ -68,13 +68,14 @@ Use the following instructions to make `angular-cli-ghpages` available locally v
    npm link
    ```
 
+Read more about the `link` feature in the [official NPM documentation](https://docs.npmjs.com/cli/link).
 
-### 3. Adding to an Angular project - ng add <a name="local-dev-add"></a>
 
-Once you have completed the previous steps to npm link the local copy of `angular-cli-ghpages`,
-follow these steps to use it in a local angular project.
+### 3. Adding to an Angular project -- ng add <a name="local-dev-add"></a>
 
-1. Enter the project's directory
+Once you have completed the previous steps to `npm link` the local copy of `angular-cli-ghpages`, follow these steps to use it in a local Angular project.
+
+1. Enter the project directory
 
    ```sh
    cd your-angular-project
@@ -86,13 +87,13 @@ follow these steps to use it in a local angular project.
    npm link angular-cli-ghpages
    ```
 
-3. Now execute the schematic.
+3. Now execute the `ng-add` schematic.
 
    ```sh
    ng add angular-cli-ghpages
    ```
 
-4. Now you can deploy your angular app to Github pages.
+4. You can now deploy your angular app to GitHub pages.
 
    ```sh
    ng run your-angular-project:deploy
@@ -118,10 +119,10 @@ npm test
 ## Testing the standalone CLI
 
 To quickly test the file `engine.ts` directly, the standalone mode is the best option.
-Use VSCode and debug the task `Launch Standalone Program"`.
+Use VSCode and debug the task `Launch Standalone Program`.
 
 
-## Publish to npm
+## Publish to NPM
 
 ```
 cd angular-cli-ghpages/src

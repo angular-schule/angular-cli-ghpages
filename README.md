@@ -3,7 +3,7 @@
 [![CircleCI](https://circleci.com/gh/angular-schule/angular-cli-ghpages.svg?style=svg)](https://circleci.com/gh/angular-schule/angular-cli-ghpages)
 [![The MIT License](https://img.shields.io/badge/license-MIT-orange.svg?color=blue&style=flat-square)](http://opensource.org/licenses/MIT)
 
-Deploy your Angular app to GitHub pages directly from the Angular CLI! 🚀
+**Deploy your Angular app to GitHub pages directly from the Angular CLI! 🚀**
 
 ![Screenshot](docs/angular-cli-ghpages-deploy.gif)
 
@@ -11,7 +11,7 @@ Deploy your Angular app to GitHub pages directly from the Angular CLI! 🚀
 
 1. [📖 Changelog](#changelog)
 2. [⚠️ Prerequisites](#prerequisites)
-3. [🚀 Quick-start (local development)](#quickstart-local)
+3. [🚀 Quick Start (local development)](#quickstart-local)
 4. [🚀 Continuous Delivery](#continuous-delivery)
 5. [📦 Options](#options)
     - [--base-href](#base-href)
@@ -38,7 +38,7 @@ Deploy your Angular app to GitHub pages directly from the Angular CLI! 🚀
 A detailed changelog is available in the [releases](https://github.com/angular-schule/angular-cli-ghpages/releases) section.
 
 In the past this project was a standalone program.
-This is still possible.  
+This is still possible:
 See the documentation at [README_standalone](docs/README_standalone).
 
 
@@ -52,12 +52,12 @@ This command has the following prerequisites:
 
 
 
-## 🚀 Quick-start (local development) <a name="quickstart-local"></a>
+## 🚀 Quick Start (local development) <a name="quickstart-local"></a>
 
-This quickstart assumes that you are starting from scratch.
-If you alreay have an existing Angular project on GitHub, skip step 1 and 2.
+This quick start assumes that you are starting from scratch.
+If you already have an existing Angular project on GitHub, skip step 1 and 2.
 
-1. Install the next version of the Angular CLI (v8.3.0-next.0 or greater)
+1. Install the next version of the Angular CLI (v8.3.0-next.0 or greater) globally
    and create a new Angular project.
 
    ```sh
@@ -66,7 +66,7 @@ If you alreay have an existing Angular project on GitHub, skip step 1 and 2.
    cd your-angular-project
    ```
 
-2. By default the Angular CLI initializes a git repository for you.  
+2. By default the Angular CLI initializes a Git repository for you.  
    To add a new remote for GitHub, use the `git remote add` command:
 
    ```sh
@@ -74,7 +74,7 @@ If you alreay have an existing Angular project on GitHub, skip step 1 and 2.
    ```
 
    Hints:  
-   * Create a new empty GithHub repository first.
+   * Create a new empty GitHub repository first.
    * Replace `<username>` and `<repositoryname>` with your username from GitHub and the name of your new repository. 
    * Please enter the URL `https://github.com/<username>/<repositoryname>.git` into your browser – you should see your existing repository on GitHub. 
    * Please double-check that you have the necessary rights to make changes to the given project!  
@@ -85,8 +85,8 @@ If you alreay have an existing Angular project on GitHub, skip step 1 and 2.
    ng add angular-cli-ghpages
    ```
 
-4. Deploy your project to Github pages with all default settings.
-   Your project will be automatically build in production mode.
+4. Deploy your project to GitHub pages with all default settings.
+   Your project will be automatically built in production mode.
 
    ```sh
    ng deploy
@@ -105,12 +105,12 @@ If you alreay have an existing Angular project on GitHub, skip step 1 and 2.
 
 ## 🚀 Continuous Delivery <a name="continuous-delivery"></a>
 
-If you run this command on a CI/CD environment, the deployment will most likely not work out of the box.
-For security reasons, those environments usually have read-only privileges or you haven't set up git correctly.
-Therefore you should take a look at [Github tokens](https://help.github.com/articles/creating-an-access-token-for-command-line-use/).
-In short: a Github token replaces username and password and is a safer choice because a token can be revoked at any time.
+If you run this command from a CI/CD environment, the deployment will most likely not work out of the box.
+For security reasons, those environments usually have read-only privileges or you haven't set up Git correctly.
+Therefore you should take a look at [GitHub tokens](https://help.github.com/articles/creating-an-access-token-for-command-line-use/).
+In short: a GitHub token replaces username and password and is a safer choice because a token can be revoked at any time.
 
-All you need to do is set an environment variable called `GH_TOKEN` in our CI/CD environment.
+All you need to do is to set an environment variable called `GH_TOKEN` in your CI/CD environment.
 You should also set the URL to the repository using the `--repo` option.
 The URL must use the HTTPS scheme.
 
@@ -131,19 +131,19 @@ ng deploy --repo=https://github.com/<username>/<repositoryname>.git --name="Your
  * __optional__
  * Default: `undefined` (string)
  * Example:
-    * `ng deploy` -- `<base href="/">` stays untouched in your `index.html`
+    * `ng deploy` -- `<base href="/">` remains unchanged in your `index.html`
     * `ng deploy --base-href=/the-repositoryname` -- `<base href="/the-repositoryname">` is added to your `index.html`
 
-Specifies the base url for the application being built.
+Specifies the base URL for the application being built.
 Same as `ng build --base-href=XXX`
 
 **ℹ️ Please read the next lines carefully, or you will get 404 errors in case of a wrong configuration!**
 
 ##### A) You don't want to use a custom domain
 
-If you don't want to use an own domain, then your later URL of your hostet Angular project should look like this:
+If you don't want to use an own domain, then your later URL of your hosted Angular project should look like this:
 `https://your-username.github.io/the-repositoryname`.
-In this case you have to adjust the `--base-href`:
+In this case you have to adjust the `--base-href` accordingly:
 
 ```sh
 ng deploy --base-href=/the-repositoryname
@@ -162,10 +162,10 @@ See the option [--cname](#cname) for more information!
 
 #### --repo <a name="repo"></a>
  * __optional__
- * Default: url of the origin remote of the current dir (assumes a git repository)
+ * Default: URL of the origin remote of the current dir (assumes a Git repository)
  * Example: `ng deploy --repo=https://github.com/<username>/<repositoryname>.git`
 
-By default, this command assumes that the current working directory is a git repository,
+By default, this command assumes that the current working directory is a Git repository,
 and that you want to push changes to the `origin` remote.
 If instead your files are not in a git repository, or if you want to push to another repository,
 you can provide the repository URL in the `repo` option.
@@ -174,7 +174,7 @@ you can provide the repository URL in the `repo` option.
 Set an environment variable with the name `GH_TOKEN` and it will be automatically added to the URL.
 (`https://github.com/<username>/<repositoryname>.git` is changed to `https://XXX@github.com/<username>/<repositoryname>.git`
 if there is an environment variable `GH_TOKEN` with the value `XXX`.
-Learn more about [Github tokens here](https://help.github.com/articles/creating-an-access-token-for-command-line-use/).)
+Learn more about [GitHub tokens here](https://help.github.com/articles/creating-an-access-token-for-command-line-use/).)
 
 
 #### --configuration <a name="configuration"></a>
@@ -208,7 +208,7 @@ if the environment variable `CIRCLECI` exists (for Circle CI).
 The name of the branch you'll be pushing to.
 The default uses GitHub's `gh-pages` branch,
 but this can be configured to push to any branch on any remote.
-You have to change this to `master` if you are pushing to an GitHub organisation page (instead of an GitHub user page).
+You have to change this to `master` if you are pushing to a GitHub organization page (instead of a GitHub user page).
 
 
 #### --name & --email <a name="name"></a>
@@ -216,10 +216,10 @@ You have to change this to `master` if you are pushing to an GitHub organisation
  * Default: value of `git config user.name` and `git config user.email`
  * Example: `ng deploy --name="Displayed Username" --email=mail@example.org`
 
-If you are running the command in a repository without a `user.name` or `user.email` git config properties
+If you run the command in a repository without `user.name` or `user.email` Git config properties
 (or on a machine without these global config properties),
-you must provide user info before git allows you to commit.
-In this case provide **both** `name` and `email` string values to identify the committer.
+you must provide user info before Git allows you to commit.
+In this case, provide **both** `name` and `email` string values to identify the committer.
 
 
 #### --no-silent <a name="no-silent"></a>
@@ -230,12 +230,12 @@ In this case provide **both** `name` and `email` string values to identify the c
     * `ng deploy --no-silent` -- Logging shows extended information.
 
 Logging is in silent mode by default.
-In silent mode log messages are suppressed and error messages are sanitized.
+In silent mode, log messages are suppressed and error messages are sanitized.
 
 The `--no-silent` option enables extended console logging.
 Keep this untouched if the repository URL or other information passed to git commands is sensitive!
 
-> WARNING: This option should kept like it is if the repository URL or other information passed to git commands is sensitive and should not be logged (== you have a public build server and you are using the `GH_TOKEN` feature).
+> WARNING: This option should be kept as it is if the repository URL or other information passed to Git commands is sensitive and should not be logged (== you have a public build server and you are using the `GH_TOKEN` feature).
 > By default the silent mode is enabled to avoid sensitive data exposure.
 
 
@@ -250,39 +250,39 @@ The command includes dotfiles by default (e.g `.htaccess` will be committed)
 With `--no-dotfiles` files starting with `.` are ignored.
 
 **Hint:**
-This is super usefull if you want to publish a `.nojekyll` file.
-Create such a file in the root of your pages repo to bypass the Jekyll static site generator on Github Pages.
-Static content is still delivered – even without Jekyll.
+This is super useful if you want to publish a `.nojekyll` file.
+Create such a file in the root of your pages repo to bypass the Jekyll static site generator on GitHub Pages.
+Static content is still delivered -- even without Jekyll.
 This should only be necessary if your site uses files or directories that start with **_underscores** since Jekyll considers these to be special resources and does not copy them to the final site.
 → Or just don't use underscores!
 
 
 #### --cname <a name="cname"></a>
  * __optional__
- * Default: `undefined` (string) – No CNAME file is generated
+ * Default: `undefined` (string) -- No CNAME file is generated
  * Example:
     * `ng deploy --cname=example.com`
 
 A CNAME file will be created enabling you to use a custom domain.
-[More information on Github Pages using a custom domain](https://help.github.com/articles/using-a-custom-domain-with-github-pages/). 
+[More information on GitHub Pages using a custom domain](https://help.github.com/articles/using-a-custom-domain-with-github-pages/). 
 
 
 #### --dry-run <a name="dry-run"></a>
  * __optional__
  * Default: `false` (boolean)
  * Example:
-    * `ng deploy` -- Normal behaviour: Changes are applied.
+    * `ng deploy` -- Normal behavior: Changes are applied.
     * `ng deploy --dry-run` -- No changes are applied at all.
 
 Run through without making any changes.
-This can be very usefull, because it outputs what would happend without doing anything.
+This can be very useful because it outputs what would happen without doing anything.
 
 
 
 ## 🏁 Next milestones <a name="milestones"></a>
 
 We are glad that we have an integration into the CLI again.
-But we are looking forward to the following features:
+However, we are looking forward to the following features:
 
 * an interactive command-line prompt that guides you through the available options 
 * a configuration file (`angular-cli-ghpages.json`) to avoid all these command-line cmd options

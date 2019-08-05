@@ -1,176 +1,233 @@
 # angular-cli-ghpages
 [![NPM version][npm-image]][npm-url]
 [![CircleCI](https://circleci.com/gh/angular-schule/angular-cli-ghpages.svg?style=svg)](https://circleci.com/gh/angular-schule/angular-cli-ghpages)
+[![The MIT License](https://img.shields.io/badge/license-MIT-orange.svg?color=blue&style=flat-square)](http://opensource.org/licenses/MIT)
+
+Deploy your Angular app to GitHub pages directly from the Angular CLI! 🚀
+
+![Screenshot](docs/angular-cli-ghpages-deploy.gif)
+
+**Table of contents:**  
+
+1. [📖 Changelog](#changelog)
+2. [⚠️ Prerequisites](#prerequisites)
+3. [🚀 Quick-start (local development)](#quickstart-local)
+4. [🚀 Continuous Delivery](#continuous-delivery)
+5. [📦 Options](#options)
+    - [--base-href](#base-href)
+    - [--configuration](#configuration)
+    - [--repo](#repo)
+    - [--message](#message)
+    - [--branch](#branch)
+    - [--name & --email](#name)
+    - [--no-silent](#no-silent)
+    - [--no-dotfiles](#no-dotfiles)
+    - [--cname](#cname)
+    - [--dry-run](#dry-run)
+6. [🏁 Next milestones](#milestones)
+7. [⁉️ FAQ](#faq)
+
+
 
 <hr>
 
-![Screenshot](screenshot-travis.png)
 
-<hr>
 
-Publish to any gh-pages branch on GitHub (or any other branch on any other remote).  
-Made for angular-cli users.  
-Made with Travis CI, CircleCi and Co. in mind.  
-Brought to you by the [angular.schule](https://angular.schule/) team! 
-
-## About
-
-This command is similar to the old `github-pages:deploy` command of @angular/cli which was removed in [#4385](https://github.com/angular/angular-cli/pull/4385).
-The [angular-cli-ghpages](https://github.com/angular-schule/angular-cli-ghpages) command is able to push to any branch on any repository. It's made on top of [tschaub/gh-pages](https://github.com/tschaub/gh-pages).
-**This script works great on Travis CI and  CircleCi.** No git credentials must be set up in before (use GH_TOKEN instead!). Specific environment variables of Travis-CI are evaluated, too. You will like it!
-
-## Changelog
+## 📖 Changelog <a name="changelog"></a>
 
 A detailed changelog is available in the [releases](https://github.com/angular-schule/angular-cli-ghpages/releases) section.
 
+In the past this project was a standalone program.
+This is still possible.  
+See the documentation at [README_standalone](docs/README_standalone).
 
-## Installation & Setup
+
+
+## ⚠️ Prerequisites <a name="prerequisites"></a>
 
 This command has the following prerequisites:
 
-- `Node.js 8.2.0` or higher which brings you `npm 5.2.0` which brings you [`npx`](https://medium.com/@maybekatz/introducing-npx-an-npm-package-runner-55f7d4bd282b) 
-- Git 1.7.6 or higher
-- __optional__: Angular project created via [angular-cli](https://github.com/angular/angular-cli)
+- Git 1.9 or higher (execute `git --version` to check your version)
+- Angular project created via [Angular CLI](https://github.com/angular/angular-cli) v8.3.0-next.0 or greater (execute `ng update @angular/cli @angular/core --next=true` to upgrade your project if necessary)
 
-To install the command run the following:
 
-```bash
-npm i angular-cli-ghpages --save-dev
+
+## 🚀 Quick-start (local development) <a name="quickstart-local"></a>
+
+This quickstart assumes that you are starting from scratch.
+If you alreay have an existing Angular project on GitHub, skip step 1 and 2.
+
+1. Install the next version of the Angular CLI (v8.3.0-next.0 or greater)
+   and create a new Angular project.
+
+   ```sh
+   npm install -g @angular/cli@next
+   ng new your-angular-project --defaults
+   cd your-angular-project
+   ```
+
+2. By default the Angular CLI initializes a git repository for you.  
+   To add a new remote for GitHub, use the `git remote add` command:
+
+   ```sh
+   git remote add origin https://github.com/<username>/<repositoryname>.git
+   ```
+
+   Hints:  
+   * Create a new empty GithHub repository first.
+   * Replace `<username>` and `<repositoryname>` with your username from GitHub and the name of your new repository. 
+   * Please enter the URL `https://github.com/<username>/<repositoryname>.git` into your browser – you should see your existing repository on GitHub. 
+   * Please double-check that you have the necessary rights to make changes to the given project!  
+
+3. Add `angular-cli-ghpages` to your project.
+
+   ```sh
+   ng add angular-cli-ghpages
+   ```
+
+4. Deploy your project to Github pages with all default settings.
+   Your project will be automatically build in production mode.
+
+   ```sh
+   ng deploy
+   ```
+
+   Which is the same as:
+
+   ```sh
+   ng run your-angular-project:deploy
+   ```
+
+5. Your project should be available at `https://<username>.github.io/<repositoryname>`.  
+   Learn more about GitHub pages on the [official website](https://pages.github.com/).
+
+
+
+## 🚀 Continuous Delivery <a name="continuous-delivery"></a>
+
+If you run this command on a CI/CD environment, the deployment will most likely not work out of the box.
+For security reasons, those environments usually have read-only privileges or you haven't set up git correctly.
+Therefore you should take a look at [Github tokens](https://help.github.com/articles/creating-an-access-token-for-command-line-use/).
+In short: a Github token replaces username and password and is a safer choice because a token can be revoked at any time.
+
+All you need to do is set an environment variable called `GH_TOKEN` in our CI/CD environment.
+You should also set the URL to the repository using the `--repo` option.
+The URL must use the HTTPS scheme.
+
+```sh
+ng deploy --repo=https://github.com/<username>/<repositoryname>.git --name="Your Git Username" --email=your.mail@example.org
 ```
 
-Note: you can skip the permanent installation, too. The command `npx` is also able to install `angular-cli-ghpages` on the first usage, if you want. 
+(replace `<username>` and `<repositoryname>` with your username from GitHub and the name of your repository)
 
-## Usage
-
-Execute `npx angular-cli-ghpages` in order to deploy the project with a build from `dist` folder.  
-__Note: you have to create the  `dist` folder in before (e.g. `ng build --prod`)__
-
-Usage:
-
-```bash
-ng build --prod --base-href "https://USERNAME.github.io/REPOSITORY_NAME/"
-npx angular-cli-ghpages [OPTIONS]
-```
-
-or
-
-```bash
-ng build --prod --base-href "/REPOSITORY_NAME/"
-npx angular-cli-ghpages [OPTIONS]
-```
-
-or (`<base href="/">` stays untouched)
-
-```bash
-ng build --prod
-npx angular-cli-ghpages [OPTIONS]
-```
-
-If you want to push to `gh-pages` on the same repository with your default credentials, then just enter `npx angular-cli-ghpages` without any options.
-
-
-### Usage with Angular CLI 6 or higher
-
-With Angular CLI 6 the build artifacts will be put in a subfolder under `dist`.
-Please take a look at the `dist` folder to see whether there is a subfolder with your project's name or not.
-If yes, you need to specify the deploy directory manually then when using this tool:
-
-```bash
-npx angular-cli-ghpages --dir=dist/[PROJECTNAME]
-```
-
-I most cases, the `[PROJECTNAME]` can be found in the `angular.json` file at `defaultProject`.
-
-
-### Usage with Ionic
-
-You can use the tool with Angular based Ionic projects, too. Instead of the ` dist` folder, the Ionic CLI will create a `www` folder you have to point the tool to. Just use the following commands:
-
-```bash
-ionic build --prod -- --base-href=https://USERNAME.github.io/REPOSITORY_NAME/`
-```
-
-```bash
-npx angular-cli-ghpages --dir=www
-```
-
-
-
-## Extra
-
-For your convenience, the command will recognize the [environment variable](https://docs.travis-ci.com/user/environment-variables/#Defining-Variables-in-Repository-Settings) `GH_TOKEN` and will replace this pattern in the `--repo` string. Please __do NOT disable the silent mode__ if you have any credentials in the repository URL! Read more about [Github tokens here](https://help.github.com/articles/creating-an-access-token-for-command-line-use/).
-
-In example, the following command runs [on our Travis-CI](https://travis-ci.org/angular-buch/book-monkey2):
-
-```bash
-npx angular-cli-ghpages --repo=https://GH_TOKEN@github.com/organisation/your-repo.git --name="Displayed Username" --email=mail@example.org
-```
+> Please __do NOT disable the silent mode__ if you have any credentials in the repository URL!
 > You have to treat the GH_TOKEN as secure as a password!
 
 
 
-## Options
+## 📦 Options <a name="options"></a>
 
-#### <a id="help">--help</a>
- * Example: `npx angular-cli-ghpages --help`
+#### --base-href <a name="base-href"></a>
+ * __optional__
+ * Default: `undefined` (string)
+ * Example:
+    * `ng deploy` -- `<base href="/">` stays untouched in your `index.html`
+    * `ng deploy --base-href=/the-repositoryname` -- `<base href="/the-repositoryname">` is added to your `index.html`
 
-Output usage information.
+Specifies the base url for the application being built.
+Same as `ng build --base-href=XXX`
 
+**ℹ️ Please read the next lines carefully, or you will get 404 errors in case of a wrong configuration!**
 
-#### <a id="version">--version</a>
- * Example: `npx angular-cli-ghpages --version`
+##### A) You don't want to use a custom domain
 
-Output the version number. Please provide the version number on any bug report!
+If you don't want to use an own domain, then your later URL of your hostet Angular project should look like this:
+`https://your-username.github.io/the-repositoryname`.
+In this case you have to adjust the `--base-href`:
 
+```sh
+ng deploy --base-href=/the-repositoryname
+```
 
-#### <a id="repo">--repo</a>
+##### B) You want to use a custom domain
+
+If you want to use your own domain, then you don't have to adjust `--base-href`.
+However, it is now necessary to set the `--cname` parameter!
+
+```sh
+ng deploy --cname=example.org
+```
+
+See the option [--cname](#cname) for more information!
+
+#### --repo <a name="repo"></a>
  * __optional__
  * Default: url of the origin remote of the current dir (assumes a git repository)
- * Example: `npx angular-cli-ghpages --repo=https://GH_TOKEN@github.com/organisation/your-repo.git`
+ * Example: `ng deploy --repo=https://github.com/<username>/<repositoryname>.git`
 
-By default, __gh-pages__ assumes that the current working directory is a git repository,
+By default, this command assumes that the current working directory is a git repository,
 and that you want to push changes to the `origin` remote.
 If instead your files are not in a git repository, or if you want to push to another repository,
 you can provide the repository URL in the `repo` option.
 
+**Hint:**
+Set an environment variable with the name `GH_TOKEN` and it will be automatically added to the URL.
+(`https://github.com/<username>/<repositoryname>.git` is changed to `https://XXX@github.com/<username>/<repositoryname>.git`
+if there is an environment variable `GH_TOKEN` with the value `XXX`.
+Learn more about [Github tokens here](https://help.github.com/articles/creating-an-access-token-for-command-line-use/).)
 
-#### <a id="message">--message</a>
+
+#### --configuration <a name="configuration"></a>
  * __optional__
- * Default: `Auto-generated commit`
- * Example: `npx angular-cli-ghpages --message="What could possibly go wrong?"`
+ * Default: `production` (string)
+ * Example:
+    * `ng deploy` -- Angular project is build in production mode
+    * `ng deploy --configuration=qs` -- Angular project is using the configuration `qs` (this configuration must exist in the `angular.json` file)
 
-The commit message, __must be wrapped in quotes__.  
+A named build target, as specified in the `configurations` section of `angular.json`.
+Each named target is accompanied by a configuration of option defaults for that target.
+Same as `ng build --configuration=XXX`.
+
+
+#### --message <a name="message"></a>
+ * __optional__
+ * Default: `Auto-generated commit` (string)
+ * Example: `ng deploy --message="What could possibly go wrong?"`
+
+The commit message, __must be wrapped in quotes__ if there are any spaces in the text.  
 Some handy additional text is always added,
-if the environment variable `process.env.TRAVIS` exists (for Travis CI).
+if the environment variable `TRAVIS` exists (for Travis CI) or
+if the environment variable `CIRCLECI` exists (for Circle CI).
 
 
-#### <a id="branch">--branch</a>
+#### --branch <a name="branch"></a>
  * __optional__
- * Default: `gh-pages`
- * Example: `npx angular-cli-ghpages --branch=other-branch`
+ * Default: `gh-pages` (string)
+ * Example: `ng deploy --branch=master`
  
 The name of the branch you'll be pushing to.
 The default uses GitHub's `gh-pages` branch,
 but this can be configured to push to any branch on any remote.
+You have to change this to `master` if you are pushing to an GitHub organisation page (instead of an GitHub user page).
 
 
-#### <a id="name">--name & --email</a>
+#### --name & --email <a name="name"></a>
  * __optional__
  * Default: value of `git config user.name` and `git config user.email`
- * Example: `npx angular-cli-ghpages --name="Displayed Username" --email=mail@example.org`
+ * Example: `ng deploy --name="Displayed Username" --email=mail@example.org`
 
 If you are running the command in a repository without a `user.name` or `user.email` git config properties
 (or on a machine without these global config properties),
 you must provide user info before git allows you to commit.
-In this case provide both `name` and `email` string values to identify the committer.
+In this case provide **both** `name` and `email` string values to identify the committer.
 
 
-#### <a id="no-silent">--no-silent</a>
+#### --no-silent <a name="no-silent"></a>
  * __optional__
  * Default: silent `true` (boolean)
  * Example:
-    * `npx angular-cli-ghpages` -- Logging is in silent mode by default.
-    * `npx angular-cli-ghpages --no-silent` -- Logging shows extended information.
+    * `ng deploy` -- Logging is in silent mode by default.
+    * `ng deploy --no-silent` -- Logging shows extended information.
 
 Logging is in silent mode by default.
 In silent mode log messages are suppressed and error messages are sanitized.
@@ -178,63 +235,80 @@ In silent mode log messages are suppressed and error messages are sanitized.
 The `--no-silent` option enables extended console logging.
 Keep this untouched if the repository URL or other information passed to git commands is sensitive!
 
-> WARNING: This option should kept like it is if the repository URL or other information passed to git commands is sensitive and should not be logged (== you have a public build server). By default the silent mode is enabled to avoid sensitive data exposure.
+> WARNING: This option should kept like it is if the repository URL or other information passed to git commands is sensitive and should not be logged (== you have a public build server and you are using the `GH_TOKEN` feature).
+> By default the silent mode is enabled to avoid sensitive data exposure.
 
 
-#### <a id="dir">--dir</a>
- * __optional__
- * Default: `dist`
-
-Directory for all published sources, relative to the project-root.  
-__Starting with Angular CLI 6 the build artifacts will be put in a subfolder under `dist`.
-Please take a look at the `dist` folder to see whether there is a subfolder with your project's name or not.__
-
-This option can be used to deploy completely different folders,
-which are not related at all to angular.
-
-
-
-#### <a id="no-dotfiles">--no-dotfiles</a>
+#### --no-dotfiles <a name="no-dotfiles"></a>
  * __optional__
  * Default: dotfiles `true` (boolean)
  * Example:
-    * `npx angular-cli-ghpages` -- Dotfiles are included by default.
-    * `npx angular-cli-ghpages --no-dotfiles` -- Dotfiles are ignored.
+    * `ng deploy` -- Dotfiles are included by default.
+    * `ng deploy --no-dotfiles` -- Dotfiles are ignored.
 
 The command includes dotfiles by default (e.g `.htaccess` will be committed)
 With `--no-dotfiles` files starting with `.` are ignored.
 
+**Hint:**
+This is super usefull if you want to publish a `.nojekyll` file.
+Create such a file in the root of your pages repo to bypass the Jekyll static site generator on Github Pages.
+Static content is still delivered – even without Jekyll.
+This should only be necessary if your site uses files or directories that start with **_underscores** since Jekyll considers these to be special resources and does not copy them to the final site.
+→ Or just don't use underscores!
 
 
-#### <a id="dry-run">--dry-run</a>
+#### --cname <a name="cname"></a>
  * __optional__
- * Default: `undefined`
+ * Default: `undefined` (string) – No CNAME file is generated
  * Example:
-    * `npx angular-cli-ghpages` -- Normal behaviour: Changes are applied.
-    * `npx angular-cli-ghpages --dry-run` -- No changes are applied at all.
+    * `ng deploy --cname=example.com`
 
-Run through without making any changes. This can be very usefull, because it outputs what would happend without doing anything.
+A CNAME file will be created enabling you to use a custom domain.
+[More information on Github Pages using a custom domain](https://help.github.com/articles/using-a-custom-domain-with-github-pages/). 
 
-#### <a id="cname">--cname</a>
+
+#### --dry-run <a name="dry-run"></a>
  * __optional__
- * Default: `No CNAME file is generated`
+ * Default: `false` (boolean)
  * Example:
-    * `npx angular-cli-ghpages --cname=example.com`
+    * `ng deploy` -- Normal behaviour: Changes are applied.
+    * `ng deploy --dry-run` -- No changes are applied at all.
 
-A CNAME file will be created enabling you to use a custom domain. [More information on Github Pages using a custom domain](https://help.github.com/articles/using-a-custom-domain-with-github-pages/). 
+Run through without making any changes.
+This can be very usefull, because it outputs what would happend without doing anything.
 
-## FAQ
+
+
+## 🏁 Next milestones <a name="milestones"></a>
+
+We are glad that we have an integration into the CLI again.
+But we are looking forward to the following features:
+
+* an interactive command-line prompt that guides you through the available options 
+* a configuration file (`angular-cli-ghpages.json`) to avoid all these command-line cmd options
+* your feature that's not on the list yet?
+
+We look forward to any help. PRs are welcome! 😃
+
+
+
+## ⁉️ FAQ <a name="faq"></a>
 
 Before posting any issue, [please read the FAQ first](https://github.com/angular-schule/angular-cli-ghpages/wiki/FAQ).
+See the contributors documentation at [README_contributors](docs/README_contributors) if you want to debug and test this project.
 
-## License
+
+## License  <a name="license"></a>
 Code released under the [MIT license](LICENSE).
 
 <hr>
 
-<img src="http://assets.angular.schule/logo-angular-schule.png" height="60">  
+<img src="https://assets.angular.schule/logo-angular-schule.png" height="60">  
 
 ### &copy; 2019 https://angular.schule
+
+This project is made on top of [tschaub/gh-pages](https://github.com/tschaub/gh-pages).  
+Thank you very much for this great foundation!
 
 [npm-url]: https://www.npmjs.com/package/angular-cli-ghpages
 [npm-image]: https://badge.fury.io/js/angular-cli-ghpages.svg

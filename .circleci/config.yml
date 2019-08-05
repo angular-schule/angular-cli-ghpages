@@ -4,29 +4,31 @@ jobs:
   build:
 
     environment:
-      GITHUB_ORG: https://GH_TOKEN@github.com/angular-schule
+      NG_CLI_ANALYTICS: ci
+      GITHUB_ORG: https://github.com/angular-schule
       GITHUB_NAME: The Buildbot
       GITHUB_EMAIL: buildbot@angular2buch.de
       NAME: angular-cli-ghpages
 
     docker:
-      - image: circleci/node:10-browsers
+      - image: circleci/node:12-browsers
+
     steps:
       - checkout
 
-
       - restore_cache:
-          key: dependency-cache-{{ checksum "package.json" }}-{{ checksum "angular-testdrive/package.json" }}
-      - run: npm i --silent
-      - run: cd angular-testdrive && npm i --silent
+          key: dependency-cache-{{ checksum "src/package.json" }}
+      - run: cd src && npm i --silent
       - save_cache:
-          key: dependency-cache-{{ checksum "package.json" }}-{{ checksum "angular-testdrive/package.json" }}
+          key: dependency-cache-{{ checksum "src/package.json" }}
           paths:
-            - node_modules
-            - angular-testdrive/node_modules
+            - src/node_modules
+      - run: cd src && npm run build
+      - run: cd src && npm run test
+      - run: cd src/dist && sudo npm link
 
-
-      - run: cd angular-testdrive && npm run build
-      - run: chmod +x bin/angular-cli-ghpages
-      - run: cd angular-testdrive && ../bin/angular-cli-ghpages --repo "$GITHUB_ORG/$NAME.git" --name "$GITHUB_NAME" --email "$GITHUB_EMAIL" --dir=dist/angular-testdrive --cname=angular-cli-ghpages.angular.schule
-
+      - run: sudo -E npm install -g @angular/cli@next
+      - run: sudo -E ng new your-angular-project --defaults
+      - run: cd your-angular-project && sudo -E npm link angular-cli-ghpages
+      - run: cd your-angular-project && sudo -E ng add angular-cli-ghpages
+      - run: cd your-angular-project && sudo -E ng deploy --repo="$GITHUB_ORG/$NAME.git" --name="$GITHUB_NAME" --email="$GITHUB_EMAIL" --cname=angular-cli-ghpages.angular.schule

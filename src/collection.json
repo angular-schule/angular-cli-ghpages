@@ -1,0 +1,9 @@
+{
+  "$schema": "@angular-devkit/schematics/collection-schema.json",
+  "schematics": {
+    "ng-add": {
+      "description": "Add GitHub pages deploy schematic (angular-cli-ghpages)",
+      "factory": "./ng-add#ngAdd"
+    }
+  }
+}

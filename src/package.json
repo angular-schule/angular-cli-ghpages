@@ -8,7 +8,7 @@
     "ngh": "angular-cli-ghpages"
   },
   "scripts": {
-    "build": "rimraf dist && json2ts deploy/schema.json > deploy/schema.d.ts && tsc && copyfiles ../README.md builders.json collection.json package.json angular-cli-ghpages dist && copyfiles deploy/schema.json dist/deploy",
+    "build": "rimraf dist && json2ts deploy/schema.json > deploy/schema.d.ts && tsc && copyfiles builders.json collection.json package.json angular-cli-ghpages deploy/schema.json dist && copyfiles ../README.md dist/README.md",
     "test": "jest"
   },
   "schematics": "./collection.json",

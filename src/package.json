@@ -1,6 +1,6 @@
 {
   "name": "angular-cli-ghpages",
-  "version": "0.6.0-rc.1",
+  "version": "0.6.0-rc.2",
   "description": "Deployment from the Angular CLI to GitHub pages (or any other branch on any other remote)",
   "main": "index.js",
   "bin": {

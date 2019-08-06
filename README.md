@@ -132,10 +132,10 @@ ng deploy --repo=https://github.com/<username>/<repositoryname>.git --name="Your
  * Default: `undefined` (string)
  * Example:
     * `ng deploy` -- `<base href="/">` remains unchanged in your `index.html`
-    * `ng deploy --base-href=/the-repositoryname` -- `<base href="/the-repositoryname">` is added to your `index.html`
+    * `ng deploy --base-href=/the-repositoryname/` -- `<base href="/the-repositoryname/">` is added to your `index.html`
 
 Specifies the base URL for the application being built.
-Same as `ng build --base-href=XXX`
+Same as `ng build --base-href=/XXX/`
 
 **ℹ️ Please read the next lines carefully, or you will get 404 errors in case of a wrong configuration!**
 
@@ -146,7 +146,7 @@ If you don't want to use an own domain, then your later URL of your hosted Angul
 In this case you have to adjust the `--base-href` accordingly:
 
 ```sh
-ng deploy --base-href=/the-repositoryname
+ng deploy --base-href=/the-repositoryname/
 ```
 
 ##### B) You want to use a custom domain

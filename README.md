@@ -132,7 +132,7 @@ ng deploy --repo=https://github.com/<username>/<repositoryname>.git --name="Your
  * Default: `undefined` (string)
  * Example:
     * `ng deploy` – The tag `<base href="/">` remains unchanged in your `index.html`
-    * `ng deploy --base-href=/the-repositoryname/` – Tha tag `<base href="/the-repositoryname/">` is added to your `index.html`
+    * `ng deploy --base-href=/the-repositoryname/` – The tag `<base href="/the-repositoryname/">` is added to your `index.html`
 
 Specifies the base URL for the application being built.
 Same as `ng build --base-href=/XXX/`

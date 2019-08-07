@@ -131,8 +131,8 @@ ng deploy --repo=https://github.com/<username>/<repositoryname>.git --name="Your
  * __optional__
  * Default: `undefined` (string)
  * Example:
-    * `ng deploy` -- `<base href="/">` remains unchanged in your `index.html`
-    * `ng deploy --base-href=/the-repositoryname/` -- `<base href="/the-repositoryname/">` is added to your `index.html`
+    * `ng deploy` – The tag `<base href="/">` remains unchanged in your `index.html`
+    * `ng deploy --base-href=/the-repositoryname/` – Tha tag `<base href="/the-repositoryname/">` is added to your `index.html`
 
 Specifies the base URL for the application being built.
 Same as `ng build --base-href=/XXX/`
@@ -181,8 +181,8 @@ Learn more about [GitHub tokens here](https://help.github.com/articles/creating-
  * __optional__
  * Default: `production` (string)
  * Example:
-    * `ng deploy` -- Angular project is build in production mode
-    * `ng deploy --configuration=qs` -- Angular project is using the configuration `qs` (this configuration must exist in the `angular.json` file)
+    * `ng deploy` – Angular project is build in production mode
+    * `ng deploy --configuration=qs` – Angular project is using the configuration `qs` (this configuration must exist in the `angular.json` file)
 
 A named build target, as specified in the `configurations` section of `angular.json`.
 Each named target is accompanied by a configuration of option defaults for that target.
@@ -194,7 +194,7 @@ Same as `ng build --configuration=XXX`.
  * Default: `Auto-generated commit` (string)
  * Example: `ng deploy --message="What could possibly go wrong?"`
 
-The commit message, __must be wrapped in quotes__ if there are any spaces in the text.  
+The commit message __must be wrapped in quotes__ if there are any spaces in the text.  
 Some handy additional text is always added,
 if the environment variable `TRAVIS` exists (for Travis CI) or
 if the environment variable `CIRCLECI` exists (for Circle CI).
@@ -226,8 +226,8 @@ In this case, provide **both** `name` and `email` string values to identify the 
  * __optional__
  * Default: silent `true` (boolean)
  * Example:
-    * `ng deploy` -- Logging is in silent mode by default.
-    * `ng deploy --no-silent` -- Logging shows extended information.
+    * `ng deploy` – Logging is in silent mode by default.
+    * `ng deploy --no-silent` – Logging shows extended information.
 
 Logging is in silent mode by default.
 In silent mode, log messages are suppressed and error messages are sanitized.
@@ -235,7 +235,7 @@ In silent mode, log messages are suppressed and error messages are sanitized.
 The `--no-silent` option enables extended console logging.
 Keep this untouched if the repository URL or other information passed to git commands is sensitive!
 
-> WARNING: This option should be kept as it is if the repository URL or other information passed to Git commands is sensitive and should not be logged (== you have a public build server and you are using the `GH_TOKEN` feature).
+> ⚠️ WARNING: This option should be kept as it is if the repository URL or other information passed to Git commands is sensitive and should not be logged (== you have a public build server and you are using the `GH_TOKEN` feature).
 > By default the silent mode is enabled to avoid sensitive data exposure.
 
 
@@ -243,23 +243,23 @@ Keep this untouched if the repository URL or other information passed to git com
  * __optional__
  * Default: dotfiles `true` (boolean)
  * Example:
-    * `ng deploy` -- Dotfiles are included by default.
-    * `ng deploy --no-dotfiles` -- Dotfiles are ignored.
+    * `ng deploy` – Dotfiles are included by default.
+    * `ng deploy --no-dotfiles` – Dotfiles are ignored.
 
-The command includes dotfiles by default (e.g `.htaccess` will be committed)
+The command includes dotfiles by default (e.g. `.htaccess` will be committed).
 With `--no-dotfiles` files starting with `.` are ignored.
 
 **Hint:**
 This is super useful if you want to publish a `.nojekyll` file.
 Create such a file in the root of your pages repo to bypass the Jekyll static site generator on GitHub Pages.
-Static content is still delivered -- even without Jekyll.
+Static content is still delivered – even without Jekyll.
 This should only be necessary if your site uses files or directories that start with **_underscores** since Jekyll considers these to be special resources and does not copy them to the final site.
 → Or just don't use underscores!
 
 
 #### --cname <a name="cname"></a>
  * __optional__
- * Default: `undefined` (string) -- No CNAME file is generated
+ * Default: `undefined` (string) – No CNAME file is generated
  * Example:
     * `ng deploy --cname=example.com`
 
@@ -271,8 +271,8 @@ A CNAME file will be created enabling you to use a custom domain.
  * __optional__
  * Default: `false` (boolean)
  * Example:
-    * `ng deploy` -- Normal behavior: Changes are applied.
-    * `ng deploy --dry-run` -- No changes are applied at all.
+    * `ng deploy` – Normal behavior: Changes are applied.
+    * `ng deploy --dry-run` – No changes are applied at all.
 
 Run through without making any changes.
 This can be very useful because it outputs what would happen without doing anything.

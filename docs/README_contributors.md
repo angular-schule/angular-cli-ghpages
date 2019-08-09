@@ -33,9 +33,23 @@ Follow the instructions for [checking and updating the Angular CLI version](#ang
 3. Update your existing project using the command:
 
    ```sh
-   ng update @angular/cli @angular/core --next=true
+   ng update @angular/cli @angular/core
+   ```
+   
+   Please pay attention to the version numbers of your project.
+   `angular-cli-ghpages` was tested with Angular CLI v8.3.0-next.0 and Angular 8.2.0.
+   Please figure out the required version numbers with:
+
+   ```sh
+   npm info @angular/cli@next
+   npm info @angular/core@next
    ```
 
+  Therefore, the command (at the time of writing) would be the following:
+
+  ```sh
+  ng update @angular/cli@8.3.0-next.1 @angular/core@8.2.1
+  ```
 
 ### 2. npm link
 

@@ -48,7 +48,7 @@ See the documentation at [README_standalone](docs/README_standalone).
 This command has the following prerequisites:
 
 - Git 1.9 or higher (execute `git --version` to check your version)
-- Angular project created via [Angular CLI](https://github.com/angular/angular-cli) v8.3.0-next.0 or greater (execute `ng update @angular/cli @angular/core --next=true` to upgrade your project if necessary)
+- Angular project created via [Angular CLI](https://github.com/angular/angular-cli) v8.3.0-next.0 or greater (execute `ng update @angular/cli@8.3.0-next.1 @angular/core@8.2.1` to upgrade your project if necessary)
 
 
 

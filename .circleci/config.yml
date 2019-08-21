@@ -1,0 +1,27 @@
+version: 2
+
+jobs:
+  build:
+
+    docker:
+      - image: circleci/node:12-browsers
+
+    steps:
+      - checkout
+
+      - restore_cache:
+          key: dependency-cache-{{ checksum "src/package.json" }}
+      - run: cd src && npm i --silent
+      - save_cache:
+          key: dependency-cache-{{ checksum "src/package.json" }}
+          paths:
+            - src/node_modules
+      - run: cd src && npm run build
+      - run: cd src && npm run test
+      - run: cd src/dist && sudo npm link
+
+      - run: sudo -E npm install -g @angular/cli@next
+      - run: sudo -E ng new your-angular-project --defaults
+      - run: cd your-angular-project && sudo -E npm link ngx-deploy-starter
+      - run: cd your-angular-project && sudo -E ng add ngx-deploy-starter
+      - run: cd your-angular-project && sudo -E ng deploy

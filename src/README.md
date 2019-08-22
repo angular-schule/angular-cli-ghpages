@@ -22,13 +22,6 @@ ng deploy [options]
 
 The following options are also available.
 
-#### --target-dir
- * __optional__
- * Default: `~/example-folder` (string)
- * Example:
-    * `ng deploy` -- App is "deployed" to the example folder (if existing)
-    * `ng deploy --target-/var/www/html` -- App is "deployed" to another folder
-
 
 #### --configuration
  * __optional__
@@ -41,3 +34,25 @@ A named build target, as specified in the `configurations` section of `angular.j
 Each named target is accompanied by a configuration of option defaults for that target.
 Same as `ng build --configuration=XXX`.
 
+> **This is a proposal from [RFC #1](https://github.com/angular-schule/ngx-deploy-starter/issues/1).**
+
+#### --target-dir
+ * __optional__
+ * Default: `~/example-folder` (string)
+ * Example:
+    * `ng deploy` -- App is "deployed" to the example folder (if existing)
+    * `ng deploy --target-/var/www/html` -- App is "deployed" to another folder
+
+> **This is one of the options you can freely choose according to your needs.**
+
+#### --base-href <a name="base-href"></a>
+ * __optional__
+ * Default: `undefined` (string)
+ * Example:
+    * `ng deploy` -- `<base href="/">` remains unchanged in your `index.html`
+    * `ng deploy --base-href=/the-repositoryname/` -- `<base href="/the-repositoryname/">` is added to your `index.html`
+
+Specifies the base URL for the application being built.
+Same as `ng build --base-href=/XXX/`
+
+> **This is an example how to override the workspace set of options.**

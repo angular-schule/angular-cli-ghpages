@@ -12,7 +12,7 @@ npm test
 ```
 
 
-## Local development <a name="local-dev"></a>
+## Local development
 
 If you want to try the latest package locally without installing it from NPM, use the following instructions.
 This may be useful when you want to try the latest non-published version of this library or you want to make a contribution.
@@ -20,7 +20,7 @@ This may be useful when you want to try the latest non-published version of this
 Follow the instructions for [checking and updating the Angular CLI version](#angular-cli) and then link the package.
 
 
-### 1. Angular CLI <a name="angular-cli"></a>
+### 1. Angular CLI
 
 1. Install the next version of the Angular CLI.
 
@@ -71,7 +71,7 @@ Use the following instructions to make `ngx-deploy-starter` available locally vi
 Read more about the `link` feature in the [official NPM documentation](https://docs.npmjs.com/cli/link).
 
 
-### 3. Adding to an Angular project -- ng add <a name="local-dev-add"></a>
+### 3. Adding to an Angular project -- ng add
 
 Once you have completed the previous steps to `npm link` the local copy of `ngx-deploy-starter`, follow these steps to use it in a local Angular project.
 
@@ -102,7 +102,7 @@ Once you have completed the previous steps to `npm link` the local copy of `ngx-
 5. You can remove the link later by running `npm unlink`
 
 
-### 4. Testing <a name="testing"></a>
+### 4. Testing
 
 Testing is done with [Jest](https://jestjs.io/).
 To run the tests:
@@ -114,14 +114,6 @@ npm test
 
 
 
-
-
-## Testing the standalone CLI
-
-To quickly test the file `engine.ts` directly, the standalone mode is the best option.
-Use VSCode and debug the task `Launch Standalone Program`.
-
-
 ## Publish to NPM
 
 ```
@@ -129,5 +121,4 @@ cd ngx-deploy-starter/src
 npm run build
 npm run test
 npm publish dist
-npm dist-tag add ngx-deploy-starter@0.6.0-rc.0 next
 ```

@@ -3,13 +3,17 @@
   "title": "schema",
   "description": "Deployment of Angular CLI applications to GitHub pages (ngx-deploy-starter)",
   "properties": {
+    "baseHref": {
+      "type": "string",
+      "description": "This is an example how to override the workspace set of options. --- Base url for the application being built. Same as `ng build --base-href=/XXX/`."
+    },
     "configuration": {
       "type": "string",
-      "description": "A named build target, as specified in the `configurations` section of angular.json. Each named target is accompanied by a configuration of option defaults for that target. Same as `ng build --configuration=XXX`."
+      "description": "This is a proposal from RFC #1. --- A named build target, as specified in the `configurations` section of angular.json. Each named target is accompanied by a configuration of option defaults for that target. Same as `ng build --configuration=XXX`."
     },
     "targetDir": {
       "type": "string",
-      "description": "Only for demonstration: we will 'deploy' to this folder."
+      "description": "This is one of the options you can freely choose according to your needs. --- We will 'deploy' to this folder."
     }
   }
 }

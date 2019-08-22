@@ -1,4 +1,6 @@
 # @angular-schule/ngx-deploy-starter 🚀
+[![NPM version][npm-image]][npm-url]
+[![The MIT License](https://img.shields.io/badge/license-MIT-orange.svg?color=blue&style=flat-square)](http://opensource.org/licenses/MIT)
 
 ## About
 
@@ -61,3 +63,7 @@ Please keep the spirit of Open Source alive and use the MIT or a compatible lice
 
 ## License
 Code released under the [MIT license](LICENSE).
+
+
+[npm-url]: https://www.npmjs.com/package/@angular-schule/ngx-deploy-starter
+[npm-image]: https://badge.fury.io/js/%40angular-schule%2Fngx-deploy-starter.svg

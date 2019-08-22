@@ -2,6 +2,12 @@
 
 **Deploy your Angular app to the file system directly from the Angular CLI! 🚀**
 
+> **Warning:**  
+> This is a sample project that helps you to implement your own deployment builder (`ng deploy`) for the Angular CLI.
+> The actual "deployment" is only a simple copy to another folder in the file system.
+>
+>**Learn more at
+> https://github.com/angular-schule/ngx-deploy-starter**
 
 ## Usage
 
@@ -38,7 +44,7 @@ Same as `ng build --configuration=XXX`.
 
 #### --target-dir
  * __optional__
- * Default: `~/example-folder` (string)
+ * Default: `/example-folder` (string)
  * Example:
     * `ng deploy` -- App is "deployed" to the example folder (if existing)
     * `ng deploy --target-/var/www/html` -- App is "deployed" to another folder

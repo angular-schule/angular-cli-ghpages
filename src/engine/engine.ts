@@ -3,16 +3,14 @@ import * as fse from 'fs-extra';
 
 import { Schema } from '../deploy/schema';
 
-// TODO: add your deploy code here!
+// TODO: add your deployment code here!
 export async function run(dir: string, options: Schema, logger: logging.LoggerApi) {
 
   try {
 
-    if (!options.targetDir) {
-      throw new Error('Please provide a target directory!');
-    }
+    options.targetDir = options.targetDir || '/example-folder';
 
-    if (await !fse.pathExists(options.targetDir)) {
+    if (!await fse.pathExists(options.targetDir)) {
       throw new Error(`Target directory ${ options.targetDir } does not exist!`);
     }
 

@@ -30,7 +30,7 @@ By default, a deployment builder **shall** compile in `production` mode, but it 
 
 Discussion: https://github.com/angular-schule/ngx-deploy-starter/issues/1
 
-### 2. A deployment builder should have an interactive prompts after the "ng add".
+### 2. A deployment builder should have an interactive prompt after the "ng add".
 
 To make it easier for the end user to get started, a deployment builder **should** ask for all the mandatory questions immediately after the `ng add`.
 The data should be persisted in the `angular.json` file.

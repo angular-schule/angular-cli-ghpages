@@ -2,6 +2,8 @@
 [![NPM version][npm-image]][npm-url]
 [![The MIT License](https://img.shields.io/badge/license-MIT-orange.svg?color=blue&style=flat-square)](http://opensource.org/licenses/MIT)
 
+![Banner](docs/ng-deploy-starter-project.jpg)
+
 ## About
 
 This is a sample project that helps you to implement your own __deployment builder__ (`ng deploy`) for the Angular CLI.
@@ -28,7 +30,7 @@ This might be not enough.
 There is also the approach not to perform the build step at all.
 
 **Our suggestion:**  
-By default, a deployment builder **shall** compile in `production` mode, but it **should** be possible to override the default coniguration using the option `--configuration`.
+By default, a deployment builder **shall** compile in `production` mode, but it **should** be possible to override the default configuration using the option `--configuration`.
 
 Discussion: https://github.com/angular-schule/ngx-deploy-starter/issues/1
 

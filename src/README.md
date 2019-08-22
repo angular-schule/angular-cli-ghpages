@@ -1,4 +1,4 @@
-# ngx-deploy-starter
+# @angular-schule/ngx-deploy-starter
 
 **Deploy your Angular app to the file system directly from the Angular CLI! 🚀**
 
@@ -11,10 +11,10 @@
 
 ## Usage
 
-Add `ngx-deploy-starter` to your project.
+Add `@angular-schule/ngx-deploy-starter` to your project.
 
 ```bash
-ng add ngx-deploy-starter
+ng add @angular-schule/ngx-deploy-starter
 ```
 
 Deploy your project to the file system.

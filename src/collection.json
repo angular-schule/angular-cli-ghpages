@@ -2,7 +2,7 @@
   "$schema": "@angular-devkit/schematics/collection-schema.json",
   "schematics": {
     "ng-add": {
-      "description": "Add ngx-deploy-starter deploy schematic",
+      "description": "Add @angular-schule/ngx-deploy-starter deploy schematic",
       "factory": "./ng-add#ngAdd"
     }
   }

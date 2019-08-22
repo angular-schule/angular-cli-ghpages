@@ -1,7 +1,7 @@
 {
   "id": "Schema",
   "title": "schema",
-  "description": "Deployment of Angular CLI applications to GitHub pages (ngx-deploy-starter)",
+  "description": "Deployment of Angular CLI applications to the file system",
   "properties": {
     "baseHref": {
       "type": "string",

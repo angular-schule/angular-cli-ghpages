@@ -1,4 +1,4 @@
-# ngx-deploy-starter: README for contributors
+# @angular-schule/ngx-deploy-starter: README for contributors
 
 ## How to start <a name="start"></a>
 
@@ -39,7 +39,7 @@ Follow the instructions for [checking and updating the Angular CLI version](#ang
 
 ### 2. npm link
 
-Use the following instructions to make `ngx-deploy-starter` available locally via `npm link`.
+Use the following instructions to make `@angular-schule/ngx-deploy-starter` available locally via `npm link`.
 
 1. Clone the project
 
@@ -73,7 +73,7 @@ Read more about the `link` feature in the [official NPM documentation](https://d
 
 ### 3. Adding to an Angular project -- ng add
 
-Once you have completed the previous steps to `npm link` the local copy of `ngx-deploy-starter`, follow these steps to use it in a local Angular project.
+Once you have completed the previous steps to `npm link` the local copy of `@angular-schule/ngx-deploy-starter`, follow these steps to use it in a local Angular project.
 
 1. Enter the project directory
 
@@ -81,21 +81,26 @@ Once you have completed the previous steps to `npm link` the local copy of `ngx-
    cd your-angular-project
    ```
 
-2. Add the local version of `ngx-deploy-starter`.
+2. Add the local version of `@angular-schule/ngx-deploy-starter`.
 
    ```sh
-   npm link ngx-deploy-starter
+   npm link @angular-schule/ngx-deploy-starter
    ```
 
 3. Now execute the `ng-add` schematic.
 
    ```sh
-   ng add ngx-deploy-starter
+   ng add @angular-schule/ngx-deploy-starter
    ```
 
 4. You can now deploy your angular app to GitHub pages.
 
    ```sh
+   ng deploy
+  ```
+
+   Which is the same as:
+   ```
    ng run your-angular-project:deploy
    ```
 
@@ -120,5 +125,5 @@ npm test
 cd ngx-deploy-starter/src
 npm run build
 npm run test
-npm publish dist
+npm publish dist --access public
 ```

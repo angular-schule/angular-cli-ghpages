@@ -170,7 +170,7 @@ const initialAngularJson = `{
           }
         },
         \"deploy\": {
-          \"builder\": \"ngx-deploy-starter:deploy\",
+          \"builder\": \"@angular-schule/ngx-deploy-starter:deploy\",
           \"options\": {}
         }
       }
@@ -202,7 +202,7 @@ const overwriteAngularJson = `{
           }
         },
         \"deploy\": {
-          \"builder\": \"ngx-deploy-starter:deploy\",
+          \"builder\": \"@angular-schule/ngx-deploy-starter:deploy\",
           \"options\": {}
         }
       }
@@ -234,7 +234,7 @@ const projectAngularJson = `{
           }
         },
         \"deploy\": {
-          \"builder\": \"ngx-deploy-starter:deploy\",
+          \"builder\": \"@angular-schule/ngx-deploy-starter:deploy\",
           \"options\": {}
         }
       }

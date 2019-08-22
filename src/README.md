@@ -47,7 +47,7 @@ Same as `ng build --configuration=XXX`.
  * Default: `/example-folder` (string)
  * Example:
     * `ng deploy` -- App is "deployed" to the example folder (if existing)
-    * `ng deploy --target-/var/www/html` -- App is "deployed" to another folder
+    * `ng deploy --target=/var/www/html` -- App is "deployed" to another folder
 
 > **This is one of the options you can freely choose according to your needs.**
 

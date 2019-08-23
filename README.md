@@ -14,11 +14,15 @@ This project has the following purposes:
 1. To promote the adoption of `ng deploy`.
 2. To clarify various questions and to standardise the experience of the various builders.  
 
-**We hope for an inspiring discussion, pull requests and questions.**
+We hope for an inspiring discussion, pull requests and questions.
+
+**If you don't know `ng deploy` yet, learn more about this command here:  
+[👉 Blogpost: All you need to know about `ng deploy`](https://angular.schule/blog/2019-08-ng-deploy)**  
 
 ## Essential considerations
 
-These rules are open for discussion, of course.
+There are still differences between the existing builders. 
+Let's find some rules that everyone agrees with. Here are two proposals.
 
 ### 1. A deployment builder must always compile the project before the deployment
 

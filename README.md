@@ -16,6 +16,7 @@
 5. [📦 Options](#options)
     - [--base-href](#base-href)
     - [--configuration](#configuration)
+    - [--no-build](#no-build)
     - [--repo](#repo)
     - [--message](#message)
     - [--branch](#branch)
@@ -161,6 +162,33 @@ ng deploy --cname=example.org
 
 See the option [--cname](#cname) for more information!
 
+
+#### --configuration <a name="configuration"></a>
+ * __optional__
+ * Alias: `-c`
+ * Default: `production` (string)
+ * Example:
+    * `ng deploy` – Angular project is build in production mode
+    * `ng deploy --configuration=test` – Angular project is using the configuration `test` (this configuration must exist in the `angular.json` file)
+
+A named build target, as specified in the `configurations` section of `angular.json`.
+Each named target is accompanied by a configuration of option defaults for that target.
+Same as `ng build --configuration=XXX`.
+This command has no effect if the option `--no-build` option is active.
+
+
+#### --no-build <a name="no-build"></a>
+ * __optional__
+ * Default: `false` (string)
+ * Example:
+    * `ng deploy` – Angular project is build in production mode before the deployment
+    * `ng deploy --no-build` – Angular project is NOT build 
+
+Skip build process during deployment.
+This can be used when you are sure that you haven't changed anything and want to deploy with the latest artifact.
+This command causes the `--configuration` setting to have no effect.
+
+
 #### --repo <a name="repo"></a>
  * __optional__
  * Default: URL of the origin remote of the current dir (assumes a Git repository)
@@ -176,18 +204,6 @@ Set an environment variable with the name `GH_TOKEN` and it will be automaticall
 (`https://github.com/<username>/<repositoryname>.git` is changed to `https://XXX@github.com/<username>/<repositoryname>.git`
 if there is an environment variable `GH_TOKEN` with the value `XXX`.
 Learn more about [GitHub tokens here](https://help.github.com/articles/creating-an-access-token-for-command-line-use/).)
-
-
-#### --configuration <a name="configuration"></a>
- * __optional__
- * Default: `production` (string)
- * Example:
-    * `ng deploy` – Angular project is build in production mode
-    * `ng deploy --configuration=qs` – Angular project is using the configuration `qs` (this configuration must exist in the `angular.json` file)
-
-A named build target, as specified in the `configurations` section of `angular.json`.
-Each named target is accompanied by a configuration of option defaults for that target.
-Same as `ng build --configuration=XXX`.
 
 
 #### --message <a name="message"></a>

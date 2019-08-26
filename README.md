@@ -7,7 +7,7 @@
 
 ![Screenshot](docs/angular-cli-ghpages-deploy.gif)
 
-**Table of contents:**
+**Table of contents:**  
 
 1. [📖 Changelog](#changelog)
 2. [⚠️ Prerequisites](#prerequisites)
@@ -67,18 +67,18 @@ If you already have an existing Angular project on GitHub, skip step 1 and 2.
    cd your-angular-project
    ```
 
-2. By default the Angular CLI initializes a Git repository for you.
+2. By default the Angular CLI initializes a Git repository for you.  
    To add a new remote for GitHub, use the `git remote add` command:
 
    ```sh
    git remote add origin https://github.com/<username>/<repositoryname>.git
    ```
 
-   Hints:
+   Hints:  
    * Create a new empty GitHub repository first.
-   * Replace `<username>` and `<repositoryname>` with your username from GitHub and the name of your new repository.
-   * Please enter the URL `https://github.com/<username>/<repositoryname>.git` into your browser – you should see your existing repository on GitHub.
-   * Please double-check that you have the necessary rights to make changes to the given project!
+   * Replace `<username>` and `<repositoryname>` with your username from GitHub and the name of your new repository. 
+   * Please enter the URL `https://github.com/<username>/<repositoryname>.git` into your browser – you should see your existing repository on GitHub. 
+   * Please double-check that you have the necessary rights to make changes to the given project!  
 
 3. Add `angular-cli-ghpages` to your project.
 
@@ -99,7 +99,7 @@ If you already have an existing Angular project on GitHub, skip step 1 and 2.
    ng run your-angular-project:deploy
    ```
 
-5. Your project should be available at `https://<username>.github.io/<repositoryname>`.
+5. Your project should be available at `https://<username>.github.io/<repositoryname>`.  
    Learn more about GitHub pages on the [official website](https://pages.github.com/).
 
 
@@ -195,7 +195,7 @@ Same as `ng build --configuration=XXX`.
  * Default: `Auto-generated commit` (string)
  * Example: `ng deploy --message="What could possibly go wrong?"`
 
-The commit message __must be wrapped in quotes__ if there are any spaces in the text.
+The commit message __must be wrapped in quotes__ if there are any spaces in the text.  
 Some handy additional text is always added,
 if the environment variable `TRAVIS` exists (for Travis CI) or
 if the environment variable `CIRCLECI` exists (for Circle CI).
@@ -205,7 +205,7 @@ if the environment variable `CIRCLECI` exists (for Circle CI).
  * __optional__
  * Default: `gh-pages` (string)
  * Example: `ng deploy --branch=master`
-
+ 
 The name of the branch you'll be pushing to.
 The default uses GitHub's `gh-pages` branch,
 but this can be configured to push to any branch on any remote.
@@ -265,7 +265,7 @@ This should only be necessary if your site uses files or directories that start 
     * `ng deploy --cname=example.com`
 
 A CNAME file will be created enabling you to use a custom domain.
-[More information on GitHub Pages using a custom domain](https://help.github.com/articles/using-a-custom-domain-with-github-pages/).
+[More information on GitHub Pages using a custom domain](https://help.github.com/articles/using-a-custom-domain-with-github-pages/). 
 
 
 #### --dry-run <a name="dry-run"></a>
@@ -334,11 +334,11 @@ Code released under the [MIT license](LICENSE).
 
 <hr>
 
-<img src="https://assets.angular.schule/logo-angular-schule.png" height="60">
+<img src="https://assets.angular.schule/logo-angular-schule.png" height="60">  
 
 ### &copy; 2019 https://angular.schule
 
-This project is made on top of [tschaub/gh-pages](https://github.com/tschaub/gh-pages).
+This project is made on top of [tschaub/gh-pages](https://github.com/tschaub/gh-pages).  
 Thank you very much for this great foundation!
 
 [npm-url]: https://www.npmjs.com/package/angular-cli-ghpages

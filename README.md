@@ -39,9 +39,7 @@
 
 A detailed changelog is available in the [releases](https://github.com/angular-schule/angular-cli-ghpages/releases) section.
 
-In the past this project was a standalone program.
-This is still possible:
-See the documentation at [README_standalone](docs/README_standalone).
+
 
 
 
@@ -50,7 +48,8 @@ See the documentation at [README_standalone](docs/README_standalone).
 This command has the following prerequisites:
 
 - Git 1.9 or higher (execute `git --version` to check your version)
-- Angular project created via [Angular CLI](https://github.com/angular/angular-cli) v8.3.0-next.0 or greater (execute `ng update @angular/cli@8.3.0-next.1 @angular/core@8.2.1` to upgrade your project if necessary)
+- Angular project created via [Angular CLI](https://github.com/angular/angular-cli) v8.3.0 or greater (execute `ng update @angular/cli @angular/core` to upgrade your project if necessary)
+- older Angular projects can still use the standalone program. See the documentation at [README_standalone](https://github.com/angular-schule/angular-cli-ghpages/blob/master/docs/README_standalone.md).
 
 
 
@@ -59,11 +58,11 @@ This command has the following prerequisites:
 This quick start assumes that you are starting from scratch.
 If you already have an existing Angular project on GitHub, skip step 1 and 2.
 
-1. Install the next version of the Angular CLI (v8.3.0-next.0 or greater) globally
+1. Install the latest version of the Angular CLI (v8.3.0 or greater) globally
    and create a new Angular project.
 
    ```sh
-   npm install -g @angular/cli@next
+   npm install -g @angular/cli
    ng new your-angular-project --defaults
    cd your-angular-project
    ```
@@ -97,7 +96,7 @@ If you already have an existing Angular project on GitHub, skip step 1 and 2.
    Which is the same as:
 
    ```sh
-   ng run your-angular-project:deploy
+   ng deploy your-angular-project
    ```
 
 5. Your project should be available at `https://<username>.github.io/<repositoryname>`.  
@@ -296,7 +295,9 @@ This can be very useful because it outputs what would happen without doing anyth
 
 ## 📁 Configuration File <a name="configuration-file"></a>
 
-To avoid all these command-line cmd options, you can write down your configuration in the `angular.json` file in the `options` attribute of your deploy project's architect. Just change the kebab-case<sup id="configuration-file-mark-1">[1](#configuration-file-def-1)</sup> to lower camel case<sup id="configuration-file-mark-2">[2](#configuration-file-def-2)</sup>
+To avoid all these command-line cmd options, you can write down your configuration in the `angular.json` file in the `options` attribute of your deploy project's architect. Just change the kebab-case<sup id="configuration-file-mark-1">[1](#configuration-file-def-1)</sup> to lower camel case<sup id="configuration-file-mark-2">[2](#configuration-file-def-2)</sup>.
+
+A list of all avaiable options is available [here](https://github.com/angular-schule/angular-cli-ghpages/blob/master/src/deploy/schema.json).
 
 Example:
 
@@ -311,15 +312,15 @@ becomes
   "builder": "angular-cli-ghpages:deploy",
   "options": {
     "baseHref": "https://angular-schule.github.io/angular-cli-ghpages/",
-    "name": "angular",
-    "email": "schule@example.com"
+    "name": "Angular Schule Team",
+    "email": "team@angular.schule"
   }
 }
 ```
 
-And just run `ng deploy your-project-name` 😄.
+And just run `ng deploy` 😄.
 
-###### You can always use the [--dry-run](#dry-run) option to verify if your configuration is right.
+> ℹ️ You can always use the [--dry-run](#dry-run) option to verify if your configuration is right.
 
 ---
 
@@ -342,7 +343,7 @@ We look forward to any help. PRs are welcome! 😃
 ## ⁉️ FAQ <a name="faq"></a>
 
 Before posting any issue, [please read the FAQ first](https://github.com/angular-schule/angular-cli-ghpages/wiki/FAQ).
-See the contributors documentation at [README_contributors](docs/README_contributors) if you want to debug and test this project.
+See the contributors documentation at [README_contributors](https://github.com/angular-schule/angular-cli-ghpages/blob/master/docs/README_contributors.md) if you want to debug and test this project.
 
 
 ## License  <a name="license"></a>

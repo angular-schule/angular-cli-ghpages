@@ -25,10 +25,10 @@ Follow the instructions for [checking and updating the Angular CLI version](#ang
 1. Install the next version of the Angular CLI.
 
    ```sh
-   npm install -g @angular/cli@next
+   npm install -g @angular/cli
    ```
 
-2. Run `ng version`, make sure you have installed Angular CLI v8.3.0-next.0 or greater.
+2. Run `ng version`, make sure you have installed Angular CLI v8.3.0 or greater.
 
 3. Update your existing project using the command:
 
@@ -37,19 +37,7 @@ Follow the instructions for [checking and updating the Angular CLI version](#ang
    ```
    
    Please pay attention to the version numbers of your project.
-   `angular-cli-ghpages` was tested with Angular CLI v8.3.0-next.0 and Angular 8.2.0.
-   Please figure out the required version numbers with:
-
-   ```sh
-   npm info @angular/cli@next
-   npm info @angular/core@next
-   ```
-
-  Therefore, the command (at the time of writing) would be the following:
-
-  ```sh
-  ng update @angular/cli@8.3.0-next.1 @angular/core@8.2.1
-  ```
+   `angular-cli-ghpages` was tested with Angular CLI v8.3.0 (`ng deploy` syntax) and Angular v8.2.0 (`ng run` syntax).
 
 ### 2. npm link
 
@@ -108,6 +96,12 @@ Once you have completed the previous steps to `npm link` the local copy of `angu
    ```
 
 4. You can now deploy your angular app to GitHub pages.
+
+   ```sh
+   ng deploy your-angular-project
+   ```
+
+   Or with the old builder syntax:
 
    ```sh
    ng run your-angular-project:deploy

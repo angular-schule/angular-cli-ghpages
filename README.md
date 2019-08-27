@@ -295,14 +295,26 @@ This can be very useful because it outputs what would happen without doing anyth
 
 ## 📁 Configuration File <a name="configuration-file"></a>
 
-To avoid all these command-line cmd options, you can write down your configuration in the `angular.json` file in the `options` attribute of your deploy project's architect. Just change the kebab-case<sup id="configuration-file-mark-1">[1](#configuration-file-def-1)</sup> to lower camel case<sup id="configuration-file-mark-2">[2](#configuration-file-def-2)</sup>.
-
-A list of all avaiable options is available [here](https://github.com/angular-schule/angular-cli-ghpages/blob/master/src/deploy/schema.json).
+To avoid all these command-line cmd options, you can write down your configuration in the `angular.json` file in the `options` attribute of your deploy project's architect. Just change the kebab-case to lower camel case. This is the notation of all options in lower camel case:
+   * baseHref
+   * configuration
+   * noBuild
+   * repo
+   * message
+   * branch
+   * name
+   * email
+   * noSilent
+   * noDotfiles
+   * cname
+   * dryRun
+  
+A list of all avaiable options is also available [here](https://github.com/angular-schule/angular-cli-ghpages/blob/master/src/deploy/schema.json).
 
 Example:
 
 ```sh
-ng deploy your-project-name --base-href=https://angular-schule.github.io/angular-cli-ghpages/ --name=angular --email=schule@example.com
+ng deploy --base-href=https://angular-schule.github.io/angular-cli-ghpages/ --name="Angular Schule Team" --email=team@angular.schule
 ```
 
 becomes
@@ -322,11 +334,6 @@ And just run `ng deploy` 😄.
 
 > ℹ️ You can always use the [--dry-run](#dry-run) option to verify if your configuration is right.
 
----
-
-<a id="configuration-file-def-1">1.</a> In kebab case, all letters are written in lower case and the words are separated by a hyphen or minus sign. "Kebab Case" becomes "kebab-case". [↩](#configuration-file-mark-1)
-
-<a id="configuration-file-def-2">2.</a> Lower camel case (part of CamelCase) is a naming convention in which a name is formed of multiple words that are joined together as a single word with the first letter of each of the multiple words (except the first one) capitalized within the new word that forms the name. "Lower Camel Case" becomes "lowerCamelCase" [↩](#configuration-file-mark-2)
 
 ## 🏁 Next milestones <a name="milestones"></a>
 

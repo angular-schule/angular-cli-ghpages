@@ -1,7 +1,7 @@
 import { BuilderContext } from '@angular-devkit/architect';
-import { Schema } from './schema';
 import { json, logging } from '@angular-devkit/core';
 
+import { Schema } from './schema';
 
 export default async function deploy(
   engine: { run: (dir: string, options: Schema, logger: logging.LoggerApi) => Promise<void> },

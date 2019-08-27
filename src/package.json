@@ -1,6 +1,6 @@
 {
   "name": "@angular-schule/ngx-deploy-starter",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "Deployment from the Angular CLI to the file system. This is a sample project that helps you to implement your own deployment builder (`ng deploy`) for the Angular CLI.",
   "main": "index.js",
   "scripts": {
@@ -34,9 +34,9 @@
   },
   "homepage": "https://github.com/angular-schule/ngx-deploy-starter/#readme",
   "devDependencies": {
-    "@angular-devkit/architect": "^0.803.0-next.0",
-    "@angular-devkit/core": "^8.3.0-next.0",
-    "@angular-devkit/schematics": "^8.3.0-next.0",
+    "@angular-devkit/architect": "^0.803.0",
+    "@angular-devkit/core": "^8.3.0",
+    "@angular-devkit/schematics": "^8.3.0",
     "@types/fs-extra": "^8.0.0",
     "@types/jest": "^24.0.18",
     "@types/node": "^12.6.9",

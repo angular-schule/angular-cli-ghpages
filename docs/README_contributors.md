@@ -25,15 +25,15 @@ Follow the instructions for [checking and updating the Angular CLI version](#ang
 1. Install the next version of the Angular CLI.
 
    ```sh
-   npm install -g @angular/cli@next
+   npm install -g @angular/cli
    ```
 
-2. Run `ng version`, make sure you have installed Angular CLI v8.3.0-next.0 or greater.
+2. Run `ng version`, make sure you have installed Angular CLI v8.3.0 or greater.
 
 3. Update your existing project using the command:
 
    ```sh
-   ng update @angular/cli @angular/core --next=true
+   ng update @angular/cli @angular/core
    ```
 
 
@@ -99,8 +99,9 @@ Once you have completed the previous steps to `npm link` the local copy of `@ang
    ng deploy
   ```
 
-   Which is the same as:
-   ```
+   Or with the old builder syntax:
+
+   ```sh
    ng run your-angular-project:deploy
    ```
 

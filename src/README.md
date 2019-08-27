@@ -33,14 +33,30 @@ The following options are also available.
  * __optional__
  * Default: `production` (string)
  * Example:
-    * `ng deploy` -- Angular project is build in production mode
-    * `ng deploy --configuration=qs` -- Angular project is using the configuration `qs` (this configuration must exist in the `angular.json` file)
+    * `ng deploy` – Angular project is build in production mode
+    * `ng deploy --configuration=test` – Angular project is using the configuration `test` (this configuration must exist in the `angular.json` file)
 
 A named build target, as specified in the `configurations` section of `angular.json`.
 Each named target is accompanied by a configuration of option defaults for that target.
 Same as `ng build --configuration=XXX`.
+This command has no effect if the option `--no-build` option is active.
 
 > **This is a proposal from [RFC #1](https://github.com/angular-schule/ngx-deploy-starter/issues/1).**
+
+
+#### --no-build
+ * __optional__
+ * Default: `false` (string)
+ * Example:
+    * `ng deploy` – Angular project is build in production mode before the deployment
+    * `ng deploy --no-build` – Angular project is NOT build 
+
+Skip build process during deployment.
+This can be used when you are sure that you haven't changed anything and want to deploy with the latest artifact.
+This command causes the `--configuration` setting to have no effect.
+
+> **This is a proposal from [RFC #1](https://github.com/angular-schule/ngx-deploy-starter/issues/1).**
+
 
 #### --target-dir
  * __optional__
@@ -50,6 +66,7 @@ Same as `ng build --configuration=XXX`.
     * `ng deploy --target=/var/www/html` -- App is "deployed" to another folder
 
 > **This is one of the options you can freely choose according to your needs.**
+
 
 #### --base-href <a name="base-href"></a>
  * __optional__

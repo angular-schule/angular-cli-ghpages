@@ -21,6 +21,7 @@ export default async function deploy(
 
     const configuration = options.configuration ? options.configuration : 'production'
     const overrides = {
+      // this is an example how to override the workspace set of options
       ...(options.baseHref && {baseHref: options.baseHref})
     };
 

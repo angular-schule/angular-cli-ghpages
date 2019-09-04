@@ -4,7 +4,7 @@
   "description": "Deployment from the Angular CLI to the file system. This is a sample project that helps you to implement your own deployment builder (`ng deploy`) for the Angular CLI.",
   "main": "index.js",
   "scripts": {
-    "build": "rimraf dist && json2ts deploy/schema.json > deploy/schema.d.ts && tsc && copyfiles README.md builders.json collection.json package.json ngx-deploy-starter deploy/schema.json dist",
+    "build": "rimraf dist && json2ts deploy/schema.json > deploy/schema.d.ts && tsc && copyfiles README.md builders.json collection.json ng-add-schema.json package.json ngx-deploy-starter deploy/schema.json dist",
     "test": "jest"
   },
   "schematics": "./collection.json",

@@ -1,4 +1,4 @@
-import { SchematicsException, Tree } from '@angular-devkit/schematics';
+import { SchematicsException, Tree, SchematicContext } from '@angular-devkit/schematics';
 import { experimental, JsonParseMode, parseJson } from '@angular-devkit/core';
 
 function getWorkspace(
@@ -29,16 +29,12 @@ function getWorkspace(
   };
 }
 interface NgAddOptions {
-  project?: string;
-}
-
-interface DeployOptions {
   project: string;
 }
 
-export const ngAdd = ({ project: DeployOptions }) => (
+export const ngAdd = (options: NgAddOptions) => (
   tree: Tree,
-  options: NgAddOptions
+  _context: SchematicContext
 ) => {
   const { path: workspacePath, workspace } = getWorkspace(tree);
 

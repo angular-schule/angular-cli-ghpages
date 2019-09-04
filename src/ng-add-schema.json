@@ -1,0 +1,10 @@
+{
+  "$schema": "http://json-schema.org/schema",
+  "id": "angular-cli-ghpages-ng-add-schematic",
+  "title": "angular-cli-ghpages ng-add schematic",
+  "type": "object",
+  "properties": {
+  },
+  "required": [],
+  "additionalProperties": false
+}

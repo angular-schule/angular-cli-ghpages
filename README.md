@@ -67,6 +67,15 @@ We appreciate your [feedback](https://github.com/angular-schule/ngx-deploy-start
 You are free to customise this project according to your needs.
 Please keep the spirit of Open Source alive and use the MIT or a compatible license.
 
+
+## Projects based on ngx-deploy-starter
+ 
+* [ngx-deploy-npm](https://github.com/bikecoders/ngx-deploy-npm) – Deploy your Angular Package to NPM directly from the Angular CLI! 🚀
+* [angular-cli-ghpages](https://github.com/angular-schule/angular-cli-ghpages) – Deploy your Angular app to GitHub pages directly from the Angular CLI! 🚀
+
+
+
+
 ## License
 Code released under the [MIT license](LICENSE).
 

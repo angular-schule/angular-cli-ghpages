@@ -46,7 +46,8 @@
     "json-schema-to-typescript": "^7.0.0",
     "rimraf": "^2.6.3",
     "ts-jest": "^24.0.2",
-    "typescript": "^3.5.3"
+    "typescript": "^3.5.3",
+    "prettier": "1.18.2"
   },
   "peerDependencies": {
     "@angular-devkit/architect": ">=0.800.0",

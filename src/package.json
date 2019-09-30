@@ -30,9 +30,9 @@
   ],
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/kauppfbi/ngx-deploy-starter/issues"
+    "url": "https://github.com/angular-schule/ngx-deploy-starter/issues"
   },
-  "homepage": "https://github.com/kauppfbi/ngx-deploy-starter/#readme",
+  "homepage": "https://github.com/angular-schule/ngx-deploy-starter/#readme",
   "devDependencies": {
     "@angular-devkit/architect": "^0.803.0",
     "@angular-devkit/core": "^8.3.0",

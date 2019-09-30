@@ -1,5 +1,5 @@
 {
-  "name": "@kauppfbi/ngx-deploy-starter",
+  "name": "@angular-schule/ngx-deploy-starter",
   "version": "0.0.2",
   "description": "Deployment from the Angular CLI to the file system. This is a sample project that helps you to implement your own deployment builder (`ng deploy`) for the Angular CLI.",
   "main": "index.js",
@@ -11,7 +11,7 @@
   "builders": "./builders.json",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/kauppfbi/ngx-deploy-starter.git"
+    "url": "git+https://github.com/angular-schule/ngx-deploy-starter.git"
   },
   "keywords": [
     "angular",
@@ -22,12 +22,11 @@
     "ng-deploy"
   ],
   "author": {
-    "name": "Fabian Kaupp",
-    "email": "kauppfbi@gmail.com"
+    "name": "Johannes Hoppe",
+    "email": "johannes.hoppe@haushoppe-its.de"
   },
   "contributors": [
-    "Minko Gechev <mgechev@gmail.com>",
-    "Johannes Hoppe <johannes.hoppe@haushoppe-its.de>"
+    "Minko Gechev <mgechev@gmail.com>"
   ],
   "license": "MIT",
   "bugs": {

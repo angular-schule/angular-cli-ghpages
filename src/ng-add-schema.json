@@ -3,8 +3,7 @@
   "id": "ngx-deploy-starter-ng-add-schematic",
   "title": "ngx-deploy-starter ng-add schematic",
   "type": "object",
-  "properties": {
-  },
+  "properties": {},
   "required": [],
   "additionalProperties": false
 }

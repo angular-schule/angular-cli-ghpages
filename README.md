@@ -335,6 +335,16 @@ And just run `ng deploy` 😄.
 > ℹ️ You can always use the [--dry-run](#dry-run) option to verify if your configuration is right.
 
 
+## 🌍 Environments <a name="environments"></a>
+
+We have seen `angular-cli-ghpages` running on various environments, like Travis CI, Circle Ci or Github Actions.
+Please share your knowledge by writing an article about how to set up the deployment.
+
+1. [GitHub Actions](https://github.com/angular-schule/angular-cli-ghpages/blob/master/docs/README_environment_github_actions.md) by [Dharmen Shah](https://github.com/shhdharmen)
+2. TODO!
+
+
+
 ## 🏁 Next milestones <a name="milestones"></a>
 
 We are glad that we have an integration into the CLI again.

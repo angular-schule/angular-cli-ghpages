@@ -208,7 +208,7 @@ const overwriteAngularJson = `{
           }
         },
         "deploy": {
-          "builder": "@angular-schule/ngx-deploy-starter:deploy",
+          "builder": "angular-cli-ghpages:deploy",
           "options": {}
         }
       }

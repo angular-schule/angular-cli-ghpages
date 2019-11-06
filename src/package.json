@@ -9,6 +9,9 @@
   },
   "schematics": "./collection.json",
   "builders": "./builders.json",
+  "ng-add": {
+    "save": "devDependencies"
+  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/angular-schule/ngx-deploy-starter.git"

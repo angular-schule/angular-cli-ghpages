@@ -26,8 +26,9 @@
     - [--cname](#cname)
     - [--dry-run](#dry-run)
 6. [📁 Configuration File](#configuration-file)
-7. [🏁 Next milestones](#milestones)
-8. [⁉️ FAQ](#faq)
+7. [🌍 Environments](#environments)
+8. [🏁 Next milestones](#milestones)
+9. [⁉️ FAQ](#faq)
 
 
 

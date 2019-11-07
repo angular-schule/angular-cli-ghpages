@@ -20,21 +20,21 @@ Please ensure that you've read the prerequisites section before continuing with 
 1. Create a [Personal Access Token with repo access](https://help.github.com/en/articles/creating-a-personal-access-token-for-the-command-line) (POA) and copy the token.
    - Make sure it has this access:
   
-        ![repo access](./repo-access.png)
+        ![repo access](img/repo-access.png)
 2. Open up your Github repo.
 3. Go to **Settings** > **Secrets** and click on **Add a new secret** link.
 
-    ![add new secret](./add-new-secret.png)
+    ![add new secret](img/add-new-secret.png)
 4. Create a secret with name `GH_TOKEN` and paste your POA, which you copied in step 1, in value.
 
-    ![secret name and value](./secret-token-value.png)
+    ![secret name and value](img/secret-token-value.png)
 
 ### Setup Github Action Flow
 
 1. Open up your Github repo.
 2. Go to **Actions** amd click on **Set up workflow yourself**.
 
-    ![setup workflow](./setup-workflow.png)
+    ![setup workflow](img/setup-workflow.png)
 
 3. A New File editor will open, keep the file name (e.g. *main.yml*) as it is, simply replace all content to below:
 

@@ -5,7 +5,7 @@
 
 **Deploy your Angular app to GitHub pages directly from the Angular CLI! 🚀**
 
-![Screenshot](docs/angular-cli-ghpages-deploy.gif)
+![Screenshot](docs/img/angular-cli-ghpages-deploy.gif)
 
 **Table of contents:**  
 

@@ -46,7 +46,11 @@ export default async function deploy(
       },
       overrides as json.JsonObject
     );
-    await build.result;
+    const buildResult = await build.result;
+
+    if (!buildResult.success) {
+      throw new Error(buildResult.error);
+    }
   }
 
   await engine.run(

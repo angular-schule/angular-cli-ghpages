@@ -44,9 +44,6 @@ Follow the instructions for [checking and updating the Angular CLI version](#ang
    ng update @angular/cli @angular/core
    ```
 
-   Please pay attention to the version numbers of your project.
-   `angular-cli-ghpages` was tested with Angular CLI v8.3.0 (`ng deploy` syntax) and Angular v8.2.0 (`ng run` syntax).
-
 ### 2. npm link
 
 Use the following instructions to make `angular-cli-ghpages` available locally via `npm link`.
@@ -105,7 +102,7 @@ Once you have completed the previous steps to `npm link` the local copy of `angu
 4. You can now deploy your angular app to GitHub pages.
 
    ```sh
-   ng deploy your-angular-project
+   ng deploy
    ```
 
    Or with the old builder syntax:
@@ -138,9 +135,6 @@ Once you have completed the previous steps to `npm link` the local copy of `angu
    }
    ```
 
-````
-
-
 ### 4. Testing
 
 Testing is done with [Jest](https://jestjs.io/).
@@ -149,7 +143,7 @@ To run the tests:
 ```sh
 cd angular-cli-ghpages/src
 npm test
-````
+```
 
 ## Testing the standalone CLI
 

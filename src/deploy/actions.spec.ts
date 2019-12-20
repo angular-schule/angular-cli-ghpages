@@ -1,11 +1,12 @@
-import { JsonObject, logging } from '@angular-devkit/core';
 import {
   BuilderContext,
+  BuilderOutput,
   BuilderRun,
   ScheduleOptions,
-  Target,
-  BuilderOutput
-} from '@angular-devkit/architect/src/index';
+  Target
+} from '@angular-devkit/architect/src';
+import { JsonObject, logging } from '@angular-devkit/core';
+
 import deploy from './actions';
 
 let context: BuilderContext;

@@ -1,4 +1,5 @@
-import { Tree, SchematicContext } from '@angular-devkit/schematics';
+import { SchematicContext, Tree } from '@angular-devkit/schematics';
+
 import { ngAdd } from './ng-add';
 
 const PROJECT_NAME = 'pie-ka-chu';

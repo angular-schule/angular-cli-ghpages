@@ -1,9 +1,9 @@
-import {
-  SchematicsException,
-  Tree,
-  SchematicContext
-} from '@angular-devkit/schematics';
 import { experimental, JsonParseMode, parseJson } from '@angular-devkit/core';
+import {
+  SchematicContext,
+  SchematicsException,
+  Tree
+} from '@angular-devkit/schematics';
 
 function getWorkspace(
   host: Tree

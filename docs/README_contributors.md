@@ -1,6 +1,15 @@
 # @angular-schule/ngx-deploy-starter: README for contributors
 
-## How to start <a name="start"></a>
+- [How to start ](#how-to-start)
+- [Local development](#local-development)
+  - [1. Angular CLI](#1-angular-cli)
+  - [2. npm link](#2-npm-link)
+  - [3. Adding to an Angular project -- ng add](#3-adding-to-an-angular-project----ng-add)
+  - [4. Testing](#4-testing)
+- [Publish to NPM](#publish-to-npm)
+- [Usage of Prettier Formatter](#usage-of-prettier-formatter)
+
+## How to start
 
 tl;dr – execute this:
 
@@ -11,14 +20,12 @@ npm run build
 npm test
 ```
 
-
 ## Local development
 
 If you want to try the latest package locally without installing it from NPM, use the following instructions.
 This may be useful when you want to try the latest non-published version of this library or you want to make a contribution.
 
 Follow the instructions for [checking and updating the Angular CLI version](#angular-cli) and then link the package.
-
 
 ### 1. Angular CLI
 
@@ -35,7 +42,6 @@ Follow the instructions for [checking and updating the Angular CLI version](#ang
    ```sh
    ng update @angular/cli @angular/core
    ```
-
 
 ### 2. npm link
 
@@ -70,7 +76,6 @@ Use the following instructions to make `@angular-schule/ngx-deploy-starter` avai
 
 Read more about the `link` feature in the [official NPM documentation](https://docs.npmjs.com/cli/link).
 
-
 ### 3. Adding to an Angular project -- ng add
 
 Once you have completed the previous steps to `npm link` the local copy of `@angular-schule/ngx-deploy-starter`, follow these steps to use it in a local Angular project.
@@ -97,16 +102,17 @@ Once you have completed the previous steps to `npm link` the local copy of `@ang
 
    ```sh
    ng deploy
-  ```
-
-   Or with the old builder syntax:
-
-   ```sh
-   ng run your-angular-project:deploy
    ```
 
-5. You can remove the link later by running `npm unlink`
+````
 
+ Or with the old builder syntax:
+
+ ```sh
+ ng run your-angular-project:deploy
+````
+
+5. You can remove the link later by running `npm unlink`
 
 ### 4. Testing
 
@@ -118,8 +124,6 @@ cd ngx-deploy-starter/src
 npm test
 ```
 
-
-
 ## Publish to NPM
 
 ```
@@ -128,3 +132,10 @@ npm run build
 npm run test
 npm publish dist --access public
 ```
+
+## Usage of Prettier Formatter
+
+Just execute `npx prettier --write '**/*'` and the code is formated automatically.
+Please ignore the errors for now. ([error] No parser could be inferred for file)
+
+We are still working on this, see https://github.com/angular-schule/ngx-deploy-starter/issues/10 .

@@ -114,6 +114,28 @@ Once you have completed the previous steps to `npm link` the local copy of `@ang
 
 5. You can remove the link later by running `npm unlink`
 
+6. We can debug the deployment with VSCode within `your-angular-project`, too.
+   Go to `your-angular-project/node_modules/@angular-schule/ngx-deploy-starter/deploy/actions.js` and place a breakpoint there.
+   Now you can debug with the following `launch.json` file:
+
+   ```json
+   {
+     "version": "0.2.0",
+     "configurations": [
+       {
+         "type": "node",
+         "request": "launch",
+         "name": "Debug ng deploy",
+         "skipFiles": ["<node_internals>/**"],
+         "program": "${workspaceFolder}/node_modules/@angular/cli/bin/ng",
+         "cwd": "${workspaceFolder}",
+         "sourceMaps": true,
+         "args": ["deploy", "--no-build"]
+       }
+     ]
+   }
+   ```
+
 ### 4. Testing
 
 Testing is done with [Jest](https://jestjs.io/).

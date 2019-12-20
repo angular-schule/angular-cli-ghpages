@@ -1,5 +1,9 @@
-import { SchematicsException, Tree, SchematicContext } from '@angular-devkit/schematics';
 import { experimental, JsonParseMode, parseJson } from '@angular-devkit/core';
+import {
+  SchematicContext,
+  SchematicsException,
+  Tree
+} from '@angular-devkit/schematics';
 
 function getWorkspace(
   host: Tree
@@ -68,9 +72,7 @@ export const ngAdd = (options: NgAddOptions) => (
     !project.architect.build.options.outputPath
   ) {
     throw new SchematicsException(
-      `Cannot read the output path (architect.build.options.outputPath) of the Angular project "${
-        options.project
-      }" in angular.json`
+      `Cannot read the output path (architect.build.options.outputPath) of the Angular project "${options.project}" in angular.json`
     );
   }
 

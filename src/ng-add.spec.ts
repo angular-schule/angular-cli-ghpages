@@ -1,4 +1,5 @@
-import { Tree, SchematicContext } from '@angular-devkit/schematics';
+import { SchematicContext, Tree } from '@angular-devkit/schematics';
+
 import { ngAdd } from './ng-add';
 
 const PROJECT_NAME = 'pie-ka-chu';
@@ -20,11 +21,12 @@ describe('ng-add', () => {
         project: PROJECT_NAME
       })(tree, {} as SchematicContext);
 
-      expect(result.read('angular.json')!.toString()).toEqual(initialAngularJson);
+      expect(result.read('angular.json')!.toString()).toEqual(
+        initialAngularJson
+      );
     });
 
     it('overrides existing files', async () => {
-
       const tempTree = ngAdd({
         project: PROJECT_NAME
       })(tree, {} as SchematicContext);
@@ -41,7 +43,6 @@ describe('ng-add', () => {
 
   describe('error handling', () => {
     it('fails if project not defined', () => {
-
       const tree = Tree.empty();
       const angularJSON = generateAngularJson();
       delete angularJSON.defaultProject;
@@ -51,7 +52,9 @@ describe('ng-add', () => {
         ngAdd({
           project: ''
         })(tree, {} as SchematicContext)
-      ).toThrowError('No Angular project selected and no default project in the workspace');
+      ).toThrowError(
+        'No Angular project selected and no default project in the workspace'
+      );
     });
 
     it('Should throw if angular.json not found', async () => {
@@ -81,7 +84,9 @@ describe('ng-add', () => {
         ngAdd({
           project: PROJECT_NAME
         })(tree, {} as SchematicContext)
-      ).toThrowError('The specified Angular project is not defined in this workspace');
+      ).toThrowError(
+        'The specified Angular project is not defined in this workspace'
+      );
     });
 
     it('Should throw if specified project is not application', async () => {
@@ -97,7 +102,9 @@ describe('ng-add', () => {
         ngAdd({
           project: PROJECT_NAME
         })(tree, {} as SchematicContext)
-      ).toThrowError('Deploy requires an Angular project type of "application" in angular.json');
+      ).toThrowError(
+        'Deploy requires an Angular project type of "application" in angular.json'
+      );
     });
 
     it('Should throw if app does not have architect configured', async () => {
@@ -113,7 +120,9 @@ describe('ng-add', () => {
         ngAdd({
           project: PROJECT_NAME
         })(tree, {} as SchematicContext)
-      ).toThrowError('Cannot read the output path (architect.build.options.outputPath) of the Angular project "pie-ka-chu" in angular.json');
+      ).toThrowError(
+        'Cannot read the output path (architect.build.options.outputPath) of the Angular project "pie-ka-chu" in angular.json'
+      );
     });
   });
 });
@@ -215,4 +224,3 @@ const overwriteAngularJson = `{
     }
   }
 }`;
-

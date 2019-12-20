@@ -3,8 +3,7 @@
   "id": "angular-cli-ghpages-ng-add-schematic",
   "title": "angular-cli-ghpages ng-add schematic",
   "type": "object",
-  "properties": {
-  },
+  "properties": {},
   "required": [],
   "additionalProperties": false
 }

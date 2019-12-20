@@ -1,20 +1,21 @@
-import { BuilderContext, BuilderOutput, createBuilder } from '@angular-devkit/architect';
+import {
+  BuilderContext,
+  BuilderOutput,
+  createBuilder
+} from '@angular-devkit/architect';
+import { asWindowsPath, experimental, normalize } from '@angular-devkit/core';
 import { NodeJsSyncHost } from '@angular-devkit/core/node';
-import { experimental, normalize, asWindowsPath } from '@angular-devkit/core';
-import { Schema } from './schema';
 import os from 'os';
 import * as path from 'path';
 
-import deploy from './actions';
 import * as engine from '../engine/engine';
+import deploy from './actions';
+import { Schema } from './schema';
 
 // Call the createBuilder() function to create a builder. This mirrors
 // createJobHandler() but add typings specific to Architect Builders.
 export default createBuilder<any>(
-  async (
-    options: Schema,
-    context: BuilderContext
-  ): Promise<BuilderOutput> => {
+  async (options: Schema, context: BuilderContext): Promise<BuilderOutput> => {
     // The project root is added to a BuilderContext.
     const root = normalize(context.workspaceRoot);
     const workspace = new experimental.workspace.Workspace(
@@ -40,12 +41,10 @@ export default createBuilder<any>(
       throw new Error('Cannot find the project output directory');
     }
 
-    // console.log('***', workspace.root)
-    // console.log('***', targets.build.options.outputPath)
-    // console.log('***', asWindowsPath( workspace.root))
-
     const isWin = os.platform() === 'win32';
-    const workspaceRoot = !isWin ? workspace.root : asWindowsPath(workspace.root);
+    const workspaceRoot = !isWin
+      ? workspace.root
+      : asWindowsPath(workspace.root);
 
     try {
       await deploy(

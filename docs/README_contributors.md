@@ -1,6 +1,16 @@
 # angular-cli-ghpages: README for contributors
 
-## How to start <a name="start"></a>
+- [How to start](#how-to-start)
+- [Local development](#local-development)
+  - [1. Angular CLI](#1-angular-cli)
+  - [2. npm link](#2-npm-link)
+  - [3. Adding to an Angular project -- ng add](#3-adding-to-an-angular-project----ng-add)
+  - [4. Testing](#4-testing)
+- [Testing the standalone CLI](#testing-the-standalone-cli)
+- [Publish to NPM](#publish-to-npm)
+- [Usage of Prettier Formatter](#usage-of-prettier-formatter)
+
+## How to start
 
 tl;dr – execute this:
 
@@ -11,16 +21,14 @@ npm run build
 npm test
 ```
 
-
-## Local development <a name="local-dev"></a>
+## Local development
 
 If you want to try the latest package locally without installing it from NPM, use the following instructions.
 This may be useful when you want to try the latest non-published version of this library or you want to make a contribution.
 
 Follow the instructions for [checking and updating the Angular CLI version](#angular-cli) and then link the package.
 
-
-### 1. Angular CLI <a name="angular-cli"></a>
+### 1. Angular CLI
 
 1. Install the next version of the Angular CLI.
 
@@ -35,7 +43,7 @@ Follow the instructions for [checking and updating the Angular CLI version](#ang
    ```sh
    ng update @angular/cli @angular/core
    ```
-   
+
    Please pay attention to the version numbers of your project.
    `angular-cli-ghpages` was tested with Angular CLI v8.3.0 (`ng deploy` syntax) and Angular v8.2.0 (`ng run` syntax).
 
@@ -72,8 +80,7 @@ Use the following instructions to make `angular-cli-ghpages` available locally v
 
 Read more about the `link` feature in the [official NPM documentation](https://docs.npmjs.com/cli/link).
 
-
-### 3. Adding to an Angular project -- ng add <a name="local-dev-add"></a>
+### 3. Adding to an Angular project -- ng add
 
 Once you have completed the previous steps to `npm link` the local copy of `angular-cli-ghpages`, follow these steps to use it in a local Angular project.
 
@@ -109,8 +116,7 @@ Once you have completed the previous steps to `npm link` the local copy of `angu
 
 5. You can remove the link later by running `npm unlink`
 
-
-### 4. Testing <a name="testing"></a>
+### 4. Testing
 
 Testing is done with [Jest](https://jestjs.io/).
 To run the tests:
@@ -120,15 +126,10 @@ cd angular-cli-ghpages/src
 npm test
 ```
 
-
-
-
-
 ## Testing the standalone CLI
 
 To quickly test the file `engine.ts` directly, the standalone mode is the best option.
 Use VSCode and debug the task `Launch Standalone Program`.
-
 
 ## Publish to NPM
 
@@ -139,3 +140,10 @@ npm run test
 npm publish dist
 npm dist-tag add angular-cli-ghpages@0.6.0-rc.0 next
 ```
+
+## Usage of Prettier Formatter
+
+Just execute `npx prettier --write '**/*'` and the code is formated automatically.
+Please ignore the errors for now. ([error] No parser could be inferred for file)
+
+We are still working on this, see https://github.com/angular-schule/ngx-deploy-starter/issues/10 .

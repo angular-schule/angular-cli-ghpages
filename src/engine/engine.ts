@@ -23,7 +23,6 @@ export async function run(
     ghpages.clean();
   }
 
-  try {
     await checkIfDistFolderExists(dir);
     await createNotFoundPage(dir, options, logger);
     await createCnameFile(dir, options, logger);
@@ -32,10 +31,6 @@ export async function run(
     logger.info(
       '🚀 Successfully published via angular-cli-ghpages! Have a nice day!'
     );
-  } catch (error) {
-    logger.error('❌ An error occurred!');
-    throw error;
-  }
 }
 
 export function prepareOptions(origOptions: Schema, logger: logging.LoggerApi) {
@@ -138,9 +133,6 @@ async function createNotFoundPage(
   const indexHtml = path.join(dir, 'index.html');
   const notFoundPage = path.join(dir, '404.html');
 
-  // console.log('***', indexHtml)
-  // console.log('***', notFoundPage)
-
   try {
     return await fse.copy(indexHtml, notFoundPage);
   } catch (err) {
@@ -150,7 +142,7 @@ async function createNotFoundPage(
     logger.info(
       '(Hint: are you sure that you have setup the directory correctly?)'
     );
-    logger.debug('Diagnostic info', err);
+    logger.debug('Diagnostic info: ' + err.message);
     return;
   }
 }
@@ -176,8 +168,7 @@ async function createCnameFile(
     await fse.writeFile(cnameFile, options.cname);
     logger.info('CNAME file created');
   } catch (err) {
-    logger.error('CNAME file could not be created. Stopping execution.');
-    throw err;
+    throw new Error('CNAME file could not be created. ' + err.message);
   }
 }
 

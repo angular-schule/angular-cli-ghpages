@@ -6,8 +6,9 @@ var path = require('path'),
   pjson = require('./package.json'),
   commander = require('commander');
 
-// unfortunately defaults-file is ignored for --no-silent & --no-dotfiles
-// according to PR it should work (https://github.com/tj/commander.js/issues/928) but it's still completely foobar!?!
+// defaults-file was ignored for --no-silent & --no-dotfiles, so it is not used here
+// TODO: review https://github.com/tj/commander.js/issues/928 and check again if it now works
+// (this is not a big problem, because true is currently the desired value and this is also the value in the defaults file)
 commander
   .version(pjson.version)
   .description(pjson.description)
@@ -74,5 +75,7 @@ var consoleLogger = {
 var dir = path.join(process.cwd(), commander.dir);
 
 engine.run(dir, commander, consoleLogger).catch(function(error) {
+  consoleLogger.error('❌ An error occurred when trying to deploy:');
+  consoleLogger.error(error.message);
   process.exit(1);
 });

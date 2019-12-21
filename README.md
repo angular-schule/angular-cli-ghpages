@@ -40,7 +40,7 @@
 
 A detailed changelog is available in the [releases](https://github.com/angular-schule/angular-cli-ghpages/releases) section.
 
-The latest version comes with enhanced error handling and progress report:
+The latest version comes with enhanced error handling and a progress report:
 
 ![Screenshot](docs/img/angular-cli-ghpages-deploy2.gif)
 

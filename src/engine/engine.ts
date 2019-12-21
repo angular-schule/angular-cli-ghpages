@@ -205,5 +205,16 @@ async function publishViaGhPages(
     return;
   }
 
-  return await ghPages.publish(dir, options);
+  // do NOT (!!) await ghPages.publish,
+  // the promise is implemented in such a way that it always succeeds – even on errors!
+  return new Promise((resolve, reject) => {
+    ghPages.publish(dir, options, (error) => {
+
+      if (error) {
+        return reject(error);
+      }
+
+      resolve();
+    });
+  });
 }

@@ -154,6 +154,7 @@ Use VSCode and debug the task `Launch Standalone Program`.
 
 ```
 cd angular-cli-ghpages/src
+npx prettier --write '**/*'
 npm run build
 npm run test
 npm publish dist

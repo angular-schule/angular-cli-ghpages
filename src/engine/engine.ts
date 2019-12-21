@@ -6,7 +6,6 @@ import { Schema } from '../deploy/schema';
 import { GHPages } from '../interfaces';
 import { defaults } from './defaults';
 
-
 export async function run(
   dir: string,
   options: Schema,
@@ -47,16 +46,16 @@ export function prepareOptions(origOptions: Schema, logger: logging.LoggerApi) {
     // monkeypatch util.debuglog to get all the extra information
     // see https://stackoverflow.com/a/39129886
     const util = require('util');
-    let debuglog  = util.debuglog;
+    let debuglog = util.debuglog;
     util.debuglog = set => {
       if (set === 'gh-pages') {
         return function() {
           let message = util.format.apply(util, arguments);
           logger.info(message);
-        }
+        };
       }
       return debuglog(set);
-    }
+    };
   }
 
   if (origOptions.noDotfiles) {
@@ -219,8 +218,7 @@ async function publishViaGhPages(
   // do NOT (!!) await ghPages.publish,
   // the promise is implemented in such a way that it always succeeds – even on errors!
   return new Promise((resolve, reject) => {
-    ghPages.publish(dir, options, (error) => {
-
+    ghPages.publish(dir, options, error => {
       if (error) {
         return reject(error);
       }

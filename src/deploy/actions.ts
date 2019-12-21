@@ -48,7 +48,7 @@ export default async function deploy(
     const buildResult = await build.result;
 
     if (!buildResult.success) {
-      throw new Error("Error while building the app.");
+      throw new Error('Error while building the app.');
     }
   }
 

@@ -148,12 +148,14 @@ In this case provide both `name` and `email` string values to identify the commi
     * `npx angular-cli-ghpages --no-silent` -- Logging shows extended information.
 
 Logging is in silent mode by default.
-In silent mode log messages are suppressed and error messages are sanitized.
+In silent mode, the error messages for git operations are always sanitized.
+(The message is always: `'Unspecified error (run without silent option for detail)'`)
 
-The `--no-silent` option enables extended console logging.
+The `--no-silent` option enables detailed error messages and extended console logging.
 Keep this untouched if the repository URL or other information passed to git commands is sensitive!
 
-> WARNING: This option should kept like it is if the repository URL or other information passed to git commands is sensitive and should not be logged (== you have a public build server). By default the silent mode is enabled to avoid sensitive data exposure.
+> ⚠️ WARNING: This option should be kept as it is if the repository URL or other information passed to Git commands is sensitive and should not be logged (== you have a public build server and you are using the `GH_TOKEN` feature).
+> By default the silent mode is enabled to avoid sensitive data exposure.
 
 
 #### --dir <a name="dir"></a>

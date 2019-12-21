@@ -6,7 +6,6 @@ import { Schema } from '../deploy/schema';
 import { GHPages } from '../interfaces';
 import { defaults } from './defaults';
 
-const ghpages = require('gh-pages');
 
 export async function run(
   dir: string,
@@ -14,6 +13,9 @@ export async function run(
   logger: logging.LoggerApi
 ) {
   options = prepareOptions(options, logger);
+
+  // this has to occur _after_ the monkeypatch of util.debuglog:
+  const ghpages = require('gh-pages');
 
   // always clean the cache directory.
   // avoids "Error: Remote url mismatch."
@@ -23,14 +25,14 @@ export async function run(
     ghpages.clean();
   }
 
-    await checkIfDistFolderExists(dir);
-    await createNotFoundPage(dir, options, logger);
-    await createCnameFile(dir, options, logger);
-    await publishViaGhPages(ghpages, dir, options, logger);
+  await checkIfDistFolderExists(dir);
+  await createNotFoundPage(dir, options, logger);
+  await createCnameFile(dir, options, logger);
+  await publishViaGhPages(ghpages, dir, options, logger);
 
-    logger.info(
-      '🚀 Successfully published via angular-cli-ghpages! Have a nice day!'
-    );
+  logger.info(
+    '🚀 Successfully published via angular-cli-ghpages! Have a nice day!'
+  );
 }
 
 export function prepareOptions(origOptions: Schema, logger: logging.LoggerApi) {
@@ -41,6 +43,20 @@ export function prepareOptions(origOptions: Schema, logger: logging.LoggerApi) {
 
   if (origOptions.noSilent) {
     options.silent = !origOptions.noSilent;
+
+    // monkeypatch util.debuglog to get all the extra information
+    // see https://stackoverflow.com/a/39129886
+    const util = require('util');
+    let debuglog  = util.debuglog;
+    util.debuglog = set => {
+      if (set === 'gh-pages') {
+        return function() {
+          let message = util.format.apply(util, arguments);
+          logger.info(message);
+        }
+      }
+      return debuglog(set);
+    }
   }
 
   if (origOptions.noDotfiles) {
@@ -57,11 +73,6 @@ export function prepareOptions(origOptions: Schema, logger: logging.LoggerApi) {
       email: options.email
     };
   }
-
-  // gh-pages internal: forwards messages to logger
-  options['logger'] = function(message) {
-    logger.info(message);
-  };
 
   if (process.env.TRAVIS) {
     options.message +=

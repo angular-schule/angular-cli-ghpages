@@ -215,6 +215,10 @@ async function publishViaGhPages(
     return;
   }
 
+  logger.info(
+    '👨‍🚀 Uploading via git, please wait...'
+  );
+
   // do NOT (!!) await ghPages.publish,
   // the promise is implemented in such a way that it always succeeds – even on errors!
   return new Promise((resolve, reject) => {

@@ -70,15 +70,13 @@ describe('Deploy Angular apps', () => {
         ___?: ScheduleOptions
       ) =>
         Promise.resolve({
-          result: Promise.resolve(
-            createBuilderOutputMock(false, 'build error test')
-          )
+          result: Promise.resolve(createBuilderOutputMock(false))
         } as BuilderRun);
       try {
         await deploy(mockEngine, context, 'host', {});
         fail();
       } catch (e) {
-        expect(e.message).toMatch(/build error test/);
+        expect(e.message).toEqual('Error while building the app.');
       }
     });
   });
@@ -112,18 +110,16 @@ const initMocks = () => {
       Promise.resolve({} as BuilderRun),
     scheduleTarget: (_: Target, __?: JsonObject, ___?: ScheduleOptions) =>
       Promise.resolve({
-        result: Promise.resolve(createBuilderOutputMock(true, ''))
+        result: Promise.resolve(createBuilderOutputMock(true))
       } as BuilderRun)
   };
 };
 
-const createBuilderOutputMock = (
-  success: boolean,
-  error: string
-): BuilderOutput => {
+const createBuilderOutputMock = (success: boolean): BuilderOutput => {
   return {
     info: { info: null },
-    error: error,
+    // unfortunately error is undefined in case of a build errors
+    error: (undefined as unknown) as string,
     success: success,
     target: {} as Target
   };

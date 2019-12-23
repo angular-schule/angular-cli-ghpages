@@ -150,6 +150,7 @@ npm test
 
 ```
 cd ngx-deploy-starter/src
+npx prettier --write '**/*'
 npm run build
 npm run test
 npm publish dist --access public

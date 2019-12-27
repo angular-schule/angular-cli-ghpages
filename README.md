@@ -372,6 +372,8 @@ Code released under the [MIT license](LICENSE).
 
 <hr>
 
+## 🚀 Powered by [ngx-deploy-starter](https://github.com/angular-schule/ngx-deploy-starter)
+
 <img src="https://assets.angular.schule/logo-angular-schule.png" height="60">  
 
 ### &copy; 2019 https://angular.schule

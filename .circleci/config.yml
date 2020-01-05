@@ -2,9 +2,7 @@ version: 2
 
 jobs:
   build:
-
     environment:
-      NG_CLI_ANALYTICS: ci
       GITHUB_ORG: https://github.com/angular-schule
       GITHUB_NAME: The Buildbot
       GITHUB_EMAIL: buildbot@angular2buch.de

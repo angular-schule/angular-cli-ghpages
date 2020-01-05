@@ -103,16 +103,40 @@ export function prepareOptions(origOptions: Schema, logger: logging.LoggerApi) {
       process.env.CIRCLE_BUILD_URL;
   }
 
-  if (process.env.GH_TOKEN && options.repo) {
-    options.repo = options.repo.replace(
-      'http://github.com/',
-      'http://GH_TOKEN@github.com/'
-    );
-    options.repo = options.repo.replace(
-      'https://github.com/',
-      'https://GH_TOKEN@github.com/'
-    );
+  // for backwards compatibility only,
+  // in the past --repo=https://GH_TOKEN@github.com/<username>/<repositoryname>.git was advised
+  //
+  // this repalcement was also used to inject other tokens into the URL,
+  // so it should only be removed with the next major version
+  if (
+    process.env.GH_TOKEN &&
+    options.repo &&
+    options.repo.includes('GH_TOKEN')
+  ) {
     options.repo = options.repo.replace('GH_TOKEN', process.env.GH_TOKEN);
+  }
+  // preffered way: token is replaced from plain URL
+  else if (options.repo && !options.repo.includes('x-access-token:')) {
+    if (process.env.GH_TOKEN) {
+      options.repo = options.repo.replace(
+        'https://github.com/',
+        `https://x-access-token:${process.env.GH_TOKEN}@github.com/`
+      );
+    }
+
+    if (process.env.PERSONAL_TOKEN) {
+      options.repo = options.repo.replace(
+        'https://github.com/',
+        `https://x-access-token:${process.env.PERSONAL_TOKEN}@github.com/`
+      );
+    }
+
+    if (process.env.GITHUB_TOKEN) {
+      options.repo = options.repo.replace(
+        'https://github.com/',
+        `https://x-access-token:${process.env.GITHUB_TOKEN}@github.com/`
+      );
+    }
   }
 
   return options;
@@ -215,9 +239,7 @@ async function publishViaGhPages(
     return;
   }
 
-  logger.info(
-    '👨‍🚀 Uploading via git, please wait...'
-  );
+  logger.info('👨‍🚀 Uploading via git, please wait...');
 
   // do NOT (!!) await ghPages.publish,
   // the promise is implemented in such a way that it always succeeds – even on errors!

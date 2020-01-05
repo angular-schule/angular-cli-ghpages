@@ -336,12 +336,12 @@ And just run `ng deploy` 😄.
 
 ## 🌍 Environments <a name="environments"></a>
 
-We have seen `angular-cli-ghpages` running on various environments, like Travis CI, Circle Ci or Github Actions.
+We have seen `angular-cli-ghpages` running on various environments, like Travis CI, CircleCi or Github Actions.
 Please share your knowledge by writing an article about how to set up the deployment.
 
 1. [GitHub Actions](https://github.com/angular-schule/angular-cli-ghpages/blob/master/docs/README_environment_github_actions.md) by [Dharmen Shah](https://github.com/shhdharmen)
 2. TODO: Travis CI
-3. TODO: Circle CI
+3. TODO: CircleCI
 
 ## ⁉️ FAQ <a name="faq"></a>
 

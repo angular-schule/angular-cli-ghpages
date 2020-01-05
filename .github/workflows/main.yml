@@ -28,6 +28,7 @@ jobs:
           cd ..
           npm install -g @angular/cli@next
           ng new your-angular-project --defaults
+          cd your-angular-project
           npm link angular-cli-ghpages
           ng add angular-cli-ghpages
           ng deploy

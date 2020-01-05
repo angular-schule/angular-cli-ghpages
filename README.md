@@ -211,9 +211,7 @@ Learn more about ["personal access tokens" here](https://help.github.com/article
 - Example: `ng deploy --message="What could possibly go wrong?"`
 
 The commit message **must be wrapped in quotes** if there are any spaces in the text.  
-Some handy additional text is always added,
-if the environment variable `TRAVIS` exists (for Travis CI) or
-if the environment variable `CIRCLECI` exists (for Circle CI).
+Some additional text is always added to the message, if the command runs on Travis CI, Circle CI or GitHub Actions.
 
 #### --branch <a name="branch"></a>
 

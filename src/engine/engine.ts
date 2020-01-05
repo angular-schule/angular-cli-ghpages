@@ -108,6 +108,16 @@ export async function prepareOptions(
       process.env.CIRCLE_BUILD_URL;
   }
 
+  if (process.env.GITHUB_ACTIONS) {
+    options.message +=
+      '\n\n' +
+      'Triggered by commit: https://github.com/' +
+      process.env.GITHUB_REPOSITORY +
+      '/' +
+      '/commit/' +
+      process.env.GITHUB_SHA;
+  }
+
   // NEW in 0.6.2: always discover remote URL (if not set)
   // this allows us to inject tokens from environment even if `--repo` is not set manually
   if (!options.repo) {

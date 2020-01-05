@@ -24,4 +24,10 @@ jobs:
           npm run build
           npm run test
           cd dist
-          sudo npm link
+          npm link
+          cd ..
+          npm install -g @angular/cli@next
+          ng new your-angular-project --defaults
+          npm link angular-cli-ghpages
+          ng add angular-cli-ghpages
+          ng deploy

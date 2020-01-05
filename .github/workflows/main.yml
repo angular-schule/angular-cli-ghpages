@@ -31,4 +31,4 @@ jobs:
           cd your-angular-project
           npm link angular-cli-ghpages
           ng add angular-cli-ghpages
-          ng deploy --no-silent
+          ng deploy --no-silent --name="The Buildbot" --email="buildbot@angular2buch.de"

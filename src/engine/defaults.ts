@@ -8,5 +8,7 @@ export const defaults = {
   silent: true,
   dotfiles: true,
   cname: undefined,
-  dryRun: false
+  dryRun: false,
+  remote: 'origin',
+  git: 'git'
 };

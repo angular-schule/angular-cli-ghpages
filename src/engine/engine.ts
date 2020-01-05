@@ -6,12 +6,14 @@ import { Schema } from '../deploy/schema';
 import { GHPages } from '../interfaces';
 import { defaults } from './defaults';
 
+import Git from 'gh-pages/lib/git';
+
 export async function run(
   dir: string,
   options: Schema,
   logger: logging.LoggerApi
 ) {
-  options = prepareOptions(options, logger);
+  options = await prepareOptions(options, logger);
 
   // this has to occur _after_ the monkeypatch of util.debuglog:
   const ghpages = require('gh-pages');
@@ -34,7 +36,10 @@ export async function run(
   );
 }
 
-export function prepareOptions(origOptions: Schema, logger: logging.LoggerApi) {
+export async function prepareOptions(
+  origOptions: Schema,
+  logger: logging.LoggerApi
+) {
   const options = {
     ...defaults,
     ...origOptions
@@ -101,6 +106,12 @@ export function prepareOptions(origOptions: Schema, logger: logging.LoggerApi) {
       '\n' +
       'CircleCI build: ' +
       process.env.CIRCLE_BUILD_URL;
+  }
+
+  // NEW in 0.6.2: always discover remote URL (if not set)
+  // this allows us to inject tokens from environment even if `--repo` is not set manually
+  if (!options.repo) {
+    options.repo = await getRemoteUrl(options);
   }
 
   // for backwards compatibility only,
@@ -252,4 +263,9 @@ async function publishViaGhPages(
       resolve();
     });
   });
+}
+
+async function getRemoteUrl(options) {
+  const git = new Git(process.cwd(), options.git);
+  return await git.getRemoteUrl(options.remote);
 }

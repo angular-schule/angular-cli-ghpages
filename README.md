@@ -121,8 +121,14 @@ ng deploy --repo=https://github.com/<username>/<repositoryname>.git --name="Your
 
 (replace `<username>` and `<repositoryname>` with your username from GitHub and the name of your repository)
 
+> **⚠️Important**
+>
 > Please **do not disable the silent mode** if you use tokens, otherwise people could read them in the output logs.
 > If you are sure that your CI/CD provider does not display secrets on the console (this applies to CircleCI / Travis CI and Github Actions), you are welcome to disable silent mode.
+
+> **ℹ️ Note for GitHub Actions**
+>
+> The `GITHUB_TOKEN` (installation access token) will only trigger a release of a new website if the action runs in a private repository. In a public repo, a commit is generated, but the site does not change. See this [GitHub Community post](https://github.community/t5/GitHub-Actions/Github-action-not-triggering-gh-pages-upon-push/m-p/26869) for more info. If your repo is public, you must still use the `GH_TOKEN` (personal access token).
 
 ## 📦 Options <a name="options"></a>
 
@@ -199,7 +205,9 @@ and that you want to push changes to the `origin` remote.
 If instead your files are not in a git repository, or if you want to push to another repository,
 you can provide the repository URL in the `repo` option.
 
-> **ℹ️ Hint:** Set an environment variable with the name `GH_TOKEN` / `PERSONAL_TOKEN` or `GITHUB_TOKEN` and it will be automatically added to the URL, if it uses the HTTPS shema (it must start with `https://github.com`).
+> **ℹ️ Hint**
+>
+> Set an environment variable with the name `GH_TOKEN` / `PERSONAL_TOKEN` or `GITHUB_TOKEN` and it will be automatically added to the URL, if it uses the HTTPS shema (it must start with `https://github.com`).
 > Tokens are generally not supported for Git over SSH (starts with `git@github.com`).
 
 Learn more about ["personal access tokens" here](https://help.github.com/articles/creating-an-access-token-for-command-line-use/) (`GH_TOKEN`) and about the ["installation access token" here](https://help.github.com/en/actions/automating-your-workflow-with-github-actions/authenticating-with-the-github_token) (`GITHUB_TOKEN`). `PERSONAL_TOKEN` is an alias for `GH_TOKEN`.
@@ -250,7 +258,9 @@ In silent mode, the error messages for git operations are always sanitized.
 The `--no-silent` option enables detailed error messages and extended console logging.
 Keep this untouched if the repository URL or other information passed to git commands is sensitive!
 
-> **⚠️ WARNING:** This option should be kept as it is if the repository URL or other information passed to Git commands is sensitive and should not be logged (== you have a public build server and you are using the token feature).
+> **⚠️ WARNING**
+>
+> This option should be kept as it is if the repository URL or other information passed to Git commands is sensitive and should not be logged (== you have a public build server and you are using the token feature).
 > By default the silent mode is enabled to avoid sensitive data exposure.
 
 #### --no-dotfiles <a name="no-dotfiles"></a>
@@ -332,7 +342,9 @@ becomes
 
 And just run `ng deploy` 😄.
 
-> **ℹ️ Hint:** You can always use the [--dry-run](#dry-run) option to verify if your configuration is right.
+> **ℹ️ Hint**
+>
+> You can always use the [--dry-run](#dry-run) option to verify if your configuration is right.
 
 ## 🌍 Environments <a name="environments"></a>
 
@@ -358,7 +370,7 @@ Code released under the [MIT license](LICENSE).
 
 <img src="https://assets.angular.schule/logo-angular-schule.png" height="60">
 
-### &copy; 2019 https://angular.schule
+### &copy; 2017-2020 https://angular.schule
 
 This project is made on top of [tschaub/gh-pages](https://github.com/tschaub/gh-pages).  
 Thank you very much for this great foundation!

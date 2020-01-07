@@ -113,7 +113,6 @@ export async function prepareOptions(
       '\n\n' +
       'Triggered by commit: https://github.com/' +
       process.env.GITHUB_REPOSITORY +
-      '/' +
       '/commit/' +
       process.env.GITHUB_SHA;
   }

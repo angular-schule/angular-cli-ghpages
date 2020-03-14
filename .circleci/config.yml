@@ -30,3 +30,13 @@ jobs:
       - run: cd your-angular-project && sudo -E npm link angular-cli-ghpages
       - run: cd your-angular-project && sudo -E ng add angular-cli-ghpages
       - run: cd your-angular-project && sudo -E ng deploy --repo="$GITHUB_ORG/$NAME.git" --name="$GITHUB_NAME" --email="$GITHUB_EMAIL" --cname=angular-cli-ghpages.angular.schule
+
+
+workflows:
+  version: 2
+  build_and_deploy:
+    jobs:
+      - build
+          branches:
+            only:
+              - master

@@ -35,36 +35,33 @@ More info can be found here:
 3. A New File editor will open, keep the file name (e.g. *main.yml*) as it is, simply replace all content to below:
 
     ```yml
-    name: Node CI
-
+    name: Deploy to GitHub Pages via angular-cli-ghpages
+    
     on: [push]
-
+    
     jobs:
-    build:
+      build-and-deploy:
         runs-on: ubuntu-latest
-
+    
         steps:
-        - uses: actions/checkout@v1
+        - name: Checkout
+          uses: actions/checkout@v2
+    
         - name: Use Node.js 10.x
-            uses: actions/setup-node@v1
-            with:
+          uses: actions/setup-node@v1
+          with:
             node-version: 10.x
-        - name: npm install, lint, test, build and deploy
-            run: |
+    
+        - name: Prepare and deploy
+          env:
+            GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          run: |
             npm install
-            npm run lint
-            ###
-            # You can comment below 2 test scripts, if you haven't [configured CLI for CI testing in Chrome](https://angular.io/guide/testing#configure-cli-for-ci-testing-in-chrome)
-            ###
-            npm test -- --no-watch --no-progress --browsers=ChromeHeadlessCI
-            npm run e2e -- --protractor-config=e2e/protractor-ci.conf.js
-            npm run deploy -- --name="<YOUR_GITHUB_USERNAME>" --email=<YOUR_GITHUB_USER_EMAIL_ADDRESS>
-            env:
-            CI: true
-            GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+            npm run ng -- deploy --base-href=/the-repositoryname/ --name="Displayed Username" --email="mail@example.org" --no-silent
     ```
 
-4. Make sure to replace **<YOUR_GITHUB_USERNAME>** and **<YOUR_GITHUB_USER_EMAIL_ADDRESS>** with correct values in above snippet.
+
+4. Make sure to replace **`/the-repositoryname/`**, **`Displayed Username`** and **`mail@example.org`** with correct values in above snippet.
 5. You can also control when your workflows are triggered:
    - It can be helpful to not have your workflows run on every push to every branch in the repo.
      - For example, you can have your workflow run on push events to master and release branches:
@@ -99,7 +96,15 @@ More info can be found here:
 6. Commit and Push to add the workflow file.
 7. Done.
 
-## Notes
+---
 
-    Please note that GitHub Actions is currently in beta and is not currently suited/intended to be for use in production.
-    Please note that the steps above may be modified at any time for reasons including the discovering of new ways to simplify the steps/process of deployment or for other reasons not explicitly mentioned.
+# Still questions?
+
+Learn everything you need to know in the following extended article.
+
+[![Banner](https://angular-schule.github.io/website-articles/blog/2020-01-everything-github/everything-github.png)](https://angular.schule/blog/2020-01-everything-github)
+
+**Everything GitHub: Continuous Integration, Deployment and Hosting for your Angular App**
+
+In this article we show several tools from the GitHub universe to launch a website with Angular. We will establish a professional pipeline, including version management, continuous deployment and web hosting. Best of all, for public repositories, this will not cost you a single cent! [Read more...](https://angular.schule/blog/2020-01-everything-github)
+

@@ -36,9 +36,13 @@
 
 A detailed changelog is available in the [releases](https://github.com/angular-schule/angular-cli-ghpages/releases) section.
 
-The latest version comes with enhanced error handling and a progress report:
+With this latest release, **GitHub Actions** becomes a first citizen alongside Travis CI and CircleCi. The token `GITHUB_TOKEN` is now supported. Learn everything you need to know in the following article.
 
-![Screenshot](docs/img/angular-cli-ghpages-deploy2.gif)
+[![Banner](https://angular-schule.github.io/website-articles/blog/2020-01-everything-github/everything-github.png)](https://angular.schule/blog/2020-01-everything-github)
+
+**Everything GitHub: Continuous Integration, Deployment and Hosting for your Angular App**
+
+In this article we show several tools from the GitHub universe to launch a website with Angular. We will establish a professional pipeline, including version management, continuous deployment and web hosting. Best of all, for public repositories, this will not cost you a single cent! [Read more...](https://angular.schule/blog/2020-01-everything-github)
 
 ## ⚠️ Prerequisites <a name="prerequisites"></a>
 

@@ -15,19 +15,15 @@ As Github has introduced [Github Actions](https://github.com/features/actions), 
 
 Please ensure that you've read the prerequisites section before continuing with this section.
 
-### Setup Tokens
+### Automatic GitHub Action Token
 
-1. Create a [Personal Access Token with repo access](https://help.github.com/en/articles/creating-a-personal-access-token-for-the-command-line) (POA) and copy the token.
-   - Make sure it has this access:
-  
-        ![repo access](img/repo-access.png)
-2. Open up your Github repo.
-3. Go to **Settings** > **Secrets** and click on **Add a new secret** link.
+GitHub provides a token that you can use to authenticate on behalf of GitHub Actions.
 
-    ![add new secret](img/add-new-secret.png)
-4. Create a secret with name `GH_TOKEN` and paste your POA, which you copied in step 1, in value.
+GitHub automatically creates a `GITHUB_TOKEN` secret to use in your workflow.
+You can use the `GITHUB_TOKEN` to authenticate in a workflow run.
 
-    ![secret name and value](img/secret-token-value.png)
+More info can be found here:  
+[help.github.com](https://help.github.com/en/actions/configuring-and-managing-workflows/authenticating-with-the-github_token#using-the-github_token-in-a-workflow)
 
 ### Setup Github Action Flow
 
@@ -65,7 +61,7 @@ Please ensure that you've read the prerequisites section before continuing with 
             npm run deploy -- --name="<YOUR_GITHUB_USERNAME>" --email=<YOUR_GITHUB_USER_EMAIL_ADDRESS>
             env:
             CI: true
-            GH_TOKEN: ${{ secrets.GH_TOKEN }}
+            GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     ```
 
 4. Make sure to replace **<YOUR_GITHUB_USERNAME>** and **<YOUR_GITHUB_USER_EMAIL_ADDRESS>** with correct values in above snippet.

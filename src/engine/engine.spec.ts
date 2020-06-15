@@ -84,6 +84,37 @@ describe('engine', () => {
       expect(finalOptions.repo).toMatch(/angular-schule\/angular-cli-ghpages/);
     });
 
+    it('should discover the github pages url from https repository url', async () => {
+      const options = {
+        repo: 'https://github.com/organisation/your-repo.git'
+      };
+      const finalOptions = await engine.prepareOptions(options, logger);
+
+      expect(finalOptions.pages).toBe(
+        'https://organisation.github.io/your-repo'
+      );
+    });
+
+    it('should discover the github pages url from ssh repository url', async () => {
+      const options = {
+        repo: 'git@github.com:organisation/your-repo.git'
+      };
+      const finalOptions = await engine.prepareOptions(options, logger);
+
+      expect(finalOptions.pages).toBe(
+        'https://organisation.github.io/your-repo'
+      );
+    });
+
+    it('should discover the github pages url from https repository url that contains with `.git`', async () => {
+      const options = {
+        repo: 'https://github.com/organisation/x.gity.git'
+      };
+      const finalOptions = await engine.prepareOptions(options, logger);
+
+      expect(finalOptions.pages).toBe('https://organisation.github.io/x.gity');
+    });
+
     /*
     // i was not able to somehow catch an error... :-(
     it('should should throw an exception, if remote url could not be discovered', async () => {

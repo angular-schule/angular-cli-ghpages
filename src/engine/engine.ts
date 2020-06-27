@@ -285,16 +285,11 @@ async function getRemoteUrl(options) {
 
 function tryParseGhPagesUrl(options: any): any {
   // Not assume custom domain page
+  let trimEndDotGit = options.repo
+    .replace(/\/\s*$/, '')
+    .replace(/\.git\s*$/, '');
 
-  const matchEndsWithDotGit = options.repo.match(
-    /github.com(\/|:)(.*)\/(.*)\.git$/
-  );
-  if (matchEndsWithDotGit) {
-    options.ghPagesUrl = `https://${matchEndsWithDotGit[2]}.github.io/${matchEndsWithDotGit[3]}`;
-    return options;
-  }
-
-  const matchEndsWithRepoName = options.repo.match(
+  const matchEndsWithRepoName = trimEndDotGit.match(
     /github.com(\/|:)(.*)\/(.*)$/
   );
   if (matchEndsWithRepoName) {

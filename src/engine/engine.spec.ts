@@ -90,7 +90,7 @@ describe('engine', () => {
       };
       const finalOptions = await engine.prepareOptions(options, logger);
 
-      expect(finalOptions.pages).toBe(
+      expect(finalOptions.ghPagesUrl).toBe(
         'https://organisation.github.io/your-repo'
       );
     });
@@ -101,7 +101,7 @@ describe('engine', () => {
       };
       const finalOptions = await engine.prepareOptions(options, logger);
 
-      expect(finalOptions.pages).toBe(
+      expect(finalOptions.ghPagesUrl).toBe(
         'https://organisation.github.io/your-repo'
       );
     });
@@ -112,7 +112,9 @@ describe('engine', () => {
       };
       const finalOptions = await engine.prepareOptions(options, logger);
 
-      expect(finalOptions.pages).toBe('https://organisation.github.io/x.gity');
+      expect(finalOptions.ghPagesUrl).toBe(
+        'https://organisation.github.io/x.gity'
+      );
     });
 
     /*

@@ -10,6 +10,6 @@ export const defaults = {
   cname: undefined,
   dryRun: false,
   remote: 'origin',
-  pages: '',
+  ghPagesUrl: '',
   git: 'git'
 };

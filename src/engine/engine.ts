@@ -32,7 +32,7 @@ export async function run(
   await publishViaGhPages(ghpages, dir, options, logger);
 
   logger.info(
-    `🚀 Successfully published ${options.pages} via angular-cli-ghpages! Have a nice day!`
+    `🚀 Successfully published ${options.ghPagesUrl} via angular-cli-ghpages! Have a nice day!`
   );
 }
 
@@ -160,9 +160,10 @@ export async function prepareOptions(
   }
 
   if (options.repo) {
+    // Not assume custom domain page
     const match = options.repo.match(/github.com(\/|:)(.*)\/(.*)\.git$/);
     if (match) {
-      options.pages = `https://${match[2]}.github.io/${match[3]}`;
+      options.ghPagesUrl = `https://${match[2]}.github.io/${match[3]}`;
     }
   }
 

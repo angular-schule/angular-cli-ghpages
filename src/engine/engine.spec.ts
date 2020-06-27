@@ -95,6 +95,17 @@ describe('engine', () => {
       );
     });
 
+    it('should discover the github pages url from url w/o .git suffix', async () => {
+      const options = {
+        repo: 'https://github.com/organisation/your-repo'
+      };
+      const finalOptions = await engine.prepareOptions(options, logger);
+
+      expect(finalOptions.ghPagesUrl).toBe(
+        'https://organisation.github.io/your-repo'
+      );
+    });
+
     it('should discover the github pages url from ssh repository url', async () => {
       const options = {
         repo: 'git@github.com:organisation/your-repo.git'

@@ -32,7 +32,7 @@ export async function run(
   await publishViaGhPages(ghpages, dir, options, logger);
 
   logger.info(
-    `🚀 Successfully published ${options.ghPagesUrl} via angular-cli-ghpages! Have a nice day!`
+    `🚀 Successfully published ${options.ghPagesUrl}via angular-cli-ghpages! Have a nice day!`
   );
 }
 
@@ -293,7 +293,7 @@ function tryParseGhPagesUrl(options: any): any {
     /github.com(\/|:)(.*)\/(.*)$/
   );
   if (matchEndsWithRepoName) {
-    options.ghPagesUrl = `https://${matchEndsWithRepoName[2]}.github.io/${matchEndsWithRepoName[3]}`;
+    options.ghPagesUrl = `https://${matchEndsWithRepoName[2]}.github.io/${matchEndsWithRepoName[3]} `;
     return options;
   }
 

@@ -90,14 +90,16 @@ If you already have an existing Angular project on GitHub, skip step 1 and 2.
    Your project will be automatically built in production mode.
 
    ```sh
-   ng deploy
+   ng deploy --base-href=/<repositoryname>/
    ```
 
    Which is the same as:
 
    ```sh
-   ng deploy your-angular-project
+   ng deploy your-angular-project --base-href=/<repositoryname>/
    ```
+   
+   Please be aware of the `--base-href` option. It is necessary when your project will be deployed to a non-root folder. See more details below.
 
 5. Your project should be available at `https://<username>.github.io/<repositoryname>`.  
    Learn more about GitHub pages on the [official website](https://pages.github.com/).

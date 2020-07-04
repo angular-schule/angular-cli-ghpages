@@ -160,7 +160,14 @@ export async function prepareOptions(
   }
 
   if (options.repo) {
-    return tryParseGhPagesUrl(options);
+    // Not assume custom domain page
+    let trimEndDotGit = options.repo
+      .replace(/\/\s*$/, '')
+      .replace(/\.git\s*$/, '');
+    const matchEndsWithRepoName = trimEndDotGit.match(/github.com(\/|:)(.*)\/(.*)$/);
+    if (matchEndsWithRepoName) {
+      options.ghPagesUrl = `https://${matchEndsWithRepoName[2]}.github.io/${matchEndsWithRepoName[3]}`;
+    }
   }
 
   return options;
@@ -281,21 +288,4 @@ async function publishViaGhPages(
 async function getRemoteUrl(options) {
   const git = new Git(process.cwd(), options.git);
   return await git.getRemoteUrl(options.remote);
-}
-
-function tryParseGhPagesUrl(options: any): any {
-  // Not assume custom domain page
-  let trimEndDotGit = options.repo
-    .replace(/\/\s*$/, '')
-    .replace(/\.git\s*$/, '');
-
-  const matchEndsWithRepoName = trimEndDotGit.match(
-    /github.com(\/|:)(.*)\/(.*)$/
-  );
-  if (matchEndsWithRepoName) {
-    options.ghPagesUrl = `https://${matchEndsWithRepoName[2]}.github.io/${matchEndsWithRepoName[3]}`;
-    return options;
-  }
-
-  return options;
 }

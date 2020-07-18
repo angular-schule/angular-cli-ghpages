@@ -37,4 +37,4 @@ jobs:
         run: |
           cd src
           cd your-angular-project
-          ng deploy --no-silent --name="The Buildbot" --email="buildbot@angular2buch.de"
+          ng deploy --no-silent --message="Auto-generated commit [ci skip]" --name="The Buildbot" --email="buildbot@angular2buch.de"

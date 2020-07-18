@@ -15,9 +15,7 @@ jobs:
         with:
           node-version: 10.x
 
-      - name: Prepare and deploy
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Prepare
         run: |
           cd src
           npm install --silent
@@ -31,4 +29,11 @@ jobs:
           cd your-angular-project
           npm link angular-cli-ghpages
           ng add angular-cli-ghpages
+
+      - name: Deploy
+        if: github.ref == 'refs/heads/master'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          cd src
           ng deploy --no-silent --name="The Buildbot" --email="buildbot@angular2buch.de"

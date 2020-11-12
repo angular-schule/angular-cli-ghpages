@@ -1,7 +1,11 @@
-import { BuilderContext } from '@angular-devkit/architect';
+import {
+  BuilderContext,
+  targetFromTargetString,
+} from '@angular-devkit/architect';
 import { json, logging } from '@angular-devkit/core';
 
 import { Schema } from './schema';
+import { BuildTarget } from '../interfaces';
 
 export default async function deploy(
   engine: {
@@ -12,7 +16,7 @@ export default async function deploy(
     ) => Promise<void>;
   },
   context: BuilderContext,
-  projectRoot: string,
+  buildTarget: BuildTarget,
   options: Schema
 ) {
   if (options.noBuild) {
@@ -26,7 +30,7 @@ export default async function deploy(
       ? options.configuration
       : 'production';
     const overrides = {
-      ...(options.baseHref && { baseHref: options.baseHref })
+      ...(options.baseHref && { baseHref: options.baseHref }),
     };
 
     context.logger.info(
@@ -41,7 +45,7 @@ export default async function deploy(
       {
         target: 'build',
         project: context.target.project,
-        configuration
+        configuration,
       },
       overrides as json.JsonObject
     );
@@ -52,8 +56,17 @@ export default async function deploy(
     }
   }
 
+  const buildOptions = await context.getTargetOptions(
+    targetFromTargetString(buildTarget.name)
+  );
+  if (!buildOptions.outputPath || typeof buildOptions.outputPath !== 'string') {
+    throw new Error(
+      `Cannot read the output path option of the Angular project '${buildTarget.name}' in angular.json`
+    );
+  }
+
   await engine.run(
-    projectRoot,
+    buildOptions.outputPath,
     options,
     (context.logger as unknown) as logging.LoggerApi
   );

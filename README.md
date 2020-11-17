@@ -98,7 +98,7 @@ If you already have an existing Angular project on GitHub, skip step 1 and 2.
    ```sh
    ng deploy your-angular-project --base-href=/<repositoryname>/
    ```
-   
+
    Please be aware of the `--base-href` option. It is necessary when your project will be deployed to a non-root folder. See more details below.
 
 5. Your project should be available at `https://<username>.github.io/<repositoryname>`.  
@@ -172,7 +172,7 @@ ng deploy --cname=example.org
 
 See the option [--cname](#cname) for more information!
 
-#### --configuration <a name="configuration"></a>
+<!-- #### --configuration <a name="configuration"></a>
 
 - **optional**
 - Alias: `-c`
@@ -196,7 +196,7 @@ This command has no effect if the option `--no-build` option is active.
 
 Skip build process during deployment.
 This can be used when you are sure that you haven't changed anything and want to deploy with the latest artifact.
-This command causes the `--configuration` setting to have no effect.
+This command causes the `--configuration` setting to have no effect. -->
 
 #### --repo <a name="repo"></a>
 

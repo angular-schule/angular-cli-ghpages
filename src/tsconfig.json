@@ -24,10 +24,11 @@
     "moduleResolution": "node",
     "esModuleInterop": true
   },
-  "files": ["index.ts"],
   "angularCompilerOptions": {
     "skipTemplateCodegen": true,
     "strictMetadataEmit": true,
     "enableSummariesForJit": false
-  }
+  },
+  "exclude": ["node_modules", "dist"],
+  "typeRoots": ["node_modules/@types"]
 }

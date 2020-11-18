@@ -1,6 +1,6 @@
 import {
   BuilderContext,
-  targetFromTargetString,
+  targetFromTargetString
 } from '@angular-devkit/architect';
 import { json, logging } from '@angular-devkit/core';
 
@@ -19,6 +19,7 @@ export default async function deploy(
   buildTarget: BuildTarget,
   options: Schema
 ) {
+  // 1. BUILD
   if (options.noBuild) {
     context.logger.info(`📦 Skipping build`);
   } else {
@@ -26,28 +27,24 @@ export default async function deploy(
       throw new Error('Cannot execute the build target');
     }
 
-    const configuration = options.configuration
-      ? options.configuration
-      : 'production';
+    // baseHref (from @angular-devkit/build-angular:browser)
+    // can be overriden here directly from the deployment builder options,
+    // since this feature is the most important switch when deploying the github
     const overrides = {
-      ...(options.baseHref && { baseHref: options.baseHref }),
+      ...(options.baseHref && { baseHref: options.baseHref })
     };
 
-    context.logger.info(
-      `📦 Building "${
-        context.target.project
-      }". Configuration: "${configuration}".${
-        options.baseHref ? ' Your base-href: "' + options.baseHref + '"' : ''
-      }`
-    );
+    context.logger.info(`📦 Building "${context.target.project}"`);
+    context.logger.info(`📦 Build target "${buildTarget.name}"`);
+
+    // options.baseHref ? ' Your base-href: "' + options.baseHref + '"' : ''
 
     const build = await context.scheduleTarget(
+      targetFromTargetString(buildTarget.name),
       {
-        target: 'build',
-        project: context.target.project,
-        configuration,
-      },
-      overrides as json.JsonObject
+        ...buildTarget.options,
+        ...overrides
+      }
     );
     const buildResult = await build.result;
 
@@ -56,6 +53,7 @@ export default async function deploy(
     }
   }
 
+  // 2. DEPLOYMENT
   const buildOptions = await context.getTargetOptions(
     targetFromTargetString(buildTarget.name)
   );

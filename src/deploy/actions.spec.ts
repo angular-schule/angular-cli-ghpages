@@ -119,7 +119,7 @@ const initMocks = () => {
       Promise.resolve({
         result: Promise.resolve(createBuilderOutputMock(true))
       } as BuilderRun)
-  };
+  } as any;
 };
 
 const createBuilderOutputMock = (success: boolean): BuilderOutput => {

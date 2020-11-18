@@ -16,7 +16,7 @@
 4. [🚀 Continuous Delivery](#continuous-delivery)
 5. [📦 Options](#options)
    - [--base-href](#base-href)
-   - [--configuration](#configuration)
+   - [--build-target](#build-target)
    - [--no-build](#no-build)
    - [--repo](#repo)
    - [--message](#message)
@@ -172,19 +172,20 @@ ng deploy --cname=example.org
 
 See the option [--cname](#cname) for more information!
 
-<!-- #### --configuration <a name="configuration"></a>
+#### --build-target <a name="build-target"></a>
 
 - **optional**
-- Alias: `-c`
-- Default: `production` (string)
+- Default: `undefined` (string)
 - Example:
-  - `ng deploy` – Angular project is build in production mode
-  - `ng deploy --configuration=test` – Angular project is using the configuration `test` (this configuration must exist in the `angular.json` file)
+  - `ng deploy` – Angular project is build in `production` mode
+  - `ng deploy --build-target=test` – Angular project is using the build configuration `test` (this configuration must exist in the `angular.json` file)
 
-A named build target, as specified in the `configurations` section of `angular.json`.
-Each named target is accompanied by a configuration of option defaults for that target.
-Same as `ng build --configuration=XXX`.
-This command has no effect if the option `--no-build` option is active.
+If no buildTarget is set, the `production` build of the default project will be chosen.
+The `buildTarget` simply points to an existing build configuration for your project, as specified in the `configurations` section of `angular.json`.
+Most projects have a default configuration and a production configuration (commonly activated by using the `--prod` flag) but it is possible to specify as many build configurations as needed.
+
+This is equivalent as calling the command `ng build --configuration=XXX`."  
+This command has no effect if the option `--no-build` is active.
 
 #### --no-build <a name="no-build"></a>
 
@@ -196,7 +197,7 @@ This command has no effect if the option `--no-build` option is active.
 
 Skip build process during deployment.
 This can be used when you are sure that you haven't changed anything and want to deploy with the latest artifact.
-This command causes the `--configuration` setting to have no effect. -->
+This command causes the `--configuration` setting to have no effect.
 
 #### --repo <a name="repo"></a>
 
@@ -313,7 +314,7 @@ This can be very useful because it outputs what would happen without doing anyth
 To avoid all these command-line cmd options, you can write down your configuration in the `angular.json` file in the `options` attribute of your deploy project's architect. Just change the kebab-case to lower camel case. This is the notation of all options in lower camel case:
 
 - baseHref
-- configuration
+- buildTarget
 - noBuild
 - repo
 - message
@@ -346,11 +347,12 @@ becomes
 }
 ```
 
-And just run `ng deploy` 😄.
+Now you can just run `ng deploy` without all the options in the command line! 😄
 
 > **ℹ️ Hint**
 >
 > You can always use the [--dry-run](#dry-run) option to verify if your configuration is right.
+> The project will build but not deploy.
 
 ## 🌍 Environments <a name="environments"></a>
 
@@ -358,8 +360,8 @@ We have seen `angular-cli-ghpages` running on various environments, like Travis 
 Please share your knowledge by writing an article about how to set up the deployment.
 
 1. [GitHub Actions](https://github.com/angular-schule/angular-cli-ghpages/blob/master/docs/README_environment_github_actions.md) by [Dharmen Shah](https://github.com/shhdharmen)
-2. TODO: Travis CI
-3. TODO: CircleCI
+2. Travis CI
+3. CircleCI
 
 ## ⁉️ FAQ <a name="faq"></a>
 

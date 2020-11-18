@@ -9,7 +9,8 @@
   },
   "scripts": {
     "build": "rimraf dist && json2ts deploy/schema.json > deploy/schema.d.ts && tsc && copyfiles builders.json collection.json ng-add-schema.json package.json angular-cli-ghpages deploy/schema.json dist && copyfiles ../README.md dist/README.md",
-    "test": "jest"
+    "test": "jest",
+    "prettier": "prettier --write ."
   },
   "schematics": "./collection.json",
   "builders": "./builders.json",
@@ -92,6 +93,10 @@
       "jsx",
       "json",
       "node"
+    ],
+    "testPathIgnorePatterns": [
+      "/node_modules/",
+      "/dist/"
     ]
   }
 }

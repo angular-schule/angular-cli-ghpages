@@ -54,7 +54,7 @@ export async function prepareOptions(
     let debuglog = util.debuglog;
     util.debuglog = set => {
       if (set === 'gh-pages') {
-        return function() {
+        return function () {
           let message = util.format.apply(util, arguments);
           logger.info(message);
         };

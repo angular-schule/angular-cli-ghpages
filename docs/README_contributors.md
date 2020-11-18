@@ -8,7 +8,6 @@
   - [4. Testing](#4-testing)
 - [Testing the standalone CLI](#testing-the-standalone-cli)
 - [Publish to NPM](#publish-to-npm)
-- [Usage of Prettier Formatter](#usage-of-prettier-formatter)
 
 ## How to start
 
@@ -154,19 +153,12 @@ Use VSCode and debug the task `Launch Standalone Program`.
 
 ```
 cd angular-cli-ghpages/src
-npx prettier --write '**/*'
+npm run prettier
 npm run build
 npm run test
 npm publish dist
 npm dist-tag add angular-cli-ghpages@0.6.0-rc.0 next
 ```
-
-## Usage of Prettier Formatter
-
-Just execute `npx prettier --write '**/*'` and the code is formated automatically.
-Please ignore the errors for now. ([error] No parser could be inferred for file)
-
-We are still working on this, see https://github.com/angular-schule/ngx-deploy-starter/issues/10 .
 
 ## Keeping track of all the forks
 

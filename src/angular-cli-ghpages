@@ -74,7 +74,7 @@ var consoleLogger = {
 
 var dir = path.join(process.cwd(), commander.dir);
 
-engine.run(dir, commander, consoleLogger).catch(function(error) {
+engine.run(dir, commander, consoleLogger).catch(function (error) {
   consoleLogger.error('❌ An error occurred when trying to deploy:');
   consoleLogger.error(error.message);
   process.exit(1);

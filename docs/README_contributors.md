@@ -167,3 +167,14 @@ Just execute `npx prettier --write '**/*'` and the code is formated automaticall
 Please ignore the errors for now. ([error] No parser could be inferred for file)
 
 We are still working on this, see https://github.com/angular-schule/ngx-deploy-starter/issues/10 .
+
+## Keeping track of all the forks
+
+[ngx-deploy-starter](https://github.com/angular-schule/ngx-deploy-starter/) and
+[angular-cli-ghpages](https://github.com/angular-schule/angular-cli-ghpages/) (both developed by Johannes Hoppe) are follow-up projects of the depcrecated [ngx-gh demo](https://github.com/mgechev/ngx-gh).
+This project was a follow-up of the deploy shematics from the [angularfire](https://github.com/angular/angularfire/) project.
+
+To stay in sync with the stuff that the Angular team is doing, we want to keep an eye on the following files
+
+- [builder.ts](https://github.com/angular/angularfire/blob/master/src/schematics/deploy/builder.ts)
+- [actions.ts](https://github.com/angular/angularfire/blob/master/src/schematics/deploy/actions.ts)

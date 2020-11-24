@@ -31,7 +31,7 @@ Follow the instructions for [checking and updating the Angular CLI version](#ang
 
 This builder requires the method `getTargetOptions()` from the Angular DevKit which was introduced [here](https://github.com/angular/angular-cli/pull/13825/files).
 All Angular projects with Angular 9 and greater are supposed to be compatible. (Actually it works with some versions of 8.x too, but you want to be up to date anyway, don't you?)
-Execute the next three steps, if your test-project is still older.
+Execute the next three steps, if your test project is still older.
 
 1. Install the latest version of the Angular CLI.
 
@@ -167,10 +167,10 @@ npm dist-tag add angular-cli-ghpages@0.6.0-rc.0 next
 ## Keeping track of all the forks
 
 [ngx-deploy-starter](https://github.com/angular-schule/ngx-deploy-starter/) and
-[angular-cli-ghpages](https://github.com/angular-schule/angular-cli-ghpages/) (both developed by Johannes Hoppe) are follow-up projects of the depcrecated [ngx-gh demo](https://github.com/mgechev/ngx-gh).
-This project was a follow-up of the deploy shematics from the [angularfire](https://github.com/angular/angularfire/) project.
+[angular-cli-ghpages](https://github.com/angular-schule/angular-cli-ghpages/) (both developed by Johannes Hoppe) are follow-up projects of the deprecated [ngx-gh demo](https://github.com/mgechev/ngx-gh).
+This project was a follow-up of the deploy schematics from the [angularfire](https://github.com/angular/angularfire/) project.
 
-To stay in sync with the stuff that the Angular team is doing, we want to keep an eye on the following files
+To stay in sync with the stuff the Angular team is doing, you might want to keep an eye on the following files:
 
 - [builder.ts](https://github.com/angular/angularfire/blob/master/src/schematics/deploy/builder.ts)
 - [actions.ts](https://github.com/angular/angularfire/blob/master/src/schematics/deploy/actions.ts)

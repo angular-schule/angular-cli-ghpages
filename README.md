@@ -58,7 +58,7 @@ If you use the old syntax, you will probably receive the following error:
 
 <br>
 
-**🐙 GitHub Actions** is now a first citizen alongside Travis CI and CircleCi. The token `GITHUB_TOKEN` is now supported. Learn everything you need to know in the following article.
+**🐙 GitHub Actions** is now properly supported alongside Travis CI and CircleCi. The token `GITHUB_TOKEN` is also supported. Learn everything you need to know in the following article.
 
 [![Banner](https://angular-schule.github.io/website-articles/blog/2020-01-everything-github/everything-github.png)](https://angular.schule/blog/2020-01-everything-github)
 
@@ -199,14 +199,14 @@ See the option [--cname](#cname) for more information!
 - **optional**
 - Default: `undefined` (string)
 - Example:
-  - `ng deploy` – Angular project is build in `production` mode
+  - `ng deploy` – Angular project is built in `production` mode
   - `ng deploy --build-target=test` – Angular project is using the build configuration `test` (this configuration must exist in the `angular.json` file)
 
-If no buildTarget is set, the `production` build of the default project will be chosen.
+If no `buildTarget` is set, the `production` build of the default project will be chosen.
 The `buildTarget` simply points to an existing build configuration for your project, as specified in the `configurations` section of `angular.json`.
 Most projects have a default configuration and a production configuration (commonly activated by using the `--prod` flag) but it is possible to specify as many build configurations as needed.
 
-This is equivalent as calling the command `ng build --configuration=XXX`."  
+This is equivalent to calling the command `ng build --configuration=XXX`.
 This command has no effect if the option `--no-build` is active.
 
 **⚠️ BREAKING CHANGE (v1)**

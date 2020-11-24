@@ -235,7 +235,7 @@ ng deploy --build-target=test
 
 Skip build process during deployment.
 This can be used when you are sure that you haven't changed anything and want to deploy with the latest artifact.
-This command causes the `--configuration` setting to have no effect.
+This command causes the `--build-target` setting to have no effect.
 
 #### --repo <a name="repo"></a>
 

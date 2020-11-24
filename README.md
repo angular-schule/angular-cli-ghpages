@@ -36,7 +36,29 @@
 
 A detailed changelog is available in the [releases](https://github.com/angular-schule/angular-cli-ghpages/releases) section.
 
-**GitHub Actions** is now a first citizen alongside Travis CI and CircleCi. The token `GITHUB_TOKEN` is now supported. Learn everything you need to know in the following article.
+**⚠️ BREAKING CHANGE (v1)**
+
+Starting with version 1 the option `--configuration` was renamed to `--build-target`.
+
+BEFORE (_does not work_):
+
+```
+ng deploy --configuration=test
+```
+
+NOW:
+
+```
+ng deploy --build-target=test
+```
+
+If you use the old syntax, you will probably receive the following error:
+
+> An unhandled exception occurred: Configuration 'test' is not set in the workspace.
+
+<br>
+
+**🐙 GitHub Actions** is now a first citizen alongside Travis CI and CircleCi. The token `GITHUB_TOKEN` is now supported. Learn everything you need to know in the following article.
 
 [![Banner](https://angular-schule.github.io/website-articles/blog/2020-01-everything-github/everything-github.png)](https://angular.schule/blog/2020-01-everything-github)
 
@@ -186,6 +208,22 @@ Most projects have a default configuration and a production configuration (commo
 
 This is equivalent as calling the command `ng build --configuration=XXX`."  
 This command has no effect if the option `--no-build` is active.
+
+**⚠️ BREAKING CHANGE (v1)**
+
+This option was called `--configuration` in previous versions.
+
+BEFORE (_does not work_):
+
+```
+ng deploy --configuration=test
+```
+
+NOW:
+
+```
+ng deploy --build-target=test
+```
 
 #### --no-build <a name="no-build"></a>
 

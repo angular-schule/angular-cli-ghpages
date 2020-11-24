@@ -36,7 +36,7 @@
 
 A detailed changelog is available in the [releases](https://github.com/angular-schule/angular-cli-ghpages/releases) section.
 
-With this latest release, **GitHub Actions** becomes a first citizen alongside Travis CI and CircleCi. The token `GITHUB_TOKEN` is now supported. Learn everything you need to know in the following article.
+**GitHub Actions** is now a first citizen alongside Travis CI and CircleCi. The token `GITHUB_TOKEN` is now supported. Learn everything you need to know in the following article.
 
 [![Banner](https://angular-schule.github.io/website-articles/blog/2020-01-everything-github/everything-github.png)](https://angular.schule/blog/2020-01-everything-github)
 
@@ -49,7 +49,7 @@ In this article we show several tools from the GitHub universe to launch a websi
 This command has the following prerequisites:
 
 - Git 1.9 or higher (execute `git --version` to check your version)
-- Angular project created via [Angular CLI](https://github.com/angular/angular-cli) v8.3.0 or greater (execute `ng update @angular/cli @angular/core` to upgrade your project if necessary)
+- Angular project created via [Angular CLI](https://github.com/angular/angular-cli) v9.0.0 or greater (execute `ng update` to upgrade your project if necessary)
 - older Angular projects can still use the standalone program. See the documentation at [README_standalone](https://github.com/angular-schule/angular-cli-ghpages/blob/master/docs/README_standalone.md).
 
 ## 🚀 Quick Start (local development) <a name="quickstart-local"></a>
@@ -57,7 +57,7 @@ This command has the following prerequisites:
 This quick start assumes that you are starting from scratch.
 If you already have an existing Angular project on GitHub, skip step 1 and 2.
 
-1. Install the latest version of the Angular CLI (v8.3.0 or greater) globally
+1. Install the latest version of the Angular CLI globally
    and create a new Angular project.
 
    ```sh

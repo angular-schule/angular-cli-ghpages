@@ -27,15 +27,19 @@ This may be useful when you want to try the latest non-published version of this
 
 Follow the instructions for [checking and updating the Angular CLI version](#angular-cli) and then link the package.
 
-### 1. Angular CLI
+### 1. Optional: Latest Angular version
 
-1. Install the next version of the Angular CLI.
+This builder requires the method `getTargetOptions()` from the Angular DevKit which was introduced [here](https://github.com/angular/angular-cli/pull/13825/files).
+All Angular projects with Angular 9 and greater are supposed to be compatible. (Actually it works with some versions of 8.x too, but you want to be up to date anyway, don't you?)
+Execute the next three steps, if your test-project is still older.
+
+1. Install the latest version of the Angular CLI.
 
    ```sh
    npm install -g @angular/cli
    ```
 
-2. Run `ng version`, make sure you have installed Angular CLI v8.3.0 or greater.
+2. Run `ng version`, to make sure you have installed Angular v9.0.0 or greater.
 
 3. Update your existing project using the command:
 

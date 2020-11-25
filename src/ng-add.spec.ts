@@ -129,7 +129,7 @@ describe('ng-add', () => {
 
 function generateAngularJson() {
   return {
-    defaultProject: PROJECT_NAME,
+    defaultProject: PROJECT_NAME as string | undefined,
     projects: {
       [PROJECT_NAME]: {
         projectType: 'application',

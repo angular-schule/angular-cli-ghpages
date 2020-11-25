@@ -6,6 +6,7 @@ import {
   Target
 } from '@angular-devkit/architect/src';
 import { JsonObject, logging } from '@angular-devkit/core';
+import { BuildTarget } from 'interfaces';
 
 import deploy from './actions';
 
@@ -13,13 +14,16 @@ let context: BuilderContext;
 const mockEngine = { run: (_: string, __: any, __2: any) => Promise.resolve() };
 
 const PROJECT = 'pirojok-project';
+const BUILD_TARGET: BuildTarget = {
+  name: `${PROJECT}:build:production`
+};
 
 describe('Deploy Angular apps', () => {
   beforeEach(() => initMocks());
 
   it('should invoke the builder', async () => {
     const spy = spyOn(context, 'scheduleTarget').and.callThrough();
-    await deploy(mockEngine, context, 'host', {});
+    await deploy(mockEngine, context, BUILD_TARGET, {});
 
     expect(spy).toHaveBeenCalledWith(
       {
@@ -33,7 +37,7 @@ describe('Deploy Angular apps', () => {
 
   it('should invoke the builder with the baseHref', async () => {
     const spy = spyOn(context, 'scheduleTarget').and.callThrough();
-    await deploy(mockEngine, context, 'host', { baseHref: '/folder' });
+    await deploy(mockEngine, context, BUILD_TARGET, { baseHref: '/folder' });
 
     expect(spy).toHaveBeenCalledWith(
       {
@@ -47,16 +51,16 @@ describe('Deploy Angular apps', () => {
 
   it('should invoke engine.run', async () => {
     const spy = spyOn(mockEngine, 'run').and.callThrough();
-    await deploy(mockEngine, context, 'host', {});
+    await deploy(mockEngine, context, BUILD_TARGET, {});
 
-    expect(spy).toHaveBeenCalledWith('host', {}, context.logger);
+    expect(spy).toHaveBeenCalledWith('dist/some-folder', {}, context.logger);
   });
 
   describe('error handling', () => {
     it('throws if there is no target project', async () => {
       context.target = undefined;
       try {
-        await deploy(mockEngine, context, 'host', {});
+        await deploy(mockEngine, context, BUILD_TARGET, {});
         fail();
       } catch (e) {
         expect(e.message).toMatch(/Cannot execute the build target/);
@@ -73,7 +77,7 @@ describe('Deploy Angular apps', () => {
           result: Promise.resolve(createBuilderOutputMock(false))
         } as BuilderRun);
       try {
-        await deploy(mockEngine, context, 'host', {});
+        await deploy(mockEngine, context, BUILD_TARGET, {});
         fail();
       } catch (e) {
         expect(e.message).toEqual('Error while building the app.');
@@ -102,7 +106,10 @@ const initMocks = () => {
     validateOptions: _ => Promise.resolve({} as any),
     getBuilderNameForTarget: () => Promise.resolve(''),
     analytics: null as any,
-    getTargetOptions: (_: Target) => Promise.resolve({}),
+    getTargetOptions: (_: Target) =>
+      Promise.resolve({
+        outputPath: 'dist/some-folder'
+      }),
     reportProgress: (_: number, __?: number, ___?: string) => {},
     reportStatus: (_: string) => {},
     reportRunning: () => {},
@@ -112,7 +119,7 @@ const initMocks = () => {
       Promise.resolve({
         result: Promise.resolve(createBuilderOutputMock(true))
       } as BuilderRun)
-  };
+  } as any;
 };
 
 const createBuilderOutputMock = (success: boolean): BuilderOutput => {

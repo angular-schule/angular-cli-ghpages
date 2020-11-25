@@ -1,7 +1,7 @@
 import {
   BuilderContext,
   BuilderOutput,
-  createBuilder,
+  createBuilder
 } from '@angular-devkit/architect';
 
 import * as engine from '../engine/engine';
@@ -17,7 +17,7 @@ export default createBuilder(
     }
 
     const buildTarget = {
-      name: `${context.target.project}:build:production`,
+      name: options.buildTarget || `${context.target.project}:build:production`
     };
 
     try {

@@ -2,13 +2,13 @@ import { JsonParseMode, parseJson } from '@angular-devkit/core';
 import {
   SchematicContext,
   SchematicsException,
-  Tree,
+  Tree
 } from '@angular-devkit/schematics';
 import { Workspace } from './interfaces';
 
 function getWorkspace(host: Tree): { path: string; workspace: Workspace } {
   const possibleFiles = ['/angular.json', '/.angular.json'];
-  const path = possibleFiles.filter((path) => host.exists(path))[0];
+  const path = possibleFiles.filter(path => host.exists(path))[0];
 
   const configBuffer = host.read(path);
   if (configBuffer === null) {
@@ -25,7 +25,7 @@ function getWorkspace(host: Tree): { path: string; workspace: Workspace } {
 
   return {
     path,
-    workspace,
+    workspace
   };
 }
 interface NgAddOptions {
@@ -74,7 +74,7 @@ export const ngAdd = (options: NgAddOptions) => (
 
   project.architect['deploy'] = {
     builder: 'angular-cli-ghpages:deploy',
-    options: {},
+    options: {}
   };
 
   tree.overwrite(workspacePath, JSON.stringify(workspace, null, 2));

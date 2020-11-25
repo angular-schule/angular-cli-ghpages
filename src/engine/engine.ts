@@ -32,7 +32,7 @@ export async function run(
   await publishViaGhPages(ghpages, dir, options, logger);
 
   logger.info(
-    '🚀 Successfully published via angular-cli-ghpages! Have a nice day!'
+    '🌟 Successfully published via angular-cli-ghpages! Have a nice day!'
   );
 }
 
@@ -54,7 +54,7 @@ export async function prepareOptions(
     let debuglog = util.debuglog;
     util.debuglog = set => {
       if (set === 'gh-pages') {
-        return function() {
+        return function () {
           let message = util.format.apply(util, arguments);
           logger.info(message);
         };
@@ -259,7 +259,7 @@ async function publishViaGhPages(
     return;
   }
 
-  logger.info('👨‍🚀 Uploading via git, please wait...');
+  logger.info('🚀 Uploading via git, please wait...');
 
   // do NOT (!!) await ghPages.publish,
   // the promise is implemented in such a way that it always succeeds – even on errors!

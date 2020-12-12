@@ -1,4 +1,4 @@
-name: Build and test angular-cli-ghpages
+name: Build and test
 
 on: [push]
 
@@ -24,6 +24,7 @@ jobs:
           cd dist
           npm link
           cd ..
+          cd ..
           npm install -g @angular/cli@next
           ng new your-angular-project --defaults
           cd your-angular-project
@@ -35,6 +36,5 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          cd src
           cd your-angular-project
           ng deploy --no-silent --name="The Buildbot" --email="buildbot@angular2buch.de" --cname=angular-cli-ghpages.angular.schule

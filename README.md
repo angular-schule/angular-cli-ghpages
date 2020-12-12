@@ -260,7 +260,7 @@ Learn more about ["personal access tokens" here](https://help.github.com/article
 #### --message <a name="message"></a>
 
 - **optional**
-- Default: `Auto-generated commit` (string)
+- Default: `Auto-generated commit [ci skip]` (string)
 - Example: `ng deploy --message="What could possibly go wrong?"`
 
 The commit message **must be wrapped in quotes** if there are any spaces in the text.  

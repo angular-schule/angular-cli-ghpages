@@ -25,3 +25,6 @@ dist
 /src/mini-testdrive/404.html
 /src/mini-testdrive/CNAME
 .angulardoc.json
+
+# Coverage directory used by tools like istanbul
+coverage

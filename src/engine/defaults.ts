@@ -1,7 +1,7 @@
 export const defaults = {
   dir: 'dist',
   repo: undefined,
-  message: 'Auto-generated commit',
+  message: 'Auto-generated commit [ci skip]',
   branch: 'gh-pages',
   name: undefined,
   email: undefined,

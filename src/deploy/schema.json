@@ -23,7 +23,7 @@
     "message": {
       "type": "string",
       "description": "The commit message.",
-      "default": "Auto-generated commit"
+      "default": "Auto-generated commit [ci skip]"
     },
     "branch": {
       "type": "string",

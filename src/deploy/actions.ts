@@ -27,9 +27,6 @@ export default async function deploy(
       throw new Error('Cannot execute the build target');
     }
 
-    // baseHref (from @angular-devkit/build-angular:browser)
-    // can be overriden here directly from the deployment builder options,
-    // since this feature is the most important switch when deploying the github
     const overrides = {
       ...(options.baseHref && { baseHref: options.baseHref })
     };

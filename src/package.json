@@ -1,6 +1,6 @@
 {
   "name": "angular-cli-ghpages",
-  "version": "1.0.0-rc.1",
+  "version": "1.0.0-rc.2",
   "description": "Deploy your Angular app to GitHub pages directly from the Angular CLI. (ng deploy)",
   "main": "index.js",
   "bin": {

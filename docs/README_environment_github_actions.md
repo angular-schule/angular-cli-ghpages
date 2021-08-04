@@ -28,7 +28,7 @@ More info can be found here:
 ### Setup Github Action Flow
 
 1. Open up your Github repo.
-2. Go to **Actions** amd click on **Set up workflow yourself**.
+2. Go to **Actions** and click on **Set up workflow yourself**.
 
     ![setup workflow](img/setup-workflow.png)
 

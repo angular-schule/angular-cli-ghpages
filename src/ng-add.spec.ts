@@ -2,10 +2,9 @@ import { SchematicContext, Tree } from '@angular-devkit/schematics';
 
 import { ngAdd } from './ng-add';
 
-const PROJECT_NAME = 'pie-ka-chu';
-const PROJECT_ROOT = 'pirojok';
-
-const OTHER_PROJECT_NAME = 'pi-catch-you';
+const PROJECT_NAME = 'THEPROJECT';
+const PROJECT_ROOT = 'PROJECTROOT';
+const OTHER_PROJECT_NAME = 'OTHERPROJECT';
 
 describe('ng-add', () => {
   describe('generating files', () => {
@@ -17,118 +16,124 @@ describe('ng-add', () => {
     });
 
     it('generates new files if starting from scratch', async () => {
-      const result = ngAdd({
+      const result = await ngAdd({
         project: PROJECT_NAME
       })(tree, {} as SchematicContext);
 
-      expect(result.read('angular.json')!.toString()).toEqual(
-        initialAngularJson
-      );
+      const actual = result.read('angular.json')!.toString();
+      expect(prettifyJSON(actual)).toMatchSnapshot();
     });
 
     it('overrides existing files', async () => {
-      const tempTree = ngAdd({
+      const tempTree = await ngAdd({
         project: PROJECT_NAME
       })(tree, {} as SchematicContext);
 
-      const result = ngAdd({
+      const result = await ngAdd({
         project: OTHER_PROJECT_NAME
       })(tempTree, {} as SchematicContext);
 
       const actual = result.read('angular.json')!.toString();
 
-      expect(actual).toEqual(overwriteAngularJson);
+      expect(prettifyJSON(actual)).toMatchSnapshot();
     });
   });
 
   describe('error handling', () => {
-    it('fails if project not defined', () => {
+    it('should fail if project not defined', async () => {
       const tree = Tree.empty();
       const angularJSON = generateAngularJson();
       delete angularJSON.defaultProject;
       tree.create('angular.json', JSON.stringify(angularJSON));
 
-      expect(() =>
+      await expect(
         ngAdd({
           project: ''
         })(tree, {} as SchematicContext)
-      ).toThrowError(
+      ).rejects.toThrowError(
         'No Angular project selected and no default project in the workspace'
       );
     });
 
-    it('Should throw if angular.json not found', async () => {
-      expect(() =>
+    it('should throw if angular.json not found', async () => {
+      await expect(
         ngAdd({
           project: PROJECT_NAME
         })(Tree.empty(), {} as SchematicContext)
-      ).toThrowError('Could not find angular.json');
+      ).rejects.toThrowError('Unable to determine format for workspace path.');
     });
 
-    it('Should throw if angular.json can not be parsed', async () => {
+    it('should throw if angular.json can not be parsed', async () => {
       const tree = Tree.empty();
       tree.create('angular.json', 'hi');
 
-      expect(() =>
+      await expect(
         ngAdd({
           project: PROJECT_NAME
         })(tree, {} as SchematicContext)
-      ).toThrowError('Could not parse angular.json');
+      ).rejects.toThrowError('Invalid JSON character: "h" at 0:0.');
     });
 
-    it('Should throw if specified project does not exist ', async () => {
+    it('should throw if specified project does not exist', async () => {
       const tree = Tree.empty();
-      tree.create('angular.json', JSON.stringify({ projects: {} }));
+      tree.create('angular.json', JSON.stringify({ version: 1, projects: {} }));
 
-      expect(() =>
+      await expect(
         ngAdd({
           project: PROJECT_NAME
         })(tree, {} as SchematicContext)
-      ).toThrowError(
+      ).rejects.toThrowError(
         'The specified Angular project is not defined in this workspace'
       );
     });
 
-    it('Should throw if specified project is not application', async () => {
+    it('should throw if specified project is not application', async () => {
       const tree = Tree.empty();
       tree.create(
         'angular.json',
         JSON.stringify({
-          projects: { [PROJECT_NAME]: { projectType: 'pokemon' } }
+          version: 1,
+          projects: { [PROJECT_NAME]: { projectType: 'invalid' } }
         })
       );
 
-      expect(() =>
+      await expect(
         ngAdd({
           project: PROJECT_NAME
         })(tree, {} as SchematicContext)
-      ).toThrowError(
+      ).rejects.toThrowError(
         'Deploy requires an Angular project type of "application" in angular.json'
       );
     });
 
-    it('Should throw if app does not have architect configured', async () => {
+    it('should throw if app does not have architect configured', async () => {
       const tree = Tree.empty();
       tree.create(
         'angular.json',
         JSON.stringify({
+          version: 1,
           projects: { [PROJECT_NAME]: { projectType: 'application' } }
         })
       );
 
-      expect(() =>
+      await expect(
         ngAdd({
           project: PROJECT_NAME
         })(tree, {} as SchematicContext)
-      ).toThrowError(
-        'Cannot read the output path (architect.build.options.outputPath) of the Angular project "pie-ka-chu" in angular.json'
+      ).rejects.toThrowError(
+        'Cannot read the output path (architect.build.options.outputPath) of the Angular project "THEPROJECT" in angular.json'
       );
     });
   });
 });
 
+function prettifyJSON(json: string) {
+  return JSON.stringify(JSON.parse(json), null, 2);
+}
+
 function generateAngularJson() {
   return {
+    version: 1,
     defaultProject: PROJECT_NAME as string | undefined,
     projects: {
       [PROJECT_NAME]: {
@@ -137,7 +142,7 @@ function generateAngularJson() {
         architect: {
           build: {
             options: {
-              outputPath: 'dist/ikachu'
+              outputPath: 'dist/' + PROJECT_NAME
             }
           }
         }
@@ -148,7 +153,7 @@ function generateAngularJson() {
         architect: {
           build: {
             options: {
-              outputPath: 'dist/ikachu'
+              outputPath: 'dist/' + OTHER_PROJECT_NAME
             }
           }
         }
@@ -156,71 +161,3 @@ function generateAngularJson() {
     }
   };
 }
-
-const initialAngularJson = `{
-  "defaultProject": "pie-ka-chu",
-  "projects": {
-    "pie-ka-chu": {
-      "projectType": "application",
-      "root": "pirojok",
-      "architect": {
-        "build": {
-          "options": {
-            "outputPath": "dist/ikachu"
-          }
-        },
-        "deploy": {
-          \"builder\": \"angular-cli-ghpages:deploy\",
-          "options": {}
-        }
-      }
-    },
-    "pi-catch-you": {
-      "projectType": "application",
-      "root": "pirojok",
-      "architect": {
-        "build": {
-          "options": {
-            "outputPath": "dist/ikachu"
-          }
-        }
-      }
-    }
-  }
-}`;
-
-const overwriteAngularJson = `{
-  "defaultProject": "pie-ka-chu",
-  "projects": {
-    "pie-ka-chu": {
-      "projectType": "application",
-      "root": "pirojok",
-      "architect": {
-        "build": {
-          "options": {
-            "outputPath": "dist/ikachu"
-          }
-        },
-        "deploy": {
-          \"builder\": \"angular-cli-ghpages:deploy\",
-          "options": {}
-        }
-      }
-    },
-    "pi-catch-you": {
-      "projectType": "application",
-      "root": "pirojok",
-      "architect": {
-        "build": {
-          "options": {
-            "outputPath": "dist/ikachu"
-          }
-        },
-        "deploy": {
-          "builder": "angular-cli-ghpages:deploy",
-          "options": {}
-        }
-      }
-    }
-  }
-}`;

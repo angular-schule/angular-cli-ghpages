@@ -1,46 +1,25 @@
-import { JsonParseMode, parseJson } from '@angular-devkit/core';
+import { workspaces } from '@angular-devkit/core';
 import {
   SchematicContext,
   SchematicsException,
   Tree
 } from '@angular-devkit/schematics';
-import { Workspace } from './interfaces';
+import { createHost } from './utils';
 
-function getWorkspace(host: Tree): { path: string; workspace: Workspace } {
-  const possibleFiles = ['/angular.json', '/.angular.json'];
-  const path = possibleFiles.filter(path => host.exists(path))[0];
-
-  const configBuffer = host.read(path);
-  if (configBuffer === null) {
-    throw new SchematicsException(`Could not find angular.json`);
-  }
-  const content = configBuffer.toString();
-
-  let workspace: Workspace;
-  try {
-    workspace = (parseJson(content, JsonParseMode.Loose) as {}) as Workspace;
-  } catch (e) {
-    throw new SchematicsException(`Could not parse angular.json: ` + e.message);
-  }
-
-  return {
-    path,
-    workspace
-  };
-}
 interface NgAddOptions {
   project: string;
 }
 
-export const ngAdd = (options: NgAddOptions) => (
+export const ngAdd = (options: NgAddOptions) => async (
   tree: Tree,
   _context: SchematicContext
 ) => {
-  const { path: workspacePath, workspace } = getWorkspace(tree);
+  const host = createHost(tree);
+  const { workspace } = await workspaces.readWorkspace('/', host);
 
   if (!options.project) {
-    if (workspace.defaultProject) {
-      options.project = workspace.defaultProject;
+    if (workspace.extensions.defaultProject) {
+      options.project = workspace.extensions.defaultProject as string;
     } else {
       throw new SchematicsException(
         'No Angular project selected and no default project in the workspace'
@@ -48,35 +27,31 @@ export const ngAdd = (options: NgAddOptions) => (
     }
   }
 
-  const project = workspace.projects[options.project];
+  const project = workspace.projects.get(options.project);
   if (!project) {
     throw new SchematicsException(
       'The specified Angular project is not defined in this workspace'
     );
   }
 
-  if (project.projectType !== 'application') {
+  if (project.extensions.projectType !== 'application') {
     throw new SchematicsException(
       `Deploy requires an Angular project type of "application" in angular.json`
     );
   }
 
-  if (
-    !project.architect ||
-    !project.architect.build ||
-    !project.architect.build.options ||
-    !project.architect.build.options.outputPath
-  ) {
+  if (!project.targets.get('build')?.options?.outputPath) {
     throw new SchematicsException(
       `Cannot read the output path (architect.build.options.outputPath) of the Angular project "${options.project}" in angular.json`
     );
   }
 
-  project.architect['deploy'] = {
+  project.targets.add({
+    name: 'deploy',
     builder: 'angular-cli-ghpages:deploy',
     options: {}
-  };
+  });
 
-  tree.overwrite(workspacePath, JSON.stringify(workspace, null, 2));
+  workspaces.writeWorkspace(workspace, host);
   return tree;
 };

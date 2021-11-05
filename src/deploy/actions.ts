@@ -2,7 +2,7 @@ import {
   BuilderContext,
   targetFromTargetString
 } from '@angular-devkit/architect';
-import { json, logging } from '@angular-devkit/core';
+import { logging } from '@angular-devkit/core';
 
 import { Schema } from './schema';
 import { BuildTarget } from '../interfaces';

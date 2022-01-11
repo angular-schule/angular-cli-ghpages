@@ -365,7 +365,7 @@ To avoid all these command-line cmd options, you can write down your configurati
 - cname
 - dryRun
 
-A list of all avaiable options is also available [here](https://github.com/angular-schule/angular-cli-ghpages/blob/master/src/deploy/schema.json).
+A list of all available options is also available [here](https://github.com/angular-schule/angular-cli-ghpages/blob/master/src/deploy/schema.json).
 
 Example:
 

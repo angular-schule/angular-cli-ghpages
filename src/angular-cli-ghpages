@@ -60,6 +60,15 @@ commander
     'For testing: Run through without making any changes.',
     defaults.dryRun
   )
+  .option(
+    '--dest <path>',
+    'The destination folder within the destination branch.',
+    defaults.dest
+  ).option(
+    '-A, --add',
+    'Only add, and never remove existing files.',
+    defaults.add
+  )
   .parse(process.argv);
 
 var consoleLogger = {

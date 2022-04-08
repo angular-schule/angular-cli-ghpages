@@ -1,5 +1,6 @@
 export const defaults = {
   dir: 'dist',
+  dest: '.',
   repo: undefined,
   message: 'Auto-generated commit [ci skip]',
   branch: 'gh-pages',
@@ -10,5 +11,6 @@ export const defaults = {
   cname: undefined,
   dryRun: false,
   remote: 'origin',
-  git: 'git'
+  git: 'git',
+  add: false
 };

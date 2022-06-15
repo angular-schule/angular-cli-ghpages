@@ -3,7 +3,6 @@
 exports[`ng-add generating files generates new files if starting from scratch 1`] = `
 "{
   \\"version\\": 1,
-  \\"defaultProject\\": \\"THEPROJECT\\",
   \\"projects\\": {
     \\"THEPROJECT\\": {
       \\"projectType\\": \\"application\\",
@@ -37,7 +36,6 @@ exports[`ng-add generating files generates new files if starting from scratch 1`
 exports[`ng-add generating files overrides existing files 1`] = `
 "{
   \\"version\\": 1,
-  \\"defaultProject\\": \\"THEPROJECT\\",
   \\"projects\\": {
     \\"THEPROJECT\\": {
       \\"projectType\\": \\"application\\",

@@ -39,27 +39,77 @@ describe('ng-add', () => {
     });
   });
 
-  describe('error handling', () => {
-    it('should fail if project not defined', async () => {
+  describe('project selection', () => {
+    it('should select the default project when not explicitly given (for compatibility!)', async () => {
       const tree = Tree.empty();
       const angularJSON = generateAngularJson();
-      delete angularJSON.defaultProject;
+
+      (angularJSON as any).defaultProject = PROJECT_NAME; // explicitly set default project
+      tree.create('angular.json', JSON.stringify(angularJSON));
+
+      const resultTree = await ngAdd({ project: '' })(
+        tree,
+        {} as SchematicContext
+      );
+
+      const resultConfig = readJSONFromTree(resultTree, 'angular.json');
+      expect(resultConfig.projects[PROJECT_NAME].architect.deploy).toBeTruthy();
+      expect(
+        resultConfig.projects[OTHER_PROJECT_NAME].architect.deploy
+      ).toBeFalsy();
+    });
+
+    it('should select the explicitly defined project', async () => {
+      const tree = Tree.empty();
+      const angularJSON = generateAngularJson();
+      tree.create('angular.json', JSON.stringify(angularJSON));
+
+      const resultTree = await ngAdd({ project: OTHER_PROJECT_NAME })(
+        tree,
+        {} as SchematicContext
+      );
+
+      const resultConfig = readJSONFromTree(resultTree, 'angular.json');
+      expect(
+        resultConfig.projects[OTHER_PROJECT_NAME].architect.deploy
+      ).toBeTruthy();
+      expect(resultConfig.projects[PROJECT_NAME].architect.deploy).toBeFalsy();
+    });
+
+    it('should select the first project if there is only one', async () => {
+      const tree = Tree.empty();
+      const angularJSON = generateAngularJson();
+      delete (angularJSON as any).projects[PROJECT_NAME]; // delete one project so that one is left
+      tree.create('angular.json', JSON.stringify(angularJSON));
+
+      const resultTree = await ngAdd({ project: '' })(
+        tree,
+        {} as SchematicContext
+      );
+
+      const resultConfig = readJSONFromTree(resultTree, 'angular.json');
+      expect(
+        resultConfig.projects[OTHER_PROJECT_NAME].architect.deploy
+      ).toBeTruthy();
+    });
+  });
+
+  describe('error handling', () => {
+    it('should fail if there are multiple projects in workspace and project is not explicitly defined', async () => {
+      const tree = Tree.empty();
+      const angularJSON = generateAngularJson();
       tree.create('angular.json', JSON.stringify(angularJSON));
 
       await expect(
-        ngAdd({
-          project: ''
-        })(tree, {} as SchematicContext)
+        ngAdd({ project: '' })(tree, {} as SchematicContext)
       ).rejects.toThrowError(
-        'No Angular project selected and no default project in the workspace'
+        'There is more than one project in your workspace. Please select it manually by using the --project argument.'
       );
     });
 
     it('should throw if angular.json not found', async () => {
       await expect(
-        ngAdd({
-          project: PROJECT_NAME
-        })(Tree.empty(), {} as SchematicContext)
+        ngAdd({ project: PROJECT_NAME })(Tree.empty(), {} as SchematicContext)
       ).rejects.toThrowError('Unable to determine format for workspace path.');
     });
 
@@ -68,9 +118,7 @@ describe('ng-add', () => {
       tree.create('angular.json', 'hi');
 
       await expect(
-        ngAdd({
-          project: PROJECT_NAME
-        })(tree, {} as SchematicContext)
+        ngAdd({ project: PROJECT_NAME })(tree, {} as SchematicContext)
       ).rejects.toThrowError('Invalid JSON character: "h" at 0:0.');
     });
 
@@ -79,9 +127,7 @@ describe('ng-add', () => {
       tree.create('angular.json', JSON.stringify({ version: 1, projects: {} }));
 
       await expect(
-        ngAdd({
-          project: PROJECT_NAME
-        })(tree, {} as SchematicContext)
+        ngAdd({ project: PROJECT_NAME })(tree, {} as SchematicContext)
       ).rejects.toThrowError(
         'The specified Angular project is not defined in this workspace'
       );
@@ -98,9 +144,7 @@ describe('ng-add', () => {
       );
 
       await expect(
-        ngAdd({
-          project: PROJECT_NAME
-        })(tree, {} as SchematicContext)
+        ngAdd({ project: PROJECT_NAME })(tree, {} as SchematicContext)
       ).rejects.toThrowError(
         'Deploy requires an Angular project type of "application" in angular.json'
       );
@@ -131,10 +175,13 @@ function prettifyJSON(json: string) {
   return JSON.stringify(JSON.parse(json), null, 2);
 }
 
+function readJSONFromTree(tree: Tree, file: string) {
+  return JSON.parse(tree.read(file)!.toString());
+}
+
 function generateAngularJson() {
   return {
     version: 1,
-    defaultProject: PROJECT_NAME as string | undefined,
     projects: {
       [PROJECT_NAME]: {
         projectType: 'application',

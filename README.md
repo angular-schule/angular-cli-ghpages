@@ -5,7 +5,7 @@
 [![GitHub Actions](https://github.com/angular-schule/angular-cli-ghpages/actions/workflows/main.yml/badge.svg)](https://github.com/angular-schule/angular-cli-ghpages/actions/workflows/main.yml)
 [![The MIT License](https://img.shields.io/badge/license-MIT-orange.svg?color=blue&style=flat-square)](http://opensource.org/licenses/MIT)
 
-**Deploy your Angular app to GitHub pages directly from the Angular CLI! 🚀**
+**Deploy your Angular app to GitHub Pages or any other Git repo directly from the Angular CLI! 🚀**
 
 ![Screenshot](docs/img/angular-cli-ghpages-deploy.gif)
 
@@ -14,8 +14,9 @@
 1. [📖 Changelog](#changelog)
 2. [⚠️ Prerequisites](#prerequisites)
 3. [🚀 Quick Start (local development)](#quickstart-local)
-4. [🚀 Continuous Delivery](#continuous-delivery)
-5. [📦 Options](#options)
+4. [⚙️ Installation](#installation)
+5. [🚀 Continuous Delivery](#continuous-delivery)
+6. [📦 Deployment Options](#options)
    - [--base-href](#base-href)
    - [--build-target](#build-target)
    - [--no-build](#no-build)
@@ -27,9 +28,9 @@
    - [--no-dotfiles](#no-dotfiles)
    - [--cname](#cname)
    - [--dry-run](#dry-run)
-6. [📁 Configuration File](#configuration-file)
-7. [🌍 Environments](#environments)
-8. [⁉️ FAQ](#faq)
+7. [📁 Configuration File](#configuration-file)
+8. [🌍 Environments](#environments)
+9. [⁉️ FAQ](#faq)
 
 <hr>
 
@@ -63,14 +64,12 @@ If you use the old syntax, you will probably receive the following error:
 
 **[Everything GitHub: Continuous Integration, Deployment and Hosting for your Angular App](https://angular.schule/blog/2020-01-everything-github)**
 
-
-
 ## ⚠️ Prerequisites <a name="prerequisites"></a>
 
 This command has the following prerequisites:
 
 - Git 1.9 or higher (execute `git --version` to check your version)
-- Angular project created via [Angular CLI](https://github.com/angular/angular-cli) v9.0.0 or greater (execute `ng update` to upgrade your project if necessary)
+- Angular project created via [Angular CLI](https://github.com/angular/angular-cli) v9.0.0 or greater
 - older Angular projects can still use the standalone program. See the documentation at [README_standalone](https://github.com/angular-schule/angular-cli-ghpages/blob/master/docs/README_standalone.md).
 
 ## 🚀 Quick Start (local development) <a name="quickstart-local"></a>
@@ -101,7 +100,7 @@ If you already have an existing Angular project on GitHub, skip step 1 and 2.
    - Please enter the URL `https://github.com/<username>/<repositoryname>.git` into your browser – you should see your existing repository on GitHub.
    - Please double-check that you have the necessary rights to make changes to the given project!
 
-3. Add `angular-cli-ghpages` to your project.
+3. Add `angular-cli-ghpages` to your project. For details, see the [installation section](#installation).
 
    ```sh
    ng add angular-cli-ghpages
@@ -124,6 +123,24 @@ If you already have an existing Angular project on GitHub, skip step 1 and 2.
 
 5. Your project should be available at `https://<username>.github.io/<repositoryname>`.  
    Learn more about GitHub pages on the [official website](https://pages.github.com/).
+
+## ⚙️ Installation <a name="installation"></a>
+
+`angular-cli-ghpages` can be installed via `ng add`.
+This will install the NPM package and add the necessary `deploy` configuration to your `angular.json` file.
+
+```sh
+ng add angular-cli-ghpages
+```
+
+The `deploy` config will be added for the specified `defaultProject`.
+If there is no `defaultProject` set and there is only one project in your workspace, this project will be used.
+
+If you have multiple projects in one workspace, you can manually define the project name:
+
+```sh
+ng add angular-cli-ghpages --project MYPROJECTNAME
+```
 
 ## 🚀 Continuous Delivery <a name="continuous-delivery"></a>
 
@@ -157,7 +174,7 @@ ng deploy --repo=https://github.com/<username>/<repositoryname>.git --name="Your
 >
 > The `GITHUB_TOKEN` (installation access token) will only trigger a release of a new website if the action runs in a private repository. In a public repo, a commit is generated, but the site does not change. See this [GitHub Community post](https://github.community/t5/GitHub-Actions/Github-action-not-triggering-gh-pages-upon-push/m-p/26869) for more info. If your repo is public, you must still use the `GH_TOKEN` (personal access token).
 
-## 📦 Options <a name="options"></a>
+## 📦 Deployment Options <a name="options"></a>
 
 #### --base-href <a name="base-href"></a>
 

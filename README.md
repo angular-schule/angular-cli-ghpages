@@ -59,13 +59,11 @@ If you use the old syntax, you will probably receive the following error:
 
 <br>
 
-**🐙 GitHub Actions** is now properly supported alongside Travis CI and CircleCi. The token `GITHUB_TOKEN` is also supported. Learn everything you need to know in the following article.
+**🐙 GitHub Actions** is now properly supported alongside Travis CI and CircleCi. The token `GITHUB_TOKEN` is also supported. Learn everything you need to know in the following article:
 
-[![Banner](https://angular-schule.github.io/website-articles/blog/2020-01-everything-github/everything-github.png)](https://angular.schule/blog/2020-01-everything-github)
+**[Everything GitHub: Continuous Integration, Deployment and Hosting for your Angular App](https://angular.schule/blog/2020-01-everything-github)**
 
-**Everything GitHub: Continuous Integration, Deployment and Hosting for your Angular App**
 
-In this article we show several tools from the GitHub universe to launch a website with Angular. We will establish a professional pipeline, including version management, continuous deployment and web hosting. Best of all, for public repositories, this will not cost you a single cent! [Read more...](https://angular.schule/blog/2020-01-everything-github)
 
 ## ⚠️ Prerequisites <a name="prerequisites"></a>
 

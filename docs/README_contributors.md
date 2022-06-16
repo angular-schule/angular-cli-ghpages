@@ -101,6 +101,8 @@ Once you have completed the previous steps to `npm link` the local copy of `angu
 
    ```sh
    ng add angular-cli-ghpages
+   # OR alternatively
+   ng generate angular-cli-ghpages:ng-add
    ```
 
 4. You can now deploy your angular app to GitHub pages.

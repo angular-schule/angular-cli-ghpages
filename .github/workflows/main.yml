@@ -18,7 +18,7 @@ jobs:
       - name: Prepare
         run: |
           cd src
-          npm install --silent
+          npm install
           npm run build
           npm run test
           cd dist

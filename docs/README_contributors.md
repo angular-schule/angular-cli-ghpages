@@ -182,7 +182,7 @@ cd angular-cli-ghpages/src
 npm run prettier
 npm run build
 npm run test
-npm publish dist
+npm run publish-to-npm
 npm dist-tag add angular-cli-ghpages@0.6.0-rc.0 next
 ```
 

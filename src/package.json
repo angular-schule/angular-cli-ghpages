@@ -1,6 +1,6 @@
 {
   "name": "angular-cli-ghpages",
-  "version": "1.0.1",
+  "version": "1.0.3",
   "description": "Deploy your Angular app to GitHub pages directly from the Angular CLI. (ng deploy)",
   "main": "index.js",
   "bin": {
@@ -12,7 +12,8 @@
     "build": "tsc -p tsconfig.build.json",
     "postbuild": "copyfiles builders.json collection.json ng-add-schema.json package.json angular-cli-ghpages deploy/schema.json dist && copyfiles ../README.md dist/README.md",
     "test": "jest",
-    "prettier": "prettier --write ."
+    "prettier": "prettier --write .",
+    "publish-to-npm": "npm run build && cd dist && npm publish"
   },
   "schematics": "./collection.json",
   "builders": "./builders.json",

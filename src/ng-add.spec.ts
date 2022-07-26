@@ -139,7 +139,9 @@ describe('ng-add', () => {
         'angular.json',
         JSON.stringify({
           version: 1,
-          projects: { [PROJECT_NAME]: { projectType: 'invalid' } }
+          projects: {
+            [PROJECT_NAME]: { projectType: 'invalid', root: PROJECT_NAME }
+          }
         })
       );
 
@@ -156,7 +158,9 @@ describe('ng-add', () => {
         'angular.json',
         JSON.stringify({
           version: 1,
-          projects: { [PROJECT_NAME]: { projectType: 'application' } }
+          projects: {
+            [PROJECT_NAME]: { projectType: 'application', root: PROJECT_NAME }
+          }
         })
       );
 

@@ -119,7 +119,7 @@ describe('ng-add', () => {
 
       await expect(
         ngAdd({ project: PROJECT_NAME })(tree, {} as SchematicContext)
-      ).rejects.toThrowError('Invalid JSON character: "h" at 0:0.');
+      ).rejects.toThrowError('Invalid workspace file - expected JSON object.');
     });
 
     it('should throw if specified project does not exist', async () => {

@@ -269,7 +269,7 @@ async function publishViaGhPages(
         return reject(error);
       }
 
-      resolve();
+      resolve(undefined);
     });
   });
 }

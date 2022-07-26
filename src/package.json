@@ -1,6 +1,6 @@
 {
   "name": "angular-cli-ghpages",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Deploy your Angular app to GitHub pages directly from the Angular CLI. (ng deploy)",
   "main": "index.js",
   "bin": {
@@ -44,7 +44,8 @@
     "email": "johannes.hoppe@haushoppe-its.de"
   },
   "contributors": [
-    "Minko Gechev <mgechev@gmail.com>"
+    "Minko Gechev <mgechev@gmail.com>",
+    "Ferdinand Malcher <ferdinand@malcher.media>"
   ],
   "license": "MIT",
   "bugs": {
@@ -66,7 +67,7 @@
     "pretty-quick": "^3.1.0",
     "rimraf": "^3.0.2",
     "ts-jest": "^26.4.4",
-    "typescript": ">=4.0.0 <4.1.0"
+    "typescript": ">=4.2.3 <4.3.0"
   },
   "peerDependencies": {
     "@angular-devkit/architect": ">= 0.900 < 0.1500",

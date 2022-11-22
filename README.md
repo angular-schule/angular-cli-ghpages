@@ -432,7 +432,7 @@ Code released under the [MIT license](LICENSE).
 
 <img src="https://assets.angular.schule/logo-angular-schule.png" height="60">
 
-### &copy; 2017-2020 https://angular.schule
+### &copy; 2017-2022 https://angular.schule
 
 This project is made on top of [tschaub/gh-pages](https://github.com/tschaub/gh-pages).  
 Thank you very much for this great foundation!

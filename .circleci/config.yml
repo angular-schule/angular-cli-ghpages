@@ -9,7 +9,7 @@ jobs:
       NAME: angular-cli-ghpages
 
     docker:
-      - image: circleci/node:18-browsers
+      - image: cimg/node:18.12.1-browsers
 
     steps:
       - checkout

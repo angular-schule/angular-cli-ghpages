@@ -51,7 +51,7 @@
     "cname": {
       "type": "string",
       "description": "Generate a CNAME file for the specified domain.",
-      "default": false
+      "default": ""
     },
     "dryRun": {
       "type": "boolean",

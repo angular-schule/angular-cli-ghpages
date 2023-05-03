@@ -25,12 +25,11 @@ jobs:
       - run: cd src && npm run test
       - run: cd src/dist && sudo npm link
 
-      - run: sudo -E npm install -g @angular/cli@next
+      - run: sudo -E npm install -g @angular/cli
       - run: sudo -E ng new your-angular-project --defaults
       - run: cd your-angular-project && sudo -E npm link angular-cli-ghpages
       - run: cd your-angular-project && sudo -E ng add angular-cli-ghpages
       - run: cd your-angular-project && sudo -E ng deploy --repo="$GITHUB_ORG/$NAME.git" --name="$GITHUB_NAME" --email="$GITHUB_EMAIL" --cname=angular-cli-ghpages.angular.schule
-
 
 workflows:
   version: 2
@@ -40,4 +39,4 @@ workflows:
           filters:
             branches:
               only:
-                - master
+                - main

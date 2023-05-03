@@ -1,19 +1,18 @@
 name: Build and test
 
-on: [push]
+on:
+  push:
+    branches: [main]
 
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout
-        uses: actions/checkout@v2
-
-      - name: Use Node.js 14.x
-        uses: actions/setup-node@v1
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
         with:
-          node-version: 14.x
+          node-version: 18
 
       - name: Prepare
         run: |
@@ -25,7 +24,7 @@ jobs:
           npm link
           cd ..
           cd ..
-          npm install -g @angular/cli@next
+          npm install -g @angular/cli
           ng new your-angular-project --defaults
           cd your-angular-project
           npm link angular-cli-ghpages

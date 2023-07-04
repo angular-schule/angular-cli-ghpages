@@ -28,6 +28,11 @@ More info can be found here:
 ### Setup Github Action Flow
 
 1. Open up your Github repo.
+
+2. Go to **Settings** . Then on the side bar, go to **Actions** then **General**.
+
+3. Allow **Read and write permissions** under **Workflow permissions** .
+
 2. Go to **Actions** and click on **Set up workflow yourself**.
 
     ![setup workflow](img/setup-workflow.png)
@@ -45,23 +50,24 @@ More info can be found here:
     
         steps:
         - name: Checkout
-          uses: actions/checkout@v2
+          uses: actions/checkout@v3
     
-        - name: Use Node.js 10.x
-          uses: actions/setup-node@v1
+        - name: Use Node.js 16.x
+          uses: actions/setup-node@v3
           with:
-            node-version: 10.x
+            node-version: 16.x
+            cache: 'npm'
     
         - name: Prepare and deploy
           env:
             GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           run: |
             npm install
-            npm run ng -- deploy --base-href=/the-repositoryname/ --name="Displayed Username" --email="mail@example.org" --no-silent
+            npm run ng -- deploy --base-href=/the-repository-name/ --name="Displayed Username" --email="mail@example.org" --no-silent
     ```
 
 
-4. Make sure to replace **`/the-repositoryname/`**, **`Displayed Username`** and **`mail@example.org`** with correct values in above snippet.
+4. Make sure to replace **`/the-repository-name/`**, **`Displayed Username`** and **`mail@example.org`** with correct values in above snippet.
 5. You can also control when your workflows are triggered:
    - It can be helpful to not have your workflows run on every push to every branch in the repo.
      - For example, you can have your workflow run on push events to master and release branches:

@@ -1,6 +1,6 @@
 {
   "name": "angular-cli-ghpages",
-  "version": "1.0.6",
+  "version": "1.0.7",
   "description": "Deploy your Angular app to GitHub pages directly from the Angular CLI. (ng deploy)",
   "main": "index.js",
   "bin": {
@@ -54,7 +54,7 @@
   },
   "homepage": "https://github.com/angular-schule/angular-cli-ghpages/#readme",
   "devDependencies": {
-    "@angular-devkit/architect": ">= 0.900 < 0.1600",
+    "@angular-devkit/architect": ">= 0.900 < 0.1602.0",
     "@angular-devkit/core": "^9.0.0 || ^10.0.0 || ^11.0.0 || ^12.0.0 || ^13.0.0 || ^14.0.0 || ^15.0.0 || ^16.0.0",
     "@angular-devkit/schematics": "^9.0.0 || ^10.0.0 || ^11.0.0 || ^12.0.0 || ^13.0.0 || ^14.0.0 || ^15.0.0 || ^16.0.0",
     "@types/fs-extra": "^9.0.4",
@@ -71,7 +71,7 @@
     "typescript": ">=4.2.3 <4.3.0"
   },
   "peerDependencies": {
-    "@angular-devkit/architect": ">= 0.900 < 0.1600",
+    "@angular-devkit/architect": ">= 0.900 < 0.1602.0",
     "@angular-devkit/core": "^9.0.0 || ^10.0.0 || ^11.0.0 || ^12.0.0 || ^13.0.0 || ^14.0.0 || ^15.0.0 || ^16.0.0",
     "@angular-devkit/schematics": "^9.0.0 || ^10.0.0 || ^11.0.0 || ^12.0.0 || ^13.0.0 || ^14.0.0 || ^15.0.0 || ^16.0.0"
   },

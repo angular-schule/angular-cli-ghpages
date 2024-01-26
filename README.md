@@ -339,7 +339,7 @@ With `--no-dotfiles` files starting with `.` are ignored.
   - `ng deploy` – A `404.html` file is created by default.
   - `ng deploy --no-notfound` – No `404.html` file is created.
 
-By default a `404.html` file is created, because this is the only known workaround to avoid 404 error messages on GitHub pages.
+By default a `404.html` file is created, because this is the only known workaround to avoid 404 error messages on GitHub Pages.
 For Cloudflare Pages we highly recommend to disable the `404.html` file by setting this switch to true! see [#178](https://github.com/angular-schule/angular-cli-ghpages/issues/178)
 
 #### --no-nojekyll <a name="no-nojekyll"></a>

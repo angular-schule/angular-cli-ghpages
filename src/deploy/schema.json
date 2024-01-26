@@ -63,7 +63,7 @@
     },
     "noNojekyll": {
       "type": "boolean",
-      "description": "By default a .nojekyll file is created, because we assume you don't want to compile the build again with Jekyll. see #160",
+      "description": "By default a .nojekyll file is created, because we assume you don't want to compile the build again with Jekyll.",
       "default": false
     },
     "cname": {

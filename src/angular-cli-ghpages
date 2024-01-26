@@ -54,7 +54,7 @@ commander
   )
   .option(
     '--no-notfound',
-    'By default a 404.html file is created, because this is the only known workaround to avoid 404 error messages on GitHub pages. For Cloudflare Pages we highly recommend to disable the 404.html file by setting this switch to true!',
+    'By default a 404.html file is created, because this is the only known workaround to avoid 404 error messages on GitHub Pages. For Cloudflare Pages we highly recommend to disable the 404.html file by setting this switch to true!',
   )
   .option(
     '--no-nojekyll',

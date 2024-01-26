@@ -355,7 +355,7 @@ By default a `.nojekyll` file is created, because we assume you don't want to co
 **Explanation:**
 By creating such a file in the root of your pages repo, you will bypass the Jekyll static site generator on GitHub Pages.
 Static content is still delivered – even without Jekyll.
-But now the deplyoment will be a bit faster.
+But now the deployment will be a bit faster.
 This is also necessary if your site uses files or directories that start with **\_underscores** since Jekyll considers these to be special resources and does not copy them to the final site.
 The samme applies to `.txt` files in your assets folder, they will just disappear if Jekyll processes the build. see [#160](https://github.com/angular-schule/angular-cli-ghpages/issues/160)
 

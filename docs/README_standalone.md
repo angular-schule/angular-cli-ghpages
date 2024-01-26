@@ -68,7 +68,7 @@ npx angular-cli-ghpages --dir=www
 
 ## Extra
 
-For your convenience, the command will recognize the [environment variable](https://docs.travis-ci.com/user/environment-variables/#Defining-Variables-in-Repository-Settings) `GH_TOKEN` and will replace this pattern in the `--repo` string. Please **do NOT disable the silent mode** if you have any credentials in the repository URL! Read more about [Github tokens here](https://help.github.com/articles/creating-an-access-token-for-command-line-use/).
+For your convenience, the command will recognize the [environment variable](https://docs.travis-ci.com/user/environment-variables/#Defining-Variables-in-Repository-Settings) `GH_TOKEN` and will replace this pattern in the `--repo` string.
 
 In example, the following command runs [on our Travis-CI](https://travis-ci.org/angular-buch/book-monkey2):
 

@@ -245,7 +245,7 @@ async function createNojekyllFile(
     await fse.writeFile(nojekyllFile, '');
     logger.info('.nojekyll file created');
   } catch (err) {
-    throw new Error('.nojekyl file could not be created. ' + err.message);
+    throw new Error('.nojekyll file could not be created. ' + err.message);
   }
 }
 

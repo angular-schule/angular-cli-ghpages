@@ -77,7 +77,7 @@ You can also and modify your `angular.json` to archive the same:
 ```
 
 For your convenience, you can also use `prerenderTarget` (which adds the suffix `:prerender:production`).
-There is no support for `universalBuildTarget` or `serverTarget` because Github pages only supports static assets!
+There is no support for `universalBuildTarget` or `serverTarget` because Github Pages only supports static assets and no Server-Side Rendering!
 
 We will then try to deploy the `dist/test/browser` folder to Github pages.
 If this is not the folder that you want to serve, then you should specify the directory explicitly with the `--dir` option.

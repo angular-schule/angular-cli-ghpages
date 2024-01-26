@@ -84,7 +84,7 @@ If this is not the folder that you want to serve, you should explicitly specify 
 
 ```bash
 ng deploy --dir=dist/test/browser
-``````
+```
 
 This new build logic is a breaking change, therefore `angular-cli-ghpages` v2 only supports Angular 17 and higher.
 For previous versions of Angular, use `angular-cli-ghpages` v1.x.

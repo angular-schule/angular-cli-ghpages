@@ -27,13 +27,16 @@ export async function run(
   }
 
   await checkIfDistFolderExists(dir);
-  await createNotFoundPage(dir, options, logger);
+  await createNotFoundFile(dir, options, logger);
   await createCnameFile(dir, options, logger);
+  await createNojekyllFile(dir, options, logger);
   await publishViaGhPages(ghpages, dir, options, logger);
 
-  logger.info(
-    '🌟 Successfully published via angular-cli-ghpages! Have a nice day!'
-  );
+  if (!options.dryRun) {
+    logger.info(
+      '🌟 Successfully published via angular-cli-ghpages! Have a nice day!'
+    );
+  }
 }
 
 export async function prepareOptions(
@@ -45,23 +48,21 @@ export async function prepareOptions(
     ...origOptions
   };
 
-  if (origOptions.noSilent) {
-    options.silent = !origOptions.noSilent;
-
-    // monkeypatch util.debuglog to get all the extra information
-    // see https://stackoverflow.com/a/39129886
-    const util = require('util');
-    let debuglog = util.debuglog;
-    util.debuglog = set => {
-      if (set === 'gh-pages') {
-        return function () {
-          let message = util.format.apply(util, arguments);
-          logger.info(message);
-        };
-      }
-      return debuglog(set);
-    };
-  }
+  // this is the place where the old `noSilent` was enabled
+  // (which is now always enabled because gh-pages is NOT silent by default)
+  // monkeypatch util.debuglog to get all the extra information
+  // see https://stackoverflow.com/a/39129886
+  const util = require('util');
+  let debuglog = util.debuglog;
+  util.debuglog = set => {
+    if (set === 'gh-pages') {
+      return function () {
+        let message = util.format.apply(util, arguments);
+        logger.info(message);
+      };
+    }
+    return debuglog(set);
+  };
 
   if (origOptions.noDotfiles) {
     options.dotfiles = !origOptions.noDotfiles;
@@ -170,11 +171,15 @@ async function checkIfDistFolderExists(dir: string) {
   }
 }
 
-async function createNotFoundPage(
+async function createNotFoundFile(
   dir: string,
   options: Schema,
   logger: logging.LoggerApi
 ) {
+  if (options.noNotfound) {
+    return;
+  }
+
   if (options.dryRun) {
     logger.info('Dry-run / SKIPPED: copying of index.html to 404.html');
     return;
@@ -182,20 +187,15 @@ async function createNotFoundPage(
 
   // Note:
   // There is no guarantee that there will be an index.html file,
-  // as we may may specify a custom index file.
-  // TODO: respect setting in angular.json
+  // as we may may specify a custom index file or a different folder is going to be deployed.
   const indexHtml = path.join(dir, 'index.html');
-  const notFoundPage = path.join(dir, '404.html');
+  const notFoundFile = path.join(dir, '404.html');
 
   try {
-    return await fse.copy(indexHtml, notFoundPage);
+    await fse.copy(indexHtml, notFoundFile);
+    logger.info('404.html file created');
   } catch (err) {
-    logger.info(
-      'index.html could not be copied to 404.html. This does not look like an angular-cli project?!'
-    );
-    logger.info(
-      '(Hint: are you sure that you have setup the directory correctly?)'
-    );
+    logger.info('index.html could not be copied to 404.html. Proceeding without it.');
     logger.debug('Diagnostic info: ' + err.message);
     return;
   }
@@ -226,6 +226,29 @@ async function createCnameFile(
   }
 }
 
+async function createNojekyllFile(
+  dir: string,
+  options: Schema,
+  logger: logging.LoggerApi
+) {
+  if (options.noNojekyll) {
+    return;
+  }
+
+  const nojekyllFile = path.join(dir, '.nojekyll');
+  if (options.dryRun) {
+    logger.info('Dry-run / SKIPPED: creating an empty .nojekyll file');
+    return;
+  }
+
+  try {
+    await fse.writeFile(nojekyllFile, '');
+    logger.info('.nojekyll file created');
+  } catch (err) {
+    throw new Error('.nojekyll file could not be created. ' + err.message);
+  }
+}
+
 async function publishViaGhPages(
   ghPages: GHPages,
   dir: string,
@@ -237,20 +260,16 @@ async function publishViaGhPages(
       `Dry-run / SKIPPED: publishing folder "${dir}" with the following options: ` +
         JSON.stringify(
           {
-            dir: dir,
-            repo:
-              options.repo ||
-              'falsy: current working directory (which must be a git repo in this case) will be used to commit & push',
-            message: options.message,
-            branch: options.branch,
-            user:
-              options.user ||
-              'falsy: local or global git username & email properties will be taken',
-            silent:
-              options.silent || 'falsy: logging is in silent mode by default',
-            dotfiles:
-              options.dotfiles || 'falsy: dotfiles are included by default',
-            cname: options.cname || 'falsy: no CNAME file will be created'
+            dir,
+            repo:       options.repo       || 'falsy: current working directory (which must be a git repo in this case) will be used to commit & push',
+            message:    options.message,
+            branch:     options.branch,
+            name:       options.name       || 'falsy: local or global git username will be used',
+            email:      options.email      || 'falsy: local or global git user email will be used',
+            dotfiles:   options.dotfiles   || 'falsy: dotfiles are included by default',
+            noNotfound: options.noNotfound || 'falsy: a 404.html file will be created by default',
+            noNojekyll: options.noNojekyll || 'falsy: a .nojekyll file will be created by default',
+            cname:      options.cname      || 'falsy: no CNAME file will be created'
           },
           null,
           '  '

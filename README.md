@@ -1,11 +1,10 @@
 # angular-cli-ghpages
 
 [![NPM version][npm-image]][npm-url]
-[![CircleCI](https://circleci.com/gh/angular-schule/angular-cli-ghpages.svg?style=svg)](https://circleci.com/gh/angular-schule/angular-cli-ghpages)
 [![GitHub Actions](https://github.com/angular-schule/angular-cli-ghpages/actions/workflows/main.yml/badge.svg)](https://github.com/angular-schule/angular-cli-ghpages/actions/workflows/main.yml)
 [![The MIT License](https://img.shields.io/badge/license-MIT-orange.svg?color=blue&style=flat-square)](http://opensource.org/licenses/MIT)
 
-**Deploy your Angular app to GitHub Pages or any other Git repo directly from the Angular CLI! 🚀**
+**Deploy your Angular app to GitHub Pages, Cloudflare Pages or any other Git repo directly from the Angular CLI! 🚀**
 
 ![Screenshot](docs/img/angular-cli-ghpages-deploy.gif)
 
@@ -24,8 +23,9 @@
    - [--message](#message)
    - [--branch](#branch)
    - [--name & --email](#name)
-   - [--no-silent](#no-silent)
    - [--no-dotfiles](#no-dotfiles)
+   - [--no-notfound](#no-notfound)
+   - [--no-nojekyll](#no-nojekyll)
    - [--cname](#cname)
    - [--dry-run](#dry-run)
 7. [📁 Configuration File](#configuration-file)
@@ -38,39 +38,64 @@
 
 A detailed changelog is available in the [releases](https://github.com/angular-schule/angular-cli-ghpages/releases) section.
 
-**⚠️ BREAKING CHANGE (v1)**
+**⚠️ BREAKING CHANGE (v2)**
 
-Starting with version 1 the option `--configuration` was renamed to `--build-target`.
+The internal build of Angular has changed with Angular 17.
+Unfortunately, there are now a lot of different _build targets_ and builders.
+We will try to guess the correct build target, based on the usual conventions to name them.
+The conventions are shown below, try to specify the build target more and more explicitly until the project compiles.
 
-BEFORE (_does not work_):
+In the following example, your app is called `test` and you want to deploy the `production` build.
 
+```bash
+ng deploy
 ```
-ng deploy --configuration=test
-```
 
-NOW:
+If this doesn't work, try this:
 
-```
+```bash
 ng deploy --build-target=test
 ```
 
-If you use the old syntax, you will probably receive the following error:
+If this doesn't work, try this:
 
-> An unhandled exception occurred: Configuration 'test' is not set in the workspace.
+```bash
+ng deploy --build-target=test:build:production
+```
 
-<br>
+You can also and modify your `angular.json` to archive the same:
 
-**🐙 GitHub Actions** is now properly supported alongside Travis CI and CircleCi. The token `GITHUB_TOKEN` is also supported. Learn everything you need to know in the following article:
+```json
+{
+  "deploy": {
+    "builder": "angular-cli-ghpages:deploy",
+    "options": {
+      "buildTarget": "test:build:production"
+    }
+  }
+}
+```
 
-**[Everything GitHub: Continuous Integration, Deployment and Hosting for your Angular App](https://angular.schule/blog/2020-01-everything-github)**
+For your convenience, you can also use `prerenderTarget` (which adds the suffix `:prerender:production`).
+There is no support for `universalBuildTarget` or `serverTarget` because Github Pages only supports static assets and no Server-Side Rendering!
+
+We will then try to deploy the `dist/test/browser` folder to Github Pages.
+If this is not the folder that you want to serve, you should explicitly specify the directory with the `--dir` option:
+
+```bash
+ng deploy --dir=dist/test/browser
+```
+
+This new build logic is a breaking change, therefore `angular-cli-ghpages` v2 only supports Angular 17 and higher.
+For previous versions of Angular, use `angular-cli-ghpages` v1.x.
 
 ## ⚠️ Prerequisites <a name="prerequisites"></a>
 
 This command has the following prerequisites:
 
 - Git 1.9 or higher (execute `git --version` to check your version)
-- Angular project created via [Angular CLI](https://github.com/angular/angular-cli) v9.0.0 or greater
-- older Angular projects can still use the standalone program. See the documentation at [README_standalone](https://github.com/angular-schule/angular-cli-ghpages/blob/master/docs/README_standalone.md).
+- Angular project created via [Angular CLI](https://github.com/angular/angular-cli) v17 or greater
+- older Angular projects can still use a v1.x version or use the standalone program. See the documentation at [README_standalone](https://github.com/angular-schule/angular-cli-ghpages/blob/master/docs/README_standalone.md).
 
 ## 🚀 Quick Start (local development) <a name="quickstart-local"></a>
 
@@ -164,11 +189,6 @@ ng deploy --repo=https://github.com/<username>/<repositoryname>.git --name="Your
 ```
 
 (replace `<username>` and `<repositoryname>` with your username from GitHub and the name of your repository)
-
-> **⚠️Important**
->
-> Please **do not disable the silent mode** if you use tokens, otherwise people could read them in the output logs.
-> If you are sure that your CI/CD provider does not display secrets on the console (this applies to CircleCI / Travis CI and Github Actions), you are welcome to disable silent mode.
 
 > **ℹ️ Note for GitHub Actions**
 >
@@ -304,30 +324,10 @@ If you run the command in a repository without `user.name` or `user.email` Git c
 you must provide user info before Git allows you to commit.
 In this case, provide **both** `name` and `email` string values to identify the committer.
 
-#### --no-silent <a name="no-silent"></a>
-
-- **optional**
-- Default: silent `true` (boolean)
-- Example:
-  - `ng deploy` – Logging is in silent mode by default.
-  - `ng deploy --no-silent` – Logging shows extended information.
-
-Logging is in silent mode by default.
-In silent mode, the error messages for git operations are always sanitized.
-(The message is always: `'Unspecified error (run without silent option for detail)'`)
-
-The `--no-silent` option enables detailed error messages and extended console logging.
-Keep this untouched if the repository URL or other information passed to git commands is sensitive!
-
-> **⚠️ WARNING**
->
-> This option should be kept as it is if the repository URL or other information passed to Git commands is sensitive and should not be logged (== you have a public build server and you are using the token feature).
-> By default the silent mode is enabled to avoid sensitive data exposure.
-
 #### --no-dotfiles <a name="no-dotfiles"></a>
 
 - **optional**
-- Default: dotfiles `true` (boolean)
+- Default: Dotfiles are created (boolean `true`)
 - Example:
   - `ng deploy` – Dotfiles are included by default.
   - `ng deploy --no-dotfiles` – Dotfiles are ignored.
@@ -335,12 +335,33 @@ Keep this untouched if the repository URL or other information passed to git com
 The command includes dotfiles by default (e.g. `.htaccess` will be committed).
 With `--no-dotfiles` files starting with `.` are ignored.
 
-**Hint:**
-This is super useful if you want to publish a `.nojekyll` file.
-Create such a file in the root of your pages repo to bypass the Jekyll static site generator on GitHub Pages.
+#### --no-notfound <a name="no-notfound"></a>
+
+- **optional**
+- Default: `404.html` file is created (boolean `true`)
+- Example:
+  - `ng deploy` – A `404.html` file is created by default.
+  - `ng deploy --no-notfound` – No `404.html` file is created.
+
+By default a `404.html` file is created, because this is the only known workaround to avoid 404 error messages on GitHub Pages.
+For Cloudflare Pages we highly recommend to disable the `404.html` file by setting this switch to true! see [#178](https://github.com/angular-schule/angular-cli-ghpages/issues/178)
+
+#### --no-nojekyll <a name="no-nojekyll"></a>
+
+- **optional**
+- Default: `.nojekyll` file is created (boolean `true`)
+- Example:
+  - `ng deploy` – A `.nojekyll` file is created by default.
+  - `ng deploy --no-nojekyll` – No `.nojekyll` file is created.
+
+By default a `.nojekyll` file is created, because we assume you don't want to compile the build again with Jekyll.
+
+**Explanation:**
+By creating such a file in the root of your pages repo, you will bypass the Jekyll static site generator on GitHub Pages.
 Static content is still delivered – even without Jekyll.
-This should only be necessary if your site uses files or directories that start with **\_underscores** since Jekyll considers these to be special resources and does not copy them to the final site.
-→ Or just don't use underscores!
+But now the deployment will be a bit faster.
+This is also necessary if your site uses files or directories that start with **\_underscores** since Jekyll considers these to be special resources and does not copy them to the final site.
+The same applies to `.txt` files in your assets folder: They will just disappear if Jekyll processes the build. see [#160](https://github.com/angular-schule/angular-cli-ghpages/issues/160)
 
 #### --cname <a name="cname"></a>
 
@@ -351,6 +372,15 @@ This should only be necessary if your site uses files or directories that start 
 
 A CNAME file will be created enabling you to use a custom domain.
 [More information on GitHub Pages using a custom domain](https://help.github.com/articles/using-a-custom-domain-with-github-pages/).
+
+#### --dir <a name="dir"></a>
+
+- **optional**
+- Default: `undefined` (string) – Conventions will be used to guess the correct directory in your `dist` folder.
+- Example:
+  - `ng deploy --dir=dist/completely-different-folder/en`
+
+Overrides the directory for all published sources, relative to the current working directory.
 
 #### --dry-run <a name="dry-run"></a>
 
@@ -375,9 +405,11 @@ To avoid all these command-line cmd options, you can write down your configurati
 - branch
 - name
 - email
-- noSilent
 - noDotfiles
+- noNotfound
+- noNojekyll
 - cname
+- dir
 - dryRun
 
 A list of all available options is also available [here](https://github.com/angular-schule/angular-cli-ghpages/blob/master/src/deploy/schema.json).
@@ -413,7 +445,7 @@ Now you can just run `ng deploy` without all the options in the command line! �
 We have seen `angular-cli-ghpages` running on various environments, like Travis CI, CircleCi or Github Actions.
 Please share your knowledge by writing an article about how to set up the deployment.
 
-1. [GitHub Actions](https://github.com/angular-schule/angular-cli-ghpages/blob/master/docs/README_environment_github_actions.md) by [Dharmen Shah](https://github.com/shhdharmen)
+1. [GitHub Actions](https://angular.schule/blog/2020-01-everything-github)
 2. Travis CI
 3. CircleCI
 
@@ -428,11 +460,9 @@ Code released under the [MIT license](LICENSE).
 
 <hr>
 
-## 🚀 Powered by [ngx-deploy-starter](https://github.com/angular-schule/ngx-deploy-starter)
-
 <img src="https://assets.angular.schule/logo-angular-schule.png" height="60">
 
-### &copy; 2017-2022 https://angular.schule
+### &copy; 2017-2024 https://angular.schule
 
 This project is made on top of [tschaub/gh-pages](https://github.com/tschaub/gh-pages).  
 Thank you very much for this great foundation!

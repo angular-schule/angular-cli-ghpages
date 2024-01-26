@@ -40,7 +40,7 @@ Execute the next three steps, if your test project is still older.
    npm install -g @angular/cli
    ```
 
-2. Run `ng version`, to make sure you have installed Angular v9.0.0 or greater.
+2. Run `ng version`, to make sure you have installed Angular v17 or greater.
 
 3. Update your existing project using the command:
 
@@ -179,7 +179,6 @@ Use VSCode and debug the task `Launch Standalone Program`.
 
 ```
 cd angular-cli-ghpages/src
-npm run prettier
 npm run build
 npm run test
 npm run publish-to-npm

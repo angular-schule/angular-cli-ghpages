@@ -1,0 +1,8 @@
+"universalBuildTarget": {
+  "type": "string",
+  "description": "A named build target, as specified in the `configurations` section of angular.json. Each named target is accompanied by a configuration of option defaults for that target. This is equivalent to calling the command `ng build --configuration=XXX`."
+},
+"serverTarget": {
+  "type": "string",
+  "description": "A named build target, as specified in the `configurations` section of angular.json. Each named target is accompanied by a configuration of option defaults for that target. This is equivalent to calling the command `ng build --configuration=XXX`."
+},

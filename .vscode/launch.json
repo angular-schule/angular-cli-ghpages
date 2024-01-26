@@ -1,41 +1,38 @@
 {
-    // Use IntelliSense to learn about possible attributes.
-    // Hover to view descriptions of existing attributes.
-    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
-    "version": "0.2.0",
-    "configurations": [
-        {
-            "type": "node",
-            "request": "launch",
-            "name": "Launch Standalone Program",
-            "cwd": "${workspaceRoot}/src",
-            "program": "${workspaceFolder}/src/dist/angular-cli-ghpages",
-            "outFiles": [
-              "${workspaceFolder}/src/dist/**/*.js"
-            ],
-            "args": [
-                //"--no-silent",
-                //"--dry-run",
-                "--dir=mini-testdrive",
-                "--cname=angular-cli-ghpages.angular.schule"
-            ],
-            "stopOnEntry": true,
-            "sourceMaps": true,
-            "preLaunchTask": "npm build",
-        },
-        {
-          "name": "Debug Jest Tests",
-          "type": "node",
-          "request": "launch",
-          "runtimeArgs": [
-            "--inspect-brk",
-            "${workspaceRoot}/src/node_modules/.bin/jest",
-            "--runInBand"
-          ],
-          "cwd": "${workspaceFolder}/src",
-          "console": "integratedTerminal",
-          "internalConsoleOptions": "neverOpen",
-          "port": 9229
-        } 
-    ]
+  // Use IntelliSense to learn about possible attributes.
+  // Hover to view descriptions of existing attributes.
+  // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "type": "node",
+      "request": "launch",
+      "name": "Launch Standalone Program",
+      "cwd": "${workspaceRoot}/src",
+      "program": "${workspaceFolder}/src/dist/angular-cli-ghpages",
+      "outFiles": ["${workspaceFolder}/src/dist/**/*.js"],
+      "args": [
+        //"--dry-run",
+        "--dir=mini-testdrive",
+        "--cname=angular-cli-ghpages.angular.schule"
+      ],
+      "stopOnEntry": true,
+      "sourceMaps": true,
+      "preLaunchTask": "npm build"
+    },
+    {
+      "name": "Debug Jest Tests",
+      "type": "node",
+      "request": "launch",
+      "runtimeArgs": [
+        "--inspect-brk",
+        "${workspaceRoot}/src/node_modules/.bin/jest",
+        "--runInBand"
+      ],
+      "cwd": "${workspaceFolder}/src",
+      "console": "integratedTerminal",
+      "internalConsoleOptions": "neverOpen",
+      "port": 9229
+    }
+  ]
 }

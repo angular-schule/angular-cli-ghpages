@@ -1,11 +1,9 @@
-import {
-  BuilderContext,
-  targetFromTargetString
-} from '@angular-devkit/architect';
+import { BuilderContext, targetFromTargetString } from '@angular-devkit/architect';
 import { logging } from '@angular-devkit/core';
+import path from 'path';
 
-import { Schema } from './schema';
 import { BuildTarget } from '../interfaces';
+import { Schema } from './schema';
 
 export default async function deploy(
   engine: {
@@ -49,17 +47,41 @@ export default async function deploy(
   }
 
   // 2. DEPLOYMENT
-  const buildOptions = await context.getTargetOptions(
-    targetFromTargetString(buildTarget.name)
-  );
-  if (!buildOptions.outputPath || typeof buildOptions.outputPath !== 'string') {
-    throw new Error(
-      `Cannot read the output path option of the Angular project '${buildTarget.name}' in angular.json`
+
+  let dir: string;
+  if (options.dir) {
+
+    dir = options.dir;
+
+  } else {
+
+    const buildOptions = await context.getTargetOptions(
+      targetFromTargetString(buildTarget.name)
     );
+
+    // Output path configuration
+    // The outputPath option can be either
+    // - a String which will be used as the base value + default value 'browser'
+    // - or an Object for more fine-tune configuration.
+    // see https://angular.io/guide/workspace-config#output-path-configuration
+    // see https://github.com/angular/angular-cli/pull/26675
+
+    if (!buildOptions.outputPath) {
+      throw new Error(
+        `Cannot read the outputPath option of the Angular project '${buildTarget.name}' in angular.json.`
+      );
+    }
+
+    if (typeof buildOptions.outputPath === 'string') {
+      dir = path.join(buildOptions.outputPath, 'browser');
+    } else {
+      const obj = buildOptions.outputPath as any;
+      dir = path.join(obj.base, obj.browser)
+    }
   }
 
   await engine.run(
-    buildOptions.outputPath,
+    dir,
     options,
     (context.logger as unknown) as logging.LoggerApi
   );

@@ -17,7 +17,7 @@ The command `npx` is also able to install `angular-cli-ghpages` on the first usa
 ## Usage
 
 Execute `npx angular-cli-ghpages` in order to deploy the project with a build from `dist` folder.  
-**Note: you have to create the `dist` folder in before (e.g. `ng build --prod`)**
+**Note: You have to create the `dist` folder in before (e.g. `ng build --prod`)**
 
 Usage:
 

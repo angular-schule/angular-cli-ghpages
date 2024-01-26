@@ -43,7 +43,7 @@ A detailed changelog is available in the [releases](https://github.com/angular-s
 The internal build of Angular has changed with Angular 17.
 Unfortunately, there are now a lot of different _build targets_ and builders.
 We will try to guess the correct build target, based on the usual conventions to name them.
-The conventions are shown below, try to specify the build target more and more explicitely until the project compiles.
+The conventions are shown below, try to specify the build target more and more explicitly until the project compiles.
 
 In the following example, your app is called `test` and you want to deploy the `production` build.
 

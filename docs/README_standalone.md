@@ -109,7 +109,7 @@ you can provide the repository URL in the `repo` option.
 - Default: `Auto-generated commit [ci skip]`
 - Example: `npx angular-cli-ghpages --message="What could possibly go wrong?"`
 
-The commit message, **must be wrapped in quotes**.  
+The commit message **must be wrapped in quotes**.  
 Some handy additional text is always added,
 if the environment variable `process.env.TRAVIS` exists (for Travis CI).
 

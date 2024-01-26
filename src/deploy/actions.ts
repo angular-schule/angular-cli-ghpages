@@ -6,6 +6,7 @@ import { logging } from '@angular-devkit/core';
 
 import { Schema } from './schema';
 import { BuildTarget } from '../interfaces';
+import path from 'path';
 
 export default async function deploy(
   engine: {
@@ -49,17 +50,29 @@ export default async function deploy(
   }
 
   // 2. DEPLOYMENT
-  const buildOptions = await context.getTargetOptions(
-    targetFromTargetString(buildTarget.name)
-  );
-  if (!buildOptions.outputPath || typeof buildOptions.outputPath !== 'string') {
-    throw new Error(
-      `Cannot read the output path option of the Angular project '${buildTarget.name}' in angular.json`
+
+  let dir: string;
+  if (options.dir) {
+    dir = path.join(process.cwd(), options.dir);
+  }
+  {
+    const buildOptions = await context.getTargetOptions(
+      targetFromTargetString(buildTarget.name)
     );
+    if (
+      !buildOptions.outputPath ||
+      typeof buildOptions.outputPath !== 'string'
+    ) {
+      throw new Error(
+        `Cannot read the output path option of the Angular project '${buildTarget.name}' in angular.json`
+      );
+    }
+
+    dir = buildOptions.outputPath;
   }
 
   await engine.run(
-    buildOptions.outputPath,
+    dir,
     options,
     (context.logger as unknown) as logging.LoggerApi
   );

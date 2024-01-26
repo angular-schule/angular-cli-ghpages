@@ -36,4 +36,4 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           cd your-angular-project
-          ng deploy --no-silent --name="The Buildbot" --email="buildbot@angular2buch.de" --cname=angular-cli-ghpages.angular.schule
+          ng deploy --name="The Buildbot" --email="buildbot@angular2buch.de" --cname=angular-cli-ghpages.angular.schule

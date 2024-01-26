@@ -1,12 +1,14 @@
 #!/usr/bin/env node
 
+// the standalone version
+
 var path = require('path'),
   engine = require('./engine/engine'),
   defaults = require('./engine/defaults').defaults,
   pjson = require('./package.json'),
   commander = require('commander');
 
-// defaults-file was ignored for --no-silent & --no-dotfiles, so it is not used here
+// defaults-file was ignored for --no-dotfiles, so it is not used here
 // TODO: review https://github.com/tj/commander.js/issues/928 and check again if it now works
 // (this is not a big problem, because true is currently the desired value and this is also the value in the defaults file)
 commander
@@ -14,7 +16,7 @@ commander
   .description(pjson.description)
   .option(
     '-d, --dir <dir>',
-    'Directory for all published sources, relative to the project-root.',
+    'Directory for all published sources, relative to the current working directory.',
     defaults.dir
   )
   .option(
@@ -44,11 +46,19 @@ commander
   )
   .option(
     '-S, --no-silent',
-    'Logging is in silent mode by default. The option enables extended console logging. Keep this untouched if the repository URL or other information passed to git commands is sensitive!'
+    'Deprecated! This paremeter is no longer needed. It will be ignored.'
   )
   .option(
     '-T, --no-dotfiles',
     'Includes dotfiles by default. Otherwise files starting with `.` are ignored.'
+  )
+  .option(
+    '--no-404',
+    'By default a 404.html file is created, because this is the only known workaround to avoid 404 error messages on GitHub pages. For Cloudflare Pages we highly recommend to disable the 404.html file by setting this switch to true!',
+  )
+  .option(
+    '--no-nojekyll',
+    'By default a .nojekyll file is created, because we assume you don\'t want to compile the build again with Jekyll.'
   )
   .option(
     '-c, --cname <domain>',

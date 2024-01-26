@@ -11,6 +11,14 @@
       "type": "string",
       "description": "A named build target, as specified in the `configurations` section of angular.json. Each named target is accompanied by a configuration of option defaults for that target. This is equivalent to calling the command `ng build --configuration=XXX`."
     },
+    "browserTarget": {
+      "type": "string",
+      "description": "A named build target, as specified in the `configurations` section of angular.json. Each named target is accompanied by a configuration of option defaults for that target. This is equivalent to calling the command `ng build --configuration=XXX`."
+    },
+    "prerenderTarget": {
+      "type": "string",
+      "description": "A named build target, as specified in the `configurations` section of angular.json. Each named target is accompanied by a configuration of option defaults for that target. This is equivalent to calling the command `ng build --configuration=XXX`."
+    },
     "noBuild": {
       "type": "boolean",
       "default": false,
@@ -40,7 +48,7 @@
     },
     "noSilent": {
       "type": "boolean",
-      "description": "Logging is in silent mode by default. Execute with --no-silent to enable extended console logging. Keep this untouched if the repository URL or other information passed to git commands is sensitive!",
+      "description": "Deprecated! This paremeter is no longer needed. It will be ignored.",
       "default": false
     },
     "noDotfiles": {
@@ -48,9 +56,24 @@
       "description": "Includes dotfiles by default. Execute with --no-dotfiles to ignore files starting with `.`.",
       "default": false
     },
+    "no404": {
+      "type": "boolean",
+      "description": "By default a 404.html file is created, because this is the only known workaround to avoid 404 error messages on GitHub pages. For Cloudflare Pages we highly recommend to disable the 404.html file by setting this switch to true!",
+      "default": false
+    },
+    "noNojekyll": {
+      "type": "boolean",
+      "description": "By default a .nojekyll file is created, because we assume you don't want to compile the build again with Jekyll. see #160",
+      "default": false
+    },
     "cname": {
       "type": "string",
       "description": "Generate a CNAME file for the specified domain.",
+      "default": ""
+    },
+    "dir": {
+      "type": "string",
+      "description": "Overrides the directory for all published sources, relative to the current working directory.",
       "default": ""
     },
     "dryRun": {

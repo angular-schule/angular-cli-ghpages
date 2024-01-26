@@ -1,6 +1,6 @@
 {
   "name": "angular-cli-ghpages",
-  "version": "2.0.0-beta",
+  "version": "2.0.0-beta.1",
   "description": "Deploy your Angular app to GitHub Pages or Cloudflare Pages directly from the Angular CLI (ng deploy)",
   "main": "index.js",
   "bin": {
@@ -12,6 +12,7 @@
     "build": "tsc -p tsconfig.build.json",
     "postbuild": "copyfiles builders.json collection.json ng-add-schema.json package.json angular-cli-ghpages deploy/schema.json dist && copyfiles ../README.md dist/README.md",
     "test": "jest",
+    "prepublishOnly": "echo \"MAKE SURE TO TYPE 'npm run publish-to-npm' AND NOT 'npm publish'!\"",
     "publish-to-npm": "npm run build && cd dist && npm publish"
   },
   "schematics": "./collection.json",

@@ -49,7 +49,7 @@ export async function prepareOptions(
   };
 
   // this is the place where the old `noSilent` was enabled
-  // (which is now always enabled because gp-pages is NOT silent by default)
+  // (which is now always enabled because gh-pages is NOT silent by default)
   // monkeypatch util.debuglog to get all the extra information
   // see https://stackoverflow.com/a/39129886
   const util = require('util');

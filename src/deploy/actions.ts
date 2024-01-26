@@ -68,7 +68,7 @@ export default async function deploy(
 
     if (!buildOptions.outputPath) {
       throw new Error(
-        `Cannot read the output path option of the Angular project '${buildTarget.name}' in angular.json`
+        `Cannot read the outputPath option of the Angular project '${buildTarget.name}' in angular.json.`
       );
     }
 

@@ -1,12 +1,9 @@
-import {
-  BuilderContext,
-  targetFromTargetString
-} from '@angular-devkit/architect';
+import { BuilderContext, targetFromTargetString } from '@angular-devkit/architect';
 import { logging } from '@angular-devkit/core';
-
-import { Schema } from './schema';
-import { BuildTarget } from '../interfaces';
 import path from 'path';
+
+import { BuildTarget } from '../interfaces';
+import { Schema } from './schema';
 
 export default async function deploy(
   engine: {

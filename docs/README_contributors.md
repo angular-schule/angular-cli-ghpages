@@ -179,7 +179,6 @@ Use VSCode and debug the task `Launch Standalone Program`.
 
 ```
 cd angular-cli-ghpages/src
-npm run prettier
 npm run build
 npm run test
 npm run publish-to-npm

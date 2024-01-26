@@ -95,7 +95,7 @@ Output the version number. Please provide the version number on any bug report!
 #### --repo <a name="repo"></a>
 
 - **optional**
-- Default: url of the origin remote of the current dir (assumes a git repository)
+- Default: URL of the origin remote of the current dir (assumes a git repository)
 - Example: `npx angular-cli-ghpages --repo=https://GH_TOKEN@github.com/<username>/<repositoryname>.git`
 
 By default, **gh-pages** assumes that the current working directory is a git repository,

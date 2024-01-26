@@ -48,7 +48,7 @@
     },
     "noSilent": {
       "type": "boolean",
-      "description": "Deprecated! This paremeter is no longer needed. It will be ignored.",
+      "description": "Deprecated! This parameter is no longer needed. It will be ignored.",
       "default": false
     },
     "noDotfiles": {

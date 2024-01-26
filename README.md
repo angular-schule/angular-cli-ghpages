@@ -24,7 +24,7 @@
    - [--branch](#branch)
    - [--name & --email](#name)
    - [--no-dotfiles](#no-dotfiles)
-   - [--no-404](#no-404)
+   - [--no-notfound](#no-notfound)
    - [--no-nojekyll](#no-nojekyll)
    - [--cname](#cname)
    - [--dry-run](#dry-run)
@@ -78,6 +78,9 @@ You can also and modify your `angular.json` to archive the same:
 
 For your convenience, you can also use `prerenderTarget` (which adds the suffix `:prerender:production`).
 There is no support for `universalBuildTarget` or `serverTarget` because Github pages only supports static assets!
+
+We will then try to deploy the `dist/test/browser` folder to Github pages.
+If this is not the folder that you want to serve, then you should specify the directory explicitly with the `--dir` option.
 
 This new build logic is a breaking change, therefore `angular-cli-ghpages` v2 only supports Angular 17 and higher.
 For previous versions of Angular, use `angular-cli-ghpages` v1.x.
@@ -328,13 +331,13 @@ In this case, provide **both** `name` and `email` string values to identify the 
 The command includes dotfiles by default (e.g. `.htaccess` will be committed).
 With `--no-dotfiles` files starting with `.` are ignored.
 
-#### --no-404 <a name="no-404"></a>
+#### --no-notfound <a name="no-notfound"></a>
 
 - **optional**
 - Default: `404.html` file is created (boolean `true`)
 - Example:
   - `ng deploy` – A `404.html` file is created by default.
-  - `ng deploy --no-404` – No `404.html` file is created.
+  - `ng deploy --no-notfound` – No `404.html` file is created.
 
 By default a `404.html` file is created, because this is the only known workaround to avoid 404 error messages on GitHub pages.
 For Cloudflare Pages we highly recommend to disable the `404.html` file by setting this switch to true! see [#178](https://github.com/angular-schule/angular-cli-ghpages/issues/178)
@@ -399,7 +402,7 @@ To avoid all these command-line cmd options, you can write down your configurati
 - name
 - email
 - noDotfiles
-- no404Page
+- noNotfound
 - noNojekyll
 - cname
 - dir

@@ -32,9 +32,11 @@ export async function run(
   await createNojekyllFile(dir, options, logger);
   await publishViaGhPages(ghpages, dir, options, logger);
 
-  logger.info(
-    '🌟 Successfully published via angular-cli-ghpages! Have a nice day!'
-  );
+  if (!options.dryRun) {
+    logger.info(
+      '🌟 Successfully published via angular-cli-ghpages! Have a nice day!'
+    );
+  }
 }
 
 export async function prepareOptions(
@@ -174,7 +176,7 @@ async function createNotFoundFile(
   options: Schema,
   logger: logging.LoggerApi
 ) {
-  if (options.no404) {
+  if (options.noNotfound) {
     return;
   }
 
@@ -185,8 +187,7 @@ async function createNotFoundFile(
 
   // Note:
   // There is no guarantee that there will be an index.html file,
-  // as we may may specify a custom index file.
-  // TODO: respect setting in angular.json
+  // as we may may specify a custom index file or a different folder is going to be deployed.
   const indexHtml = path.join(dir, 'index.html');
   const notFoundFile = path.join(dir, '404.html');
 
@@ -194,12 +195,7 @@ async function createNotFoundFile(
     await fse.copy(indexHtml, notFoundFile);
     logger.info('404.html file created');
   } catch (err) {
-    logger.info(
-      'index.html could not be copied to 404.html. This does not look like an angular-cli project?!'
-    );
-    logger.info(
-      '(Hint: are you sure that you have setup the directory correctly?)'
-    );
+    logger.info('index.html could not be copied to 404.html. Proceeding without it.');
     logger.debug('Diagnostic info: ' + err.message);
     return;
   }
@@ -264,24 +260,16 @@ async function publishViaGhPages(
       `Dry-run / SKIPPED: publishing folder "${dir}" with the following options: ` +
         JSON.stringify(
           {
-            dir: dir,
-            repo:
-              options.repo ||
-              'falsy: current working directory (which must be a git repo in this case) will be used to commit & push',
-            message: options.message,
-            branch: options.branch,
-            user:
-              options.user ||
-              'falsy: local or global git username & email properties will be taken',
-            dotfiles:
-              options.dotfiles || 'falsy: dotfiles are included by default',
-            no404:
-              options.no404 ||
-              'falsy: a 404.html file will be created by default',
-            noNojekyll:
-              options.noNojekyll ||
-              'falsy: a .nojekyll file will be created by default',
-            cname: options.cname || 'falsy: no CNAME file will be created'
+            dir,
+            repo:       options.repo       || 'falsy: current working directory (which must be a git repo in this case) will be used to commit & push',
+            message:    options.message,
+            branch:     options.branch,
+            name:       options.name       || 'falsy: local or global git username will be taken',
+            email:      options.email      || 'falsy: local or global git user email will be taken',
+            dotfiles:   options.dotfiles   || 'falsy: dotfiles are included by default',
+            noNotfound: options.noNotfound || 'falsy: a 404.html file will be created by default',
+            noNojekyll: options.noNojekyll || 'falsy: a .nojekyll file will be created by default',
+            cname:      options.cname      || 'falsy: no CNAME file will be created'
           },
           null,
           '  '

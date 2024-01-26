@@ -80,7 +80,7 @@ For your convenience, you can also use `prerenderTarget` (which adds the suffix 
 There is no support for `universalBuildTarget` or `serverTarget` because Github Pages only supports static assets and no Server-Side Rendering!
 
 We will then try to deploy the `dist/test/browser` folder to Github Pages.
-If this is not the folder that you want to serve, then you should specify the directory explicitly with the `--dir` option.
+If this is not the folder that you want to serve, you should explicitly specify the directory with the `--dir` option:
 
 This new build logic is a breaking change, therefore `angular-cli-ghpages` v2 only supports Angular 17 and higher.
 For previous versions of Angular, use `angular-cli-ghpages` v1.x.

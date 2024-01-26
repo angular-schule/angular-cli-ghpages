@@ -82,6 +82,10 @@ There is no support for `universalBuildTarget` or `serverTarget` because Github 
 We will then try to deploy the `dist/test/browser` folder to Github Pages.
 If this is not the folder that you want to serve, you should explicitly specify the directory with the `--dir` option:
 
+```bash
+ng deploy --dir=dist/test/browser
+``````
+
 This new build logic is a breaking change, therefore `angular-cli-ghpages` v2 only supports Angular 17 and higher.
 For previous versions of Angular, use `angular-cli-ghpages` v1.x.
 

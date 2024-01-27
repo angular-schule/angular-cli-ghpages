@@ -61,7 +61,7 @@ In example, the following command runs [on our Travis-CI](https://travis-ci.org/
 npx angular-cli-ghpages --repo=https://GH_TOKEN@github.com/<username>/<repositoryname>.git --name="Displayed Username" --email=mail@example.org
 ```
 
-> Don't share the GH_TOKEN with other persons. It is essentially a password to your github account!
+> Don't share the GH_TOKEN with anyone! It is essentially a password to your GitHub account.
 
 ## Options
 

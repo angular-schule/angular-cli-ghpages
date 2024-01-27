@@ -6,7 +6,7 @@ import {
   Target
 } from '@angular-devkit/architect/src';
 import { JsonObject, logging } from '@angular-devkit/core';
-import { BuildTarget } from 'interfaces';
+import { BuildTarget } from '../interfaces';
 
 import deploy from './actions';
 

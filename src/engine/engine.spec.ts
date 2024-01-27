@@ -83,20 +83,5 @@ describe('engine', () => {
 
       expect(finalOptions.repo).toMatch(/angular-schule\/angular-cli-ghpages/);
     });
-
-    /*
-    // i was not able to somehow catch an error... :-(
-    it('should should throw an exception, if remote url could not be discovered', async () => {
-
-      expect.assertions(1);
-
-      const options = { git: 'xxx' };
-
-      try {
-        await engine.prepareOptions(options, logger);
-      } catch (e) {
-        expect(e).toBeTruthy();
-      }
-    })*/
   });
 });

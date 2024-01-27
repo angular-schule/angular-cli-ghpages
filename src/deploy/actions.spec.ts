@@ -100,7 +100,7 @@ const initMocks = () => {
     },
     currentDirectory: 'cwd',
     id: 1,
-    logger: new logging.NullLogger() as any,
+    logger: new logging.NullLogger(),
     workspaceRoot: 'cwd',
     addTeardown: _ => {},
     validateOptions: _ => Promise.resolve({} as any),

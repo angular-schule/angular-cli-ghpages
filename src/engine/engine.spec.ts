@@ -1,10 +1,10 @@
-import { NullLogger } from '@angular-devkit/core/src/logger';
+import { logging } from '@angular-devkit/core';
 
 import * as engine from './engine';
 
 describe('engine', () => {
   describe('prepareOptions', () => {
-    const logger = new NullLogger();
+    const logger = new logging.NullLogger();
 
     beforeEach(() => {
       process.env = {};

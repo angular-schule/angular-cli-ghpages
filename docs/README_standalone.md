@@ -20,7 +20,7 @@ Execute `npx angular-cli-ghpages` in order to deploy the project with a build fr
 **Note: You have to create the `dist` folder first (e.g. by running `ng build`).**
 
 Since Angular CLI 6 the build artifacts will be put in a subfolder, e.g. `dist/PROJECTNAME`.
-Since Angular CLI 17 the build artifacts will be put in a subfolder, followed by the folder `browser`, eg. `dist/PROJECTNAME/browser`.
+Since Angular CLI 17 the build artifacts will be put in a subfolder, followed by the folder `browser`, e.g. `dist/PROJECTNAME/browser`.
 
 Please take a look at the `dist` folder to see whether there is a subfolder with your project's name or not.
 If yes, you need to specify the deploy directory manually then when using this tool:

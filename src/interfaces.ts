@@ -19,13 +19,3 @@ export interface BuildTarget {
   name: string;
   options?: Record<string, any>;
 }
-
-// just for testing, NullLogger can't be imported any longer?
-// export const consoleLogger = {
-//   log: console.log,
-//   debug: console.debug,
-//   info: console.info,
-//   warn: console.warn,
-//   error: console.error,
-//   fatal: console.error
-// };

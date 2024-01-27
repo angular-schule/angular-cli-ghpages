@@ -2,29 +2,29 @@
 
 exports[`ng-add generating files generates new files if starting from scratch 1`] = `
 "{
-  \\"version\\": 1,
-  \\"projects\\": {
-    \\"THEPROJECT\\": {
-      \\"projectType\\": \\"application\\",
-      \\"root\\": \\"PROJECTROOT\\",
-      \\"architect\\": {
-        \\"build\\": {
-          \\"options\\": {
-            \\"outputPath\\": \\"dist/THEPROJECT\\"
+  "version": 1,
+  "projects": {
+    "THEPROJECT": {
+      "projectType": "application",
+      "root": "PROJECTROOT",
+      "architect": {
+        "build": {
+          "options": {
+            "outputPath": "dist/THEPROJECT"
           }
         },
-        \\"deploy\\": {
-          \\"builder\\": \\"angular-cli-ghpages:deploy\\"
+        "deploy": {
+          "builder": "angular-cli-ghpages:deploy"
         }
       }
     },
-    \\"OTHERPROJECT\\": {
-      \\"projectType\\": \\"application\\",
-      \\"root\\": \\"PROJECTROOT\\",
-      \\"architect\\": {
-        \\"build\\": {
-          \\"options\\": {
-            \\"outputPath\\": \\"dist/OTHERPROJECT\\"
+    "OTHERPROJECT": {
+      "projectType": "application",
+      "root": "PROJECTROOT",
+      "architect": {
+        "build": {
+          "options": {
+            "outputPath": "dist/OTHERPROJECT"
           }
         }
       }
@@ -35,33 +35,33 @@ exports[`ng-add generating files generates new files if starting from scratch 1`
 
 exports[`ng-add generating files overrides existing files 1`] = `
 "{
-  \\"version\\": 1,
-  \\"projects\\": {
-    \\"THEPROJECT\\": {
-      \\"projectType\\": \\"application\\",
-      \\"root\\": \\"PROJECTROOT\\",
-      \\"architect\\": {
-        \\"build\\": {
-          \\"options\\": {
-            \\"outputPath\\": \\"dist/THEPROJECT\\"
+  "version": 1,
+  "projects": {
+    "THEPROJECT": {
+      "projectType": "application",
+      "root": "PROJECTROOT",
+      "architect": {
+        "build": {
+          "options": {
+            "outputPath": "dist/THEPROJECT"
           }
         },
-        \\"deploy\\": {
-          \\"builder\\": \\"angular-cli-ghpages:deploy\\"
+        "deploy": {
+          "builder": "angular-cli-ghpages:deploy"
         }
       }
     },
-    \\"OTHERPROJECT\\": {
-      \\"projectType\\": \\"application\\",
-      \\"root\\": \\"PROJECTROOT\\",
-      \\"architect\\": {
-        \\"build\\": {
-          \\"options\\": {
-            \\"outputPath\\": \\"dist/OTHERPROJECT\\"
+    "OTHERPROJECT": {
+      "projectType": "application",
+      "root": "PROJECTROOT",
+      "architect": {
+        "build": {
+          "options": {
+            "outputPath": "dist/OTHERPROJECT"
           }
         },
-        \\"deploy\\": {
-          \\"builder\\": \\"angular-cli-ghpages:deploy\\"
+        "deploy": {
+          "builder": "angular-cli-ghpages:deploy"
         }
       }
     }

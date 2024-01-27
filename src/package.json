@@ -11,7 +11,7 @@
     "prebuild": "rimraf dist && json2ts deploy/schema.json > deploy/schema.d.ts",
     "build": "tsc -p tsconfig.build.json",
     "postbuild": "copyfiles builders.json collection.json ng-add-schema.json package.json angular-cli-ghpages deploy/schema.json dist && copyfiles ../README.md dist/README.md",
-    "test": "jest",
+    "test": "npm run prebuild && jest",
     "prepublishOnly": "echo \"MAKE SURE TO TYPE 'npm run publish-to-npm' AND NOT 'npm publish'!\"",
     "publish-to-npm": "npm run build && cd dist && npm publish"
   },
@@ -69,7 +69,7 @@
     "typescript": "~5.2.2"
   },
   "peerDependencies": {
-    "@angular-devkit/architect": "~0.1700.0",
+    "@angular-devkit/architect": "",
     "@angular-devkit/core": "^17.0.0",
     "@angular-devkit/schematics": "^17.0.0"
   },
@@ -77,23 +77,5 @@
     "commander": "^3.0.0-0",
     "fs-extra": "^11.2.0",
     "gh-pages": "^3.1.0"
-  },
-  "jest": {
-    "transform": {
-      "^.+\\.tsx?$": "ts-jest"
-    },
-    "testRegex": "(/test/.*|(\\.|/)(test|spec))\\.(jsx?|tsx?)$",
-    "moduleFileExtensions": [
-      "ts",
-      "tsx",
-      "js",
-      "jsx",
-      "json",
-      "node"
-    ],
-    "testPathIgnorePatterns": [
-      "/node_modules/",
-      "/dist/"
-    ]
   }
 }

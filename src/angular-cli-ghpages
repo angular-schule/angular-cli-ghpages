@@ -50,7 +50,7 @@ commander
   )
   .option(
     '-T, --no-dotfiles',
-    'Includes dotfiles by default. Otherwise files starting with `.` are ignored.'
+    'Includes dotfiles by default. Otherwise files starting with `.` are ignored.',
   )
   .option(
     '--no-notfound',
@@ -58,7 +58,7 @@ commander
   )
   .option(
     '--no-nojekyll',
-    'By default a .nojekyll file is created, because we assume you don\'t want to compile the build again with Jekyll.'
+    'By default a .nojekyll file is created, because we assume you don\'t want to compile the build again with Jekyll.',
   )
   .option(
     '-c, --cname <domain>',
@@ -81,6 +81,19 @@ var consoleLogger = {
   error: console.error,
   fatal: console.error
 };
+
+// !! Important: Commander is renaming the vars here !!
+//
+// adding no param becomes dotfiles: true
+// adding no param becomes notfound: true
+// adding no param becomes nojekyll: true
+// --no-dotfiles becomes dotfiles: false
+// --no-notfound becomes notfound: false
+// --no-nojekyll becomes nojekyll: false
+
+// console.log('*** dotfiles', commander.dotfiles)
+// console.log('*** notfound', commander.notfound)
+// console.log('*** nojekyll', commander.nojekyll)
 
 var dir = path.join(process.cwd(), commander.dir);
 

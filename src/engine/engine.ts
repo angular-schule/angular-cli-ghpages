@@ -10,7 +10,11 @@ import Git from 'gh-pages/lib/git';
 
 export async function run(
   dir: string,
-  options: Schema,
+  options: Schema & {
+    dotfiles: boolean,
+    notfound: boolean,
+    nojekyll: boolean
+  },
   logger: logging.LoggerApi
 ) {
   options = await prepareOptions(options, logger);
@@ -42,14 +46,22 @@ export async function run(
 export async function prepareOptions(
   origOptions: Schema,
   logger: logging.LoggerApi
-) {
-  const options = {
+): Promise<Schema & {
+  dotfiles: boolean,
+  notfound: boolean,
+  nojekyll: boolean
+}> {
+  const options: Schema & {
+    dotfiles: boolean,
+    notfound: boolean,
+    nojekyll: boolean
+  } = {
     ...defaults,
     ...origOptions
   };
 
   // this is the place where the old `noSilent` was enabled
-  // (which is now always enabled because gh-pages is NOT silent by default)
+  // (which is now always enabled because gh-pages is NOT silent)
   // monkeypatch util.debuglog to get all the extra information
   // see https://stackoverflow.com/a/39129886
   const util = require('util');
@@ -64,8 +76,18 @@ export async function prepareOptions(
     return debuglog(set);
   };
 
+  // !! Important: Angular-CLI is NOT renaming the vars here !!
+  // so noDotfiles, noNotfound, and noNojekyll come in with no change
+  // we map this to dotfiles, notfound, nojekyll to have a consistent pattern
+  // between Commander and Angular-CLI
   if (origOptions.noDotfiles) {
     options.dotfiles = !origOptions.noDotfiles;
+  }
+  if (origOptions.noNotfound) {
+    options.notfound = !origOptions.noNotfound;
+  }
+  if (origOptions.noNojekyll) {
+    options.nojekyll = !origOptions.noNojekyll;
   }
 
   if (options.dryRun) {
@@ -173,10 +195,13 @@ async function checkIfDistFolderExists(dir: string) {
 
 async function createNotFoundFile(
   dir: string,
-  options: Schema,
+  options: {
+    notfound: boolean,
+    dryRun?: boolean
+  },
   logger: logging.LoggerApi
 ) {
-  if (options.noNotfound) {
+  if (!options.notfound) {
     return;
   }
 
@@ -203,7 +228,10 @@ async function createNotFoundFile(
 
 async function createCnameFile(
   dir: string,
-  options: Schema,
+  options: {
+    cname?: string,
+    dryRun?: boolean
+  },
   logger: logging.LoggerApi
 ) {
   if (!options.cname) {
@@ -228,16 +256,19 @@ async function createCnameFile(
 
 async function createNojekyllFile(
   dir: string,
-  options: Schema,
+  options: {
+    nojekyll: boolean,
+    dryRun?: boolean
+  },
   logger: logging.LoggerApi
 ) {
-  if (options.noNojekyll) {
+  if (!options.nojekyll) {
     return;
   }
 
   const nojekyllFile = path.join(dir, '.nojekyll');
   if (options.dryRun) {
-    logger.info('Dry-run / SKIPPED: creating an empty .nojekyll file');
+    logger.info('Dry-run / SKIPPED: creating a .nojekyll file');
     return;
   }
 
@@ -252,24 +283,28 @@ async function createNojekyllFile(
 async function publishViaGhPages(
   ghPages: GHPages,
   dir: string,
-  options: Schema,
+  options: Schema & {
+    dotfiles: boolean,
+    notfound: boolean,
+    nojekyll: boolean
+  },
   logger: logging.LoggerApi
 ) {
   if (options.dryRun) {
     logger.info(
-      `Dry-run / SKIPPED: publishing folder "${dir}" with the following options: ` +
+      `Dry-run / SKIPPED: publishing folder '${dir}' with the following options: ` +
         JSON.stringify(
           {
             dir,
-            repo:       options.repo       || 'falsy: current working directory (which must be a git repo in this case) will be used to commit & push',
+            repo:       options.repo      || 'current working directory (which must be a git repo in this case) will be used to commit & push',
             message:    options.message,
             branch:     options.branch,
-            name:       options.name       || 'falsy: local or global git username will be used',
-            email:      options.email      || 'falsy: local or global git user email will be used',
-            dotfiles:   options.dotfiles   || 'falsy: dotfiles are included by default',
-            noNotfound: options.noNotfound || 'falsy: a 404.html file will be created by default',
-            noNojekyll: options.noNojekyll || 'falsy: a .nojekyll file will be created by default',
-            cname:      options.cname      || 'falsy: no CNAME file will be created'
+            name:       options.name      ? `the name '${options.username} will be used for the commit` : 'local or global git user name will be used for the commit',
+            email:      options.email     ? `the email '${options.cname} will be used for the commit` : 'local or global git user email will be used for the commit',
+            dotfiles:   options.dotfiles  ? `files starting with dot ('.') will be included` : `files starting with dot ('.') will be ignored`,
+            notfound:   options.notfound  ? 'a 404.html file will be created' : 'a 404.html file will NOT be created',
+            nojekyll:   options.nojekyll  ? 'a .nojekyll file will be created' : 'a .nojekyll file will NOT be created',
+            cname:      options.cname     ? `a CNAME file with the content '${options.cname}' will be created` : 'a CNAME file will NOT be created'
           },
           null,
           '  '

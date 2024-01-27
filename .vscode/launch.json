@@ -12,7 +12,10 @@
       "program": "${workspaceFolder}/src/dist/angular-cli-ghpages",
       "outFiles": ["${workspaceFolder}/src/dist/**/*.js"],
       "args": [
-        //"--dry-run",
+        "--dry-run",
+        "--no-notfound",
+        "--no-dotfiles",
+        "--no-nojekyll",
         "--dir=mini-testdrive",
         "--cname=angular-cli-ghpages.angular.schule"
       ],
@@ -31,8 +34,7 @@
       ],
       "cwd": "${workspaceFolder}/src",
       "console": "integratedTerminal",
-      "internalConsoleOptions": "neverOpen",
-      "port": 9229
+      "internalConsoleOptions": "neverOpen"
     }
   ]
 }

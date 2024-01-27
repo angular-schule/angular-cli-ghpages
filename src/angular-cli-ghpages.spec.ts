@@ -15,19 +15,19 @@ function runCliWithArgs(args) {
   return execSync(`node ${program} --dry-run ${args}`).toString();
 }
 
-describe('Commander CLI Options', () => {
+describe('Commander CLI options', () => {
 
-  test('should have dotfiles, notfound, and nojekyll as true by default', () => {
+  test('should set dotfiles, notfound, and nojekyll to `true` by default', () => {
     const output = runCliWithArgs('');
-    expect(output).toContain(`files starting with dot ('.') will be included`);
-    expect(output).toContain('a 404.html file will be created');
-    expect(output).toContain('a .nojekyll file will be created');
+    expect(output).toContain(`"dotfiles": "files starting with dot ('.') will be included"`);
+    expect(output).toContain('"notfound": "a 404.html file will be created"');
+    expect(output).toContain('"nojekyll": "a .nojekyll file will be created"');
   });
 
-  test('should set dotfiles, notfound, and nojekyll to false with no- flags', () => {
+  test('should set dotfiles, notfound, and nojekyll to `false` with no- flags', () => {
     const output = runCliWithArgs('--no-dotfiles --no-notfound --no-nojekyll');
-    expect(output).toMatch(`files starting with dot ('.') will be ignored`);
-    expect(output).toMatch('a 404.html file will NOT be created');
-    expect(output).toMatch('a .nojekyll file will NOT be created');
+    expect(output).toMatch(`"dotfiles": "files starting with dot ('.') will be ignored"`);
+    expect(output).toMatch('"notfound": "a 404.html file will NOT be created"');
+    expect(output).toMatch('"nojekyll": "a .nojekyll file will NOT be created"');
   });
 });

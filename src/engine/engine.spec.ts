@@ -84,4 +84,30 @@ describe('engine', () => {
       expect(finalOptions.repo).toMatch(/angular-schule\/angular-cli-ghpages/);
     });
   });
+
+  describe('prepareOptions - handling dotfiles, notfound, and nojekyll', () => {
+    const logger = new logging.NullLogger();
+
+    it('should set dotfiles, notfound, and nojekyll to false when no- flags are given', async () => {
+      const options = {
+        noDotfiles: true,
+        noNotfound: true,
+        noNojekyll: true
+      };
+      const finalOptions = await engine.prepareOptions(options, logger);
+
+      expect(finalOptions.dotfiles).toBe(false);
+      expect(finalOptions.notfound).toBe(false);
+      expect(finalOptions.nojekyll).toBe(false);
+    });
+
+    it('should set dotfiles, notfound, and nojekyll to true when no- flags are not given', async () => {
+      const options = {};
+      const finalOptions = await engine.prepareOptions(options, logger);
+
+      expect(finalOptions.dotfiles).toBe(true);
+      expect(finalOptions.notfound).toBe(true);
+      expect(finalOptions.nojekyll).toBe(true);
+    });
+  });
 });

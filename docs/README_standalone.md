@@ -106,7 +106,7 @@ you can provide the repository URL in the `repo` option.
 #### --message <a name="message"></a>
 
 - **optional**
-- Default: `Auto-generated commit [ci skip]`
+- Default: `Auto-generated commit`
 - Example: `npx angular-cli-ghpages --message="What could possibly go wrong?"`
 
 The commit message **must be wrapped in quotes**.  

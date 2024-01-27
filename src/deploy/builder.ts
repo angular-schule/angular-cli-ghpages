@@ -7,7 +7,7 @@ import {
 import * as engine from '../engine/engine';
 import deploy from './actions';
 import { Schema } from './schema';
-import { BuildTarget } from './interfaces';
+import { BuildTarget } from '../interfaces';
 
 // Call the createBuilder() function to create a builder. This mirrors
 // createJobHandler() but add typings specific to Architect Builders.

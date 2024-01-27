@@ -158,10 +158,7 @@ This will install the NPM package and add the necessary `deploy` configuration t
 ng add angular-cli-ghpages
 ```
 
-The `deploy` config will be added for the specified `defaultProject`.
-If there is no `defaultProject` set and there is only one project in your workspace, this project will be used.
-
-If you have multiple projects in one workspace, you can manually define the project name:
+If you have multiple projects in one workspace, you should manually define the project name:
 
 ```sh
 ng add angular-cli-ghpages --project MYPROJECTNAME

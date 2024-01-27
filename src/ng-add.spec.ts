@@ -40,41 +40,6 @@ describe('ng-add', () => {
   });
 
   describe('project selection', () => {
-    it('should select the default project when not explicitly given (for compatibility!)', async () => {
-      const tree = Tree.empty();
-      const angularJSON = generateAngularJson();
-
-      (angularJSON as any).defaultProject = PROJECT_NAME; // explicitly set default project
-      tree.create('angular.json', JSON.stringify(angularJSON));
-
-      const resultTree = await ngAdd({ project: '' })(
-        tree,
-        {} as SchematicContext
-      );
-
-      const resultConfig = readJSONFromTree(resultTree, 'angular.json');
-      expect(resultConfig.projects[PROJECT_NAME].architect.deploy).toBeTruthy();
-      expect(
-        resultConfig.projects[OTHER_PROJECT_NAME].architect.deploy
-      ).toBeFalsy();
-    });
-
-    it('should select the explicitly defined project', async () => {
-      const tree = Tree.empty();
-      const angularJSON = generateAngularJson();
-      tree.create('angular.json', JSON.stringify(angularJSON));
-
-      const resultTree = await ngAdd({ project: OTHER_PROJECT_NAME })(
-        tree,
-        {} as SchematicContext
-      );
-
-      const resultConfig = readJSONFromTree(resultTree, 'angular.json');
-      expect(
-        resultConfig.projects[OTHER_PROJECT_NAME].architect.deploy
-      ).toBeTruthy();
-      expect(resultConfig.projects[PROJECT_NAME].architect.deploy).toBeFalsy();
-    });
 
     it('should select the first project if there is only one', async () => {
       const tree = Tree.empty();

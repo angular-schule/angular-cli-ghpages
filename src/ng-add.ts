@@ -18,10 +18,7 @@ export const ngAdd = (options: NgAddOptions) => async (
   const { workspace } = await workspaces.readWorkspace('/', host);
 
   if (!options.project) {
-    // TODO: defaultProject is deprecated as for Angular 14. Remove support here when officially removed from Angular.
-    if (workspace.extensions.defaultProject) {
-      options.project = workspace.extensions.defaultProject as string;
-    } else if (workspace.projects.size === 1) {
+    if (workspace.projects.size === 1) {
       // If there is only one project, return that one.
       options.project = Array.from(workspace.projects.keys())[0];
     } else {

@@ -1,10 +1,10 @@
-import { NullLogger } from '@angular-devkit/core/src/logger';
+import { logging } from '@angular-devkit/core';
 
 import * as engine from './engine';
 
 describe('engine', () => {
   describe('prepareOptions', () => {
-    const logger = new NullLogger();
+    const logger = new logging.NullLogger();
 
     beforeEach(() => {
       process.env = {};
@@ -83,20 +83,31 @@ describe('engine', () => {
 
       expect(finalOptions.repo).toMatch(/angular-schule\/angular-cli-ghpages/);
     });
+  });
 
-    /*
-    // i was not able to somehow catch an error... :-(
-    it('should should throw an exception, if remote url could not be discovered', async () => {
+  describe('prepareOptions - handling dotfiles, notfound, and nojekyll', () => {
+    const logger = new logging.NullLogger();
 
-      expect.assertions(1);
+    it('should set dotfiles, notfound, and nojekyll to false when no- flags are given', async () => {
+      const options = {
+        noDotfiles: true,
+        noNotfound: true,
+        noNojekyll: true
+      };
+      const finalOptions = await engine.prepareOptions(options, logger);
 
-      const options = { git: 'xxx' };
+      expect(finalOptions.dotfiles).toBe(false);
+      expect(finalOptions.notfound).toBe(false);
+      expect(finalOptions.nojekyll).toBe(false);
+    });
 
-      try {
-        await engine.prepareOptions(options, logger);
-      } catch (e) {
-        expect(e).toBeTruthy();
-      }
-    })*/
+    it('should set dotfiles, notfound, and nojekyll to true when no- flags are not given', async () => {
+      const options = {};
+      const finalOptions = await engine.prepareOptions(options, logger);
+
+      expect(finalOptions.dotfiles).toBe(true);
+      expect(finalOptions.notfound).toBe(true);
+      expect(finalOptions.nojekyll).toBe(true);
+    });
   });
 });

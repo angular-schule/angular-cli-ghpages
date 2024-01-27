@@ -6,7 +6,7 @@ import {
   Target
 } from '@angular-devkit/architect/src';
 import { JsonObject, logging } from '@angular-devkit/core';
-import { BuildTarget } from 'interfaces';
+import { BuildTarget } from '../interfaces';
 
 import deploy from './actions';
 
@@ -22,7 +22,7 @@ describe('Deploy Angular apps', () => {
   beforeEach(() => initMocks());
 
   it('should invoke the builder', async () => {
-    const spy = spyOn(context, 'scheduleTarget').and.callThrough();
+    const spy = jest.spyOn(context, 'scheduleTarget');
     await deploy(mockEngine, context, BUILD_TARGET, {});
 
     expect(spy).toHaveBeenCalledWith(
@@ -36,7 +36,7 @@ describe('Deploy Angular apps', () => {
   });
 
   it('should invoke the builder with the baseHref', async () => {
-    const spy = spyOn(context, 'scheduleTarget').and.callThrough();
+    const spy = jest.spyOn(context, 'scheduleTarget');
     await deploy(mockEngine, context, BUILD_TARGET, { baseHref: '/folder' });
 
     expect(spy).toHaveBeenCalledWith(
@@ -50,10 +50,10 @@ describe('Deploy Angular apps', () => {
   });
 
   it('should invoke engine.run', async () => {
-    const spy = spyOn(mockEngine, 'run').and.callThrough();
+    const spy = jest.spyOn(mockEngine, 'run');
     await deploy(mockEngine, context, BUILD_TARGET, {});
 
-    expect(spy).toHaveBeenCalledWith('dist/some-folder', {}, context.logger);
+    expect(spy).toHaveBeenCalledWith('dist/some-folder/browser', {}, context.logger);
   });
 
   describe('error handling', () => {
@@ -100,7 +100,7 @@ const initMocks = () => {
     },
     currentDirectory: 'cwd',
     id: 1,
-    logger: new logging.NullLogger() as any,
+    logger: new logging.NullLogger(),
     workspaceRoot: 'cwd',
     addTeardown: _ => {},
     validateOptions: _ => Promise.resolve({} as any),

@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-// the standalone version
+// the standalone version, pure js, no compilation necessary
 
 var path = require('path'),
   engine = require('./engine/engine'),

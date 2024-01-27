@@ -16,43 +16,28 @@ The command `npx` is also able to install `angular-cli-ghpages` on the first usa
 
 ## Usage
 
-Execute `npx angular-cli-ghpages` in order to deploy the project with a build from `dist` folder.  
-**Note: You have to create the `dist` folder first (e.g. by running `ng build --prod`).**
+Execute `npx angular-cli-ghpages` in order to deploy the project with a build from `dist` folder. (`dist` is the default)
+**Note: You have to create the `dist` folder first (e.g. by running `ng build`).**
+
+Since Angular CLI 6 the build artifacts will be put in a subfolder, e.g. `dist/PROJECTNAME`.
+Since Angular CLI 17 the build artifacts will be put in a subfolder, followed by the folder `browser`, e.g. `dist/PROJECTNAME/browser`.
+
+Please take a look at the `dist` folder to see whether there is a subfolder with your project's name or not.
+If yes, you need to specify the deploy directory manually then when using this tool:
 
 Usage:
 
 ```bash
-ng build --prod --base-href "https://USERNAME.github.io/REPOSITORY_NAME/"
-npx angular-cli-ghpages [OPTIONS]
-```
-
-or
-
-```bash
-ng build --prod --base-href "/REPOSITORY_NAME/"
-npx angular-cli-ghpages [OPTIONS]
+ng build --base-href "/REPOSITORY_NAME/"
+npx angular-cli-ghpages --dir=dist/[PROJECTNAME]/browser
 ```
 
 or (`<base href="/">` stays untouched)
 
 ```bash
-ng build --prod
-npx angular-cli-ghpages [OPTIONS]
+ng build
+npx angular-cli-ghpages [OPTIONS]  --dir=dist/[PROJECTNAME]/browser
 ```
-
-If you want to push to `gh-pages` on the same repository with your default credentials, then just enter `npx angular-cli-ghpages` without any options.
-
-### Usage with Angular CLI 6 or higher
-
-With Angular CLI 6 the build artifacts will be put in a subfolder under `dist`.
-Please take a look at the `dist` folder to see whether there is a subfolder with your project's name or not.
-If yes, you need to specify the deploy directory manually then when using this tool:
-
-```bash
-npx angular-cli-ghpages --dir=dist/[PROJECTNAME]
-```
-
-I most cases, the `[PROJECTNAME]` can be found in the `angular.json` file at `defaultProject`.
 
 ### Usage with Ionic
 
@@ -76,7 +61,7 @@ In example, the following command runs [on our Travis-CI](https://travis-ci.org/
 npx angular-cli-ghpages --repo=https://GH_TOKEN@github.com/<username>/<repositoryname>.git --name="Displayed Username" --email=mail@example.org
 ```
 
-> You have to treat the GH_TOKEN as secure as a password!
+> Don't share the GH_TOKEN with anyone! It is essentially a password to your GitHub account.
 
 ## Options
 

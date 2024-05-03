@@ -50,12 +50,12 @@ More info can be found here:
 
        steps:
          - name: Checkout
-           uses: actions/checkout@v3
+           uses: actions/checkout@v4
 
-         - name: Use Node.js 16.x
-           uses: actions/setup-node@v3
+         - name: Use Node.js 20.x
+           uses: actions/setup-node@v4
            with:
-             node-version: 16.x
+             node-version: 20.x
              cache: "npm"
 
          - name: Prepare and deploy

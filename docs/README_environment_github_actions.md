@@ -71,7 +71,7 @@ More info can be found here:
    ```
 
 6. Make sure to replace **`/the-repository-name/`**, **`Displayed Username`** and **`mail@example.org`** with correct values in above snippet.
-7. If you do not have tests you may remove step "Run tests" from the example.
+7. If you do not have tests you may remove the step "Run tests" from the example.
 8. You can also control when your workflows are triggered:
 
    - It can be helpful to not have your workflows run on every push to every branch in the repo.

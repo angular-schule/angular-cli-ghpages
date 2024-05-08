@@ -78,7 +78,7 @@ describe('engine', () => {
     // this allows us to inject tokens from environment even if --repo is not set manually
     // it uses gh-pages lib directly for this
     it('should discover the remote url, if no --repo is set', async () => {
-      const options = {repo: 'angular-schule/angular-cli-ghpages'};
+      const options = {};
       const finalOptions = await engine.prepareOptions(options, logger);
 
       expect(finalOptions.repo).toMatch(/angular-schule\/angular-cli-ghpages/);

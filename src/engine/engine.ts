@@ -1,10 +1,10 @@
-import { logging } from '@angular-devkit/core';
+import {logging} from '@angular-devkit/core';
 import * as fse from 'fs-extra';
 import * as path from 'path';
 
-import { Schema } from '../deploy/schema';
-import { GHPages } from '../interfaces';
-import { defaults } from './defaults';
+import {Schema} from '../deploy/schema';
+import {GHPages} from '../interfaces';
+import {defaults} from './defaults';
 
 import Git from 'gh-pages/lib/git';
 
@@ -293,22 +293,23 @@ async function publishViaGhPages(
   if (options.dryRun) {
     logger.info(
       `Dry-run / SKIPPED: publishing folder '${dir}' with the following options: ` +
-        JSON.stringify(
-          {
-            dir,
-            repo:       options.repo      || 'current working directory (which must be a git repo in this case) will be used to commit & push',
-            message:    options.message,
-            branch:     options.branch,
-            name:       options.name      ? `the name '${options.username} will be used for the commit` : 'local or global git user name will be used for the commit',
-            email:      options.email     ? `the email '${options.cname} will be used for the commit` : 'local or global git user email will be used for the commit',
-            dotfiles:   options.dotfiles  ? `files starting with dot ('.') will be included` : `files starting with dot ('.') will be ignored`,
-            notfound:   options.notfound  ? 'a 404.html file will be created' : 'a 404.html file will NOT be created',
-            nojekyll:   options.nojekyll  ? 'a .nojekyll file will be created' : 'a .nojekyll file will NOT be created',
-            cname:      options.cname     ? `a CNAME file with the content '${options.cname}' will be created` : 'a CNAME file will NOT be created'
-          },
-          null,
-          '  '
-        )
+      JSON.stringify(
+        {
+          dir,
+          repo: options.repo || 'current working directory (which must be a git repo in this case) will be used to commit & push',
+          message: options.message,
+          branch: options.branch,
+          name: options.name ? `the name '${options.username} will be used for the commit` : 'local or global git user name will be used for the commit',
+          email: options.email ? `the email '${options.cname} will be used for the commit` : 'local or global git user email will be used for the commit',
+          dotfiles: options.dotfiles ? `files starting with dot ('.') will be included` : `files starting with dot ('.') will be ignored`,
+          notfound: options.notfound ? 'a 404.html file will be created' : 'a 404.html file will NOT be created',
+          nojekyll: options.nojekyll ? 'a .nojekyll file will be created' : 'a .nojekyll file will NOT be created',
+          cname: options.cname ? `a CNAME file with the content '${options.cname}' will be created` : 'a CNAME file will NOT be created',
+          add: options.add ? 'all files will be added to the branch. Existing files will not be removed' : 'existing files will be removed from the branch before adding the new ones',
+        },
+        null,
+        '  '
+      )
     );
     return;
   }

@@ -6,6 +6,7 @@ node_modules
 *.swp
 *.swo
 *.d.ts
+.idea
 
 *.classpath
 *.project

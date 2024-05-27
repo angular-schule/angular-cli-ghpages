@@ -71,6 +71,11 @@
       "description": "Generate a CNAME file for the specified domain.",
       "default": ""
     },
+    "add": {
+      "type": "boolean",
+      "description": "Only add, and never remove existing files from the GitHub pages branch.",
+      "default": false
+    },
     "dir": {
       "type": "string",
       "description": "Overrides the directory for all published sources, relative to the current working directory.",

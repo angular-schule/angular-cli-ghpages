@@ -1,6 +1,6 @@
 # angular-cli-ghpages: README for the standalone program
 
-In the past this project was a standalone program.
+In the past, this project was a standalone program.
 This is still possible.
 
 ## Installation & Setup
@@ -85,7 +85,7 @@ Output the version number. Please provide the version number on any bug report!
 
 By default, **gh-pages** assumes that the current working directory is a git repository,
 and that you want to push changes to the `origin` remote.
-If instead your files are not in a git repository, or if you want to push to another repository,
+If instead, your files are not in a git repository, or if you want to push to another repository,
 you can provide the repository URL in the `repo` option.
 
 #### --message <a name="message"></a>
@@ -125,7 +125,7 @@ In this case provide both `name` and `email` string values to identify the commi
 - Default: `dist`
 
 Directory for all published sources, relative to the current working directory.  
-**Starting with Angular CLI 6 the build artifacts will be put in a subfolder under `dist`.
+**Starting with Angular CLI 6, the build artifacts will be put in a subfolder under `dist`.
 Please take a look at the `dist` folder to see whether there is a subfolder with your project's name or not.**
 
 This option can be used to deploy completely different folders,
@@ -139,7 +139,7 @@ which are not related at all to angular.
   - `npx angular-cli-ghpages` -- Dotfiles are included by default.
   - `npx angular-cli-ghpages --no-dotfiles` -- Dotfiles are ignored.
 
-The command includes dotfiles by default (e.g `.htaccess` will be committed)
+The command includes dotfiles by default (e.g. `.htaccess` will be committed)
 With `--no-dotfiles` files starting with `.` are ignored.
 
 #### --dry-run <a name="dry-run"></a>
@@ -160,6 +160,17 @@ Run through without making any changes. This can be very usefull, because it out
   - `npx angular-cli-ghpages --cname=example.com`
 
 A CNAME file will be created enabling you to use a custom domain. [More information on Github Pages using a custom domain](https://help.github.com/articles/using-a-custom-domain-with-github-pages/).
+
+#### --add <a name="add"></a>
+
+- **optional**
+- Default: `false` (boolean) – The existing files will be removed from the branch you'll be pushing to as expected.
+- Example:
+  - `npx angular-cli-ghpages --add=true`
+
+If is set to `true`, it will only add, and never remove existing files.
+By default, existing files in the target branch are removed before adding the ones.
+[More information](https://www.npmjs.com/package/gh-pages#optionsadd).
 
 ## FAQ
 

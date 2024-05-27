@@ -9,6 +9,7 @@ export const defaults = {
   notfound: true,
   nojekyll: true,
   cname: undefined,
+  add: false,
   dryRun: false,
   remote: 'origin',
   git: 'git'

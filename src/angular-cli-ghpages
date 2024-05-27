@@ -66,6 +66,11 @@ commander
     defaults.cname
   )
   .option(
+    '-a, --add',
+    'Only add, and never remove existing files from the GitHub pages branch.',
+    defaults.add
+  )
+  .option(
     '--dry-run',
     'For testing: Run through without making any changes.',
     defaults.dryRun

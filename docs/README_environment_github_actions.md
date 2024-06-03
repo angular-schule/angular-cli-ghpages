@@ -58,16 +58,21 @@ More info can be found here:
              node-version: 20.x
              cache: "npm"
 
+         - name: Install dependencies
+           run: npm install
+
+         - name: Run tests
+           run: npm run ng -- test --no-watch --no-progress --browsers=ChromeHeadless
+
          - name: Prepare and deploy
            env:
              GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-           run: |
-             npm install
-             npm run ng -- deploy --base-href=/the-repository-name/ --name="Displayed Username" --email="mail@example.org"
+           run: npm run ng -- deploy --base-href=/the-repository-name/ --name="Displayed Username" --email="mail@example.org"
    ```
 
 6. Make sure to replace **`/the-repository-name/`**, **`Displayed Username`** and **`mail@example.org`** with correct values in above snippet.
-7. You can also control when your workflows are triggered:
+7. If you do not have tests you may remove the step "Run tests" from the example.
+8. You can also control when your workflows are triggered:
 
    - It can be helpful to not have your workflows run on every push to every branch in the repo.
 
@@ -100,8 +105,8 @@ More info can be found here:
 
    - For more information see [Events that trigger workflows](https://help.github.com/articles/events-that-trigger-workflows) and [Workflow syntax for GitHub Actions](https://help.github.com/articles/workflow-syntax-for-github-actions#on).
 
-8. Commit and Push to add the workflow file.
-9. Done.
+9. Commit and Push to add the workflow file.
+10. Done.
 
 ---
 

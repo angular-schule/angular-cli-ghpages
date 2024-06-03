@@ -1,6 +1,6 @@
 {
   "name": "angular-cli-ghpages",
-  "version": "2.0.0-beta.2",
+  "version": "2.0.0",
   "description": "Deploy your Angular app to GitHub Pages or Cloudflare Pages directly from the Angular CLI (ng deploy)",
   "main": "index.js",
   "bin": {
@@ -55,9 +55,9 @@
   },
   "homepage": "https://github.com/angular-schule/angular-cli-ghpages/#readme",
   "devDependencies": {
-    "@angular-devkit/architect": "~0.1700.0",
-    "@angular-devkit/core": "^17.0.0",
-    "@angular-devkit/schematics": "^17.0.0",
+    "@angular-devkit/architect": "~0.1800.0",
+    "@angular-devkit/core": "^18.0.0",
+    "@angular-devkit/schematics": "^18.0.0",
     "@types/fs-extra": "^11.0.4",
     "@types/jest": "^29.5.11",
     "@types/node": "^20.11.7",
@@ -69,9 +69,9 @@
     "typescript": "~5.2.2"
   },
   "dependencies": {
-    "@angular-devkit/architect": "~0.1700.0",
-    "@angular-devkit/core": "^17.0.0",
-    "@angular-devkit/schematics": "^17.0.0",
+    "@angular-devkit/architect": "~0.1800.0",
+    "@angular-devkit/core": "^18.0.0",
+    "@angular-devkit/schematics": "^18.0.0",
     "commander": "^3.0.0-0",
     "fs-extra": "^11.2.0",
     "gh-pages": "^6.1.1"

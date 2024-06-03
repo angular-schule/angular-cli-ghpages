@@ -27,6 +27,7 @@
    - [--no-notfound](#no-notfound)
    - [--no-nojekyll](#no-nojekyll)
    - [--cname](#cname)
+   - [--add](#add)
    - [--dry-run](#dry-run)
 7. [📁 Configuration File](#configuration-file)
 8. [🌍 Environments](#environments)
@@ -77,9 +78,9 @@ You can also and modify your `angular.json` to archive the same:
 ```
 
 For your convenience, you can also use `prerenderTarget` (which adds the suffix `:prerender:production`).
-There is no support for `universalBuildTarget` or `serverTarget` because Github Pages only supports static assets and no Server-Side Rendering!
+There is no support for `universalBuildTarget` or `serverTarget` because GitHub Pages only supports static assets and no Server-Side Rendering!
 
-We will then try to deploy the `dist/test/browser` folder to Github Pages.
+We will then try to deploy the `dist/test/browser` folder to GitHub Pages.
 If this is not the folder that you want to serve, you should explicitly specify the directory with the `--dir` option:
 
 ```bash
@@ -111,7 +112,7 @@ If you already have an existing Angular project on GitHub, skip step 1 and 2.
    cd your-angular-project
    ```
 
-2. By default the Angular CLI initializes a Git repository for you.  
+2. By default, the Angular CLI initializes a Git repository for you.  
    To add a new remote for GitHub, use the `git remote add` command:
 
    ```sh
@@ -167,8 +168,8 @@ ng add angular-cli-ghpages --project MYPROJECTNAME
 ## 🚀 Continuous Delivery <a name="continuous-delivery"></a>
 
 If you run this command from a CI/CD environment, the deployment will most likely not work out of the box.
-For security reasons, those environments usually have read-only privileges or you haven't set up Git correctly.
-Therefore you should take a look at ["personal access tokens" `GH_TOKEN`](https://help.github.com/articles/creating-an-access-token-for-command-line-use/) (which works everywhere) and the ["installation access token" `GITHUB_TOKEN`](https://help.github.com/en/actions/automating-your-workflow-with-github-actions/authenticating-with-the-github_token) (which is exclusively provided by GitHub actions).
+For security reasons, those environments usually have read-only privileges, or you haven't set up Git correctly.
+Therefore, you should take a look at ["personal access tokens" `GH_TOKEN`](https://help.github.com/articles/creating-an-access-token-for-command-line-use/) (which works everywhere) and the ["installation access token" `GITHUB_TOKEN`](https://help.github.com/en/actions/automating-your-workflow-with-github-actions/authenticating-with-the-github_token) (which is exclusively provided by GitHub actions).
 In short: a token replaces username and password and is a safer choice because a token can be revoked at any time.
 
 All you need to do is to set an environment variable called `GH_TOKEN` (or `PERSONAL_TOKEN`) in your CI/CD environment.
@@ -201,7 +202,7 @@ ng deploy --repo=https://github.com/<username>/<repositoryname>.git --name="Your
   - `ng deploy` – The tag `<base href="/">` remains unchanged in your `index.html`
   - `ng deploy --base-href=/the-repositoryname/` – The tag `<base href="/the-repositoryname/">` is added to your `index.html`
 
-Specifies the base URL for the application being built.
+Specify the base URL for the application being built.
 Same as `ng build --base-href=/XXX/`
 
 **ℹ️ Please read the next lines carefully, or you will get 404 errors in case of a wrong configuration!**
@@ -266,7 +267,7 @@ ng deploy --build-target=test
   - `ng deploy` – Angular project is build in production mode before the deployment
   - `ng deploy --no-build` – Angular project is NOT build
 
-Skip build process during deployment.
+Skip the build process during deployment.
 This can be used when you are sure that you haven't changed anything and want to deploy with the latest artifact.
 This command causes the `--build-target` setting to have no effect.
 
@@ -280,7 +281,7 @@ This specifies the target repository. If none is given as an option, the reposit
 
 By default, this command assumes that the current working directory is a Git repository,
 and that you want to push changes to the `origin` remote.
-If instead your files are not in a git repository, or if you want to push to another repository,
+If instead, your files are not in a git repository, or if you want to push to another repository,
 you can provide the repository URL in the `repo` option.
 
 > **ℹ️ Hint**
@@ -340,8 +341,9 @@ With `--no-dotfiles` files starting with `.` are ignored.
   - `ng deploy` – A `404.html` file is created by default.
   - `ng deploy --no-notfound` – No `404.html` file is created.
 
-By default a `404.html` file is created, because this is the only known workaround to avoid 404 error messages on GitHub Pages.
-For Cloudflare Pages we highly recommend to disable the `404.html` file by setting this switch to true! see [#178](https://github.com/angular-schule/angular-cli-ghpages/issues/178)
+By default, a `404.html` file is created, because this is the only known workaround to avoid 404 error messages on GitHub Pages.
+For Cloudflare Pages we highly recommend to disable the `404.html` file by setting this switch to true! 
+See [#178](https://github.com/angular-schule/angular-cli-ghpages/issues/178)
 
 #### --no-nojekyll <a name="no-nojekyll"></a>
 
@@ -351,7 +353,7 @@ For Cloudflare Pages we highly recommend to disable the `404.html` file by setti
   - `ng deploy` – A `.nojekyll` file is created by default.
   - `ng deploy --no-nojekyll` – No `.nojekyll` file is created.
 
-By default a `.nojekyll` file is created, because we assume you don't want to compile the build again with Jekyll.
+By default, a `.nojekyll` file is created, because we assume you don't want to compile the build again with Jekyll.
 
 **Explanation:**
 By creating such a file in the root of your pages repo, you will bypass the Jekyll static site generator on GitHub Pages.
@@ -369,6 +371,17 @@ The same applies to `.txt` files in your assets folder: They will just disappear
 
 A CNAME file will be created enabling you to use a custom domain.
 [More information on GitHub Pages using a custom domain](https://help.github.com/articles/using-a-custom-domain-with-github-pages/).
+
+#### --add <a name="add"></a>
+
+- **optional**
+- Default: `false` (boolean) – The existing files will be removed from the branch you'll be pushing to as expected.
+- Example:
+  - `ng deploy --add=true`
+
+If is set to `true`, it will only add, and never remove existing files.
+By default, existing files in the target branch are removed before adding the ones.
+[More information](https://www.npmjs.com/package/gh-pages#optionsadd).
 
 #### --dir <a name="dir"></a>
 
@@ -439,7 +452,7 @@ Now you can just run `ng deploy` without all the options in the command line! �
 
 ## 🌍 Environments <a name="environments"></a>
 
-We have seen `angular-cli-ghpages` running on various environments, like Travis CI, CircleCi or Github Actions.
+We have seen `angular-cli-ghpages` running on various environments, like Travis CI, CircleCi or GitHub Actions.
 Please share your knowledge by writing an article about how to set up the deployment.
 
 1. [GitHub Actions](https://angular.schule/blog/2020-01-everything-github)

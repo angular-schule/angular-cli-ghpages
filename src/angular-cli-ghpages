@@ -25,6 +25,11 @@ commander
     defaults.repo
   )
   .option(
+    '-R, --remote <remote>',
+    'Provide the remote name. If no value is provided, and --repo is not set, `origin` is used.',
+    defaults.remote
+  )
+  .option(
     '-m, --message <message>',
     'The commit message, must be wrapped in quotes.',
     defaults.message

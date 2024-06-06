@@ -24,6 +24,10 @@
       "default": false,
       "description": "Skip build process during deployment."
     },
+    "remote": {
+      "type": "string",
+      "description": "Provide the remote name. If no value is provided, and --repo is not set, `origin` is used."
+    },
     "repo": {
       "type": "string",
       "description": "Provide the repository URL. If no value is provided, the `origin` remote of the current working directory is used."

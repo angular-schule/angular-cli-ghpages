@@ -88,6 +88,16 @@ and that you want to push changes to the `origin` remote.
 If instead, your files are not in a git repository, or if you want to push to another repository,
 you can provide the repository URL in the `repo` option.
 
+#### --remote <a name="remote"></a>
+
+- **optional**
+- Default: `origin`
+- Example: `npx angular-cli-ghpages --remote=github`
+
+By default, **gh-pages** assumes that the current working directory is a git repository,
+and that you want to push changes to the `origin` remote.
+If you want to push to another remote, you can provide the remote name in the `remote` option.
+
 #### --message <a name="message"></a>
 
 - **optional**

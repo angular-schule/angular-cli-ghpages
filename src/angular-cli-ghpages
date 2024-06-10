@@ -21,8 +21,13 @@ commander
   )
   .option(
     '-r, --repo <repo>',
-    'Provide the repository URL. If no value is provided, the `origin` remote of the current working directory is used.',
+    'Provide the repository URL. If no value is provided, a remote of the current working directory is used (defaults to `origin`; see --remote for details).',
     defaults.repo
+  )
+  .option(
+    '-R, --remote <remote>',
+    'Provide the remote name. If no value is provided, `origin` is used. Has no function if --repo is set.',
+    defaults.remote
   )
   .option(
     '-m, --message <message>',

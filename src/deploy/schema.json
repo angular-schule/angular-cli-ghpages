@@ -26,11 +26,11 @@
     },
     "remote": {
       "type": "string",
-      "description": "Provide the remote name. If no value is provided, and --repo is not set, `origin` is used."
+      "description": "Provide the remote name. If no value is provided, `origin` is used. Has no function if --repo is set."
     },
     "repo": {
       "type": "string",
-      "description": "Provide the repository URL. If no value is provided, the `origin` remote of the current working directory is used."
+      "description": "Provide the repository URL. If no value is provided, a remote of the current working directory is used (defaults to `origin`; see --remote for details)."
     },
     "message": {
       "type": "string",

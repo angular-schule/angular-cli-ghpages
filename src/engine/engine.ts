@@ -297,6 +297,7 @@ async function publishViaGhPages(
         {
           dir,
           repo: options.repo || 'current working directory (which must be a git repo in this case) will be used to commit & push',
+          remote: options.remote,
           message: options.message,
           branch: options.branch,
           name: options.name ? `the name '${options.username} will be used for the commit` : 'local or global git user name will be used for the commit',

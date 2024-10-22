@@ -26,7 +26,8 @@
     },
     "remote": {
       "type": "string",
-      "description": "Provide the remote name. If no value is provided, `origin` is used. Has no function if --repo is set."
+      "description": "Provide the remote name. If no value is provided, `origin` is used. Has no function if --repo is set.",
+      "default": "origin"
     },
     "repo": {
       "type": "string",

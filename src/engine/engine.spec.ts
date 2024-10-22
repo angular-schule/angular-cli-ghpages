@@ -83,6 +83,22 @@ describe('engine', () => {
 
       expect(finalOptions.repo).toMatch(/angular-schule\/angular-cli-ghpages/);
     });
+
+    describe('remote', () => {
+      it('should use the provided remote if --remote is set', async () => {
+        const options = { remote: 'foobar', repo: 'xxx' };
+        const finalOptions = await engine.prepareOptions(options, logger);
+
+        expect(finalOptions.remote).toBe('foobar');
+      });
+
+      it('should use the origin remote if --remote is not set', async () => {
+        const options = { repo: 'xxx' };
+        const finalOptions = await engine.prepareOptions(options, logger);
+
+        expect(finalOptions.remote).toBe('origin');
+      });
+    });
   });
 
   describe('prepareOptions - handling dotfiles, notfound, and nojekyll', () => {

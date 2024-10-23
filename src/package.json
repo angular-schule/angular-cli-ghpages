@@ -1,6 +1,6 @@
 {
   "name": "angular-cli-ghpages",
-  "version": "2.0.1",
+  "version": "2.0.3",
   "description": "Deploy your Angular app to GitHub Pages or Cloudflare Pages directly from the Angular CLI (ng deploy)",
   "main": "index.js",
   "bin": {

@@ -94,6 +94,9 @@ export async function prepareOptions(
     logger.info('Dry-run: No changes are applied at all.');
   }
 
+  // TODO: Add warning if only name OR only email is set (not both)
+  // When user object is not created, gh-pages uses local/global git config
+  // This might be confusing if user only sets one parameter
   if (options.name && options.email) {
     options['user'] = {
       name: options.name,
@@ -300,8 +303,8 @@ async function publishViaGhPages(
           remote: options.remote,
           message: options.message,
           branch: options.branch,
-          name: options.name ? `the name '${options.username} will be used for the commit` : 'local or global git user name will be used for the commit',
-          email: options.email ? `the email '${options.cname} will be used for the commit` : 'local or global git user email will be used for the commit',
+          name: options.name ? `the name '${options.name}' will be used for the commit` : 'local or global git user name will be used for the commit',
+          email: options.email ? `the email '${options.email}' will be used for the commit` : 'local or global git user email will be used for the commit',
           dotfiles: options.dotfiles ? `files starting with dot ('.') will be included` : `files starting with dot ('.') will be ignored`,
           notfound: options.notfound ? 'a 404.html file will be created' : 'a 404.html file will NOT be created',
           nojekyll: options.nojekyll ? 'a .nojekyll file will be created' : 'a .nojekyll file will NOT be created',

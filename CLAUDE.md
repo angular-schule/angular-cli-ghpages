@@ -197,8 +197,78 @@ Tests use Jest and are located alongside source files with `.spec.ts` extension:
 - `deploy/actions.spec.ts` - Deployment action tests
 - `engine/engine.spec.ts` - Core engine tests
 - `ng-add.spec.ts` - Schematic tests
+- `engine/parameter-passthrough.spec.ts` - Parameter transformation tests
+- `engine/edge-cases.spec.ts` - Edge case and boundary tests
+- `cli-e2e.spec.ts` - End-to-end CLI testing
 
 Snapshot tests are stored in `__snapshots__/` directory.
+
+### Testing Philosophy: Explicit Assertions
+
+**CRITICAL: All tests MUST use explicit assertions. Never use `.toContain()` for value testing.**
+
+**Rules:**
+1. **Explicit expected values** - Always write out the exact expected value
+2. **Use `.toBe()` for exact equality** - Not `.toContain()` unless testing substring presence
+3. **Variable reuse for passthrough** - If input should equal output unchanged, use the same variable for both
+4. **Separate variables for transformations** - If input is transformed, use distinct `input` and `expected` variables
+
+**Good examples:**
+```typescript
+// ✅ Passthrough - same variable shows value doesn't change
+const repoUrl = 'https://github.com/test/repo.git';
+const options = { repo: repoUrl };
+const result = await prepareOptions(options, logger);
+expect(result.repo).toBe(repoUrl);
+
+// ✅ Transformation - separate variables show what changes
+const inputUrl = 'https://github.com/test/repo.git';
+const token = 'secret_token';
+const expectedUrl = 'https://x-access-token:secret_token@github.com/test/repo.git';
+expect(result.repo).toBe(expectedUrl);
+```
+
+**Bad examples:**
+```typescript
+// ❌ Weak - doesn't verify exact value
+expect(result.repo).toContain('github.com');
+
+// ❌ Unclear - is this supposed to change or not?
+const options = { branch: 'main' };
+expect(result.branch).toBe('main'); // Should use same variable!
+
+// ❌ Cheating - use .toBe() instead
+expect(result.message).toContain('Deploy');
+expect(result.message).toMatch(/Deploy/);
+expect(result.message).toStartWith('Deploy');
+expect(result.message.startsWith('Deploy')).toBe(true);
+```
+
+**ONLY use `.toBe()` for value assertions.** Other matchers like `.toContain()`, `.toMatch()`, `.toStartWith()` are forbidden for value testing.
+
+### TypeScript: NEVER Use `any`
+
+**HARD RULE: The `any` type is FORBIDDEN in all code.**
+
+- Never use `any` type
+- Use proper types, `unknown`, or `Partial<T>` instead
+- If mocking complex types, use `Partial<T>` and cast: `mockObject as CompleteType`
+- If type is truly unknown, use `unknown` and add type guards
+
+**Bad:**
+```typescript
+const result: any = getValue();
+const mock = {} as any;
+```
+
+**Good:**
+```typescript
+const result: string | number = getValue();
+const mock: Partial<ComplexType> = { ...props };
+const typedMock = mock as ComplexType;
+```
+
+This explicit style makes tests serve as precise documentation of behavior and catches subtle regressions.
 
 ## Related Projects
 
@@ -210,3 +280,7 @@ This project builds upon:
 For sync considerations, monitor:
 - https://github.com/angular/angularfire/blob/master/src/schematics/deploy/builder.ts
 - https://github.com/angular/angularfire/blob/master/src/schematics/deploy/actions.ts
+
+## GitHub CLI Usage
+
+When performing GitHub operations (creating issues, PRs, etc.), use the `gh` CLI tool instead of web requests to avoid rate limiting and authentication issues.

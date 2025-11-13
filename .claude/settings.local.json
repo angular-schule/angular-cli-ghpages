@@ -1,0 +1,17 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(gh pr view 186 --json title,body,comments,reviews,state,author,createdAt,updatedAt,files)",
+      "Bash(gh pr diff 186 --patch)",
+      "Bash(cat package.json)",
+      "WebFetch(domain:github.com)",
+      "Bash(npm view gh-pages@6.1.1)",
+      "Bash(npm test)",
+      "Bash(npm run build)",
+      "Bash(node src/dist/angular-cli-ghpages --dry-run --dir=custom/dist)",
+      "Bash(npm test -- builder-passthrough.spec.ts)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

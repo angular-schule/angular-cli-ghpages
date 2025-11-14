@@ -6,7 +6,7 @@ var path = require('path'),
   engine = require('./engine/engine'),
   defaults = require('./engine/defaults').defaults,
   pjson = require('./package.json'),
-  commander = require('commander');
+  commander = require('./commander-fork');
 
 // defaults-file was ignored for --no-dotfiles, so it is not used here
 // TODO: review https://github.com/tj/commander.js/issues/928 and check again if it now works

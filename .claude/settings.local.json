@@ -9,7 +9,18 @@
       "Bash(npm test)",
       "Bash(npm run build)",
       "Bash(node src/dist/angular-cli-ghpages --dry-run --dir=custom/dist)",
-      "Bash(npm test -- builder-passthrough.spec.ts)"
+      "Bash(npm test -- builder-passthrough.spec.ts)",
+      "Bash(rm -rf commander-v3)",
+      "Bash(git clone --depth 1 --branch v3.0.0 https://github.com/tj/commander.js.git commander-v3)",
+      "Read(//tmp/commander-v3/**)",
+      "Bash(mkdir -p /Users/johanneshoppe/Work/angular-schule/angular-cli-ghpages/commander-fork)",
+      "Bash(node -e \"console.log(require.resolve(''../commander-fork''))\")",
+      "Bash(node angular-cli-ghpages --version)",
+      "Bash(node angular-cli-ghpages --help)",
+      "Bash(./angular-cli-ghpages --version)",
+      "Bash(npm test -- commander-fork)",
+      "Bash(npm test -- commander-fork/test)",
+      "Bash(timeout 30 npm test)"
     ],
     "deny": [],
     "ask": []

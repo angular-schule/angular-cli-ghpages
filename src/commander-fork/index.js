@@ -67,7 +67,7 @@ function Option(flags, description) {
   this.flags = flags;
   this.required = flags.indexOf('<') >= 0;
   this.optional = flags.indexOf('[') >= 0;
-  this.negate = flags.indexOf('-no-') !== -1;
+  this.negate = /(^|[\s,|])--no-/.test(flags);
   flags = flags.split(/[ ,|]+/);
   if (flags.length > 1 && !/^[[<]/.test(flags[1])) this.short = flags.shift();
   this.long = flags.shift();
@@ -82,7 +82,8 @@ function Option(flags, description) {
  */
 
 Option.prototype.name = function() {
-  return this.long.replace(/^--/, '');
+  // Strip -- first, then - (for short-only flags that end up in .long)
+  return this.long.replace(/^--/, '').replace(/^-/, '');
 };
 
 /**
@@ -117,6 +118,7 @@ Option.prototype.is = function(arg) {
  */
 
 function Command(name) {
+  EventEmitter.call(this);
   this.options = [];
   this._allowUnknownOption = false;
   this._name = name || '';
@@ -502,9 +504,10 @@ Command.prototype.version = function(str, flags, description) {
   flags = flags || '-V, --version';
   description = description || 'output the version number';
   var versionOption = new Option(flags, description);
-  this._versionOptionName = versionOption.long.substr(2) || 'version';
+  // Use attributeName() for camelCase conversion (e.g., 'version-info' -> 'versionInfo')
+  this._versionOptionName = versionOption.attributeName();
   this.options.push(versionOption);
-  this.on('option:' + this._versionOptionName, function() {
+  this.on('option:' + versionOption.name(), function() {
     process.stdout.write(str + '\n');
     process.exit(0);
   });
@@ -658,6 +661,7 @@ Command.prototype.outputHelp = function(cb) {
   }
   process.stdout.write(cbOutput);
   this.emit(this._helpLongFlag);
+  this.emit('help'); // stable hook for custom flags
 };
 
 /**

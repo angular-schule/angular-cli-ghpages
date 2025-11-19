@@ -1,16 +1,9 @@
 # Commander Fork
 
-Minimal fork of commander v3.0.2 for angular-cli-ghpages.
+**Minimal subset fork of commander v3.0.2 for angular-cli-ghpages.**
 
-## Why Fork?
-
-Commander v4+ introduced breaking changes that would break user scripts:
-- v9: Boolean option default values changed (breaks `--no-dotfiles` behavior)
-- v9: Option casing enforcement (breaks mixed-case scripts)
-- v9: Excess arguments now error by default (breaks flexible scripts)
-- v12: Default export removed (breaks `require('commander')`)
-
-Rather than adapt to this ever-changing dependency and potentially break user workflows, we decided to fork commander v3.0.2 and freeze its behavior permanently.
+⚠️ **This is NOT a drop-in replacement for commander v3.0.2**
+This fork intentionally removes features (subcommands, actions, etc.) and preserves only the option parsing functionality needed by angular-cli-ghpages.
 
 ## What This Fork Contains
 
@@ -32,57 +25,48 @@ Rather than adapt to this ever-changing dependency and potentially break user wo
 - Action handlers (`.action()`)
 - Argument definitions (`.arguments()`)
 - Advanced help customization
-- Custom event listeners
+- Custom event listeners (except version and help)
 - Most EventEmitter functionality
 
-### What Was Stripped
+## Compatibility Matrix
 
-Original commander v3.0.2:
-- **1332 lines** of code
-- **~32KB** file size
+| Capability                  | Commander v3.0.2 | commander-fork |
+| --------------------------- | ---------------: | -------------: |
+| Options parsing             |                ✅ |             ✅ |
+| Negated booleans (`--no-`)  |                ✅ |             ✅ |
+| Version flag (`-V`)         |                ✅ |             ✅ |
+| Help flag (`-h, --help`)    |                ✅ |             ✅ |
+| Option coercion functions   |                ✅ |             ✅ |
+| Regex validation            |                ✅ |             ✅ |
+| `.opts()` method            |                ✅ |             ✅ |
+| Subcommands (`.command()`)  |                ✅ |             ❌ |
+| `.action()` handlers        |                ✅ |             ❌ |
+| `.arguments()` definition   |                ✅ |             ❌ |
+| Custom EventEmitter events  |                ✅ |             ❌ |
 
-Commander-fork:
-- **~600-700 lines** of code (estimated)
-- **~15-20KB** file size (estimated)
-- **Removed ~50%** of the codebase
+## Supported API Surface
 
-## Usage
+### Methods You Can Use
 
-```javascript
-// In angular-cli-ghpages
-const commander = require('./commander-fork');
+- ✅ `program.version(str, flags?, description?)` - Set version
+- ✅ `program.description(str)` - Set description
+- ✅ `program.option(flags, description, fn?, defaultValue?)` - Define option
+- ✅ `program.parse(argv)` - Parse arguments
+- ✅ `program.opts()` - Get options object
+- ✅ `program.name(str?)` - Get/set name
+- ✅ `program.usage(str?)` - Get/set usage
+- ✅ `program.help()` - Output help and exit
+- ✅ `program.helpInformation()` - Get help text
+- ✅ `program.helpOption(flags?, description?)` - Customize help
+- ✅ `program.allowUnknownOption()` - Allow unknown options
+- ✅ Property access: `program.foo`, `program.bar`
 
-commander
-  .version('2.0.0')
-  .description('Deploy Angular app to GitHub Pages')
-  .option('-d, --dir <dir>', 'Base directory', 'dist/browser')
-  .option('-r, --repo <repo>', 'Repository URL')
-  .option('--no-dotfiles', 'Exclude dotfiles')
-  .parse(process.argv);
+### Methods NOT Supported
 
-console.log(commander.dir);      // Access parsed option
-console.log(commander.repo);     // Access parsed option
-console.log(commander.dotfiles); // false if --no-dotfiles was used
-```
-
-## Key Behavior Preserved
-
-### `--no-` Prefix Handling
-
-This is the CRITICAL behavior we're preserving from v3:
-
-```javascript
-.option('--no-dotfiles', 'Exclude dotfiles')
-
-// Without flag:    commander.dotfiles === true  (implicit default)
-// With --no-dotfiles:  commander.dotfiles === false
-```
-
-In commander v9+, this behavior changed to require explicit defaults, which would break our CLI.
-
-### Implicit Defaults for Boolean Flags
-
-When you define `--no-foo`, commander v3 automatically sets the default to `true`. This is the behavior we're freezing.
+- ❌ `program.command(name, description?)` - Use full commander for this
+- ❌ `program.action(fn)` - Use full commander for this
+- ❌ `program.arguments(desc)` - Use full commander for this
+- ❌ Custom EventEmitter listeners beyond version/help
 
 ## Maintenance
 
@@ -95,16 +79,6 @@ For any fixes:
 1. Update `commander-fork/index.js`
 2. Add test in `commander-fork/__tests__/`
 3. Bump version to `3.0.2-fork.2`, etc.
-4. Document in `FORK_NOTICE.md`
-
-## License
-
-MIT License
-
-Original work Copyright (c) 2011 TJ Holowaychuk <tj@vision-media.ca>
-Modified work Copyright (c) 2025 angular-cli-ghpages contributors
-
-See LICENSE file for full text.
 
 ## Original Project
 

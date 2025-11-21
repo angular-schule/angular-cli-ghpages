@@ -21,7 +21,8 @@
       "Bash(npm test -- commander-fork)",
       "Bash(npm test -- commander-fork/test)",
       "Bash(timeout 30 npm test)",
-      "Bash(git log:*)"
+      "Bash(git log:*)",
+      "Bash(npm test:*)"
     ],
     "deny": [],
     "ask": []

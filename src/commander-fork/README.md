@@ -2,7 +2,22 @@
 
 **Minimal subset fork of commander v3.0.2 for angular-cli-ghpages.**
 
+## 🚨 INTERNAL USE ONLY
+
+**This fork exists SOLELY for angular-cli-ghpages and will NEVER be a general-purpose library.**
+
+- ❌ NOT for public adoption or use by other projects
+- ❌ NOT a community fork
+- ❌ NO migration support or guidance
+- ❌ NO feature requests accepted
+- ✅ ONLY maintained for angular-cli-ghpages internal needs
+
+**If you need commander.js, use the official upstream library:** https://github.com/tj/commander.js
+
+---
+
 ⚠️ **This is NOT a drop-in replacement for commander v3.0.2**
+
 This fork intentionally removes features (subcommands, actions, etc.) and preserves only the option parsing functionality needed by angular-cli-ghpages.
 
 ## What This Fork Contains
@@ -63,21 +78,29 @@ This fork intentionally removes features (subcommands, actions, etc.) and preser
 
 ### Methods NOT Supported
 
-- ❌ `program.command(name, description?)` - Use full commander for this
-- ❌ `program.action(fn)` - Use full commander for this
-- ❌ `program.arguments(desc)` - Use full commander for this
-- ❌ Custom EventEmitter listeners beyond version/help
+- ❌ `program.command(name, description?)` - Not implemented
+- ❌ `program.action(fn)` - Not implemented
+- ❌ `program.arguments(desc)` - Not implemented
+- ❌ Custom EventEmitter listeners beyond version/help - Not implemented
+- ❌ `prog help` subcommand pattern - Not implemented (use `-h` or `--help` flags instead)
 
 ## Maintenance
 
-This fork is **FROZEN** - we will NOT update it unless:
-1. A critical security vulnerability is found
-2. A bug is discovered that affects angular-cli-ghpages
-3. Node.js changes break compatibility
+**This fork is maintained EXCLUSIVELY for angular-cli-ghpages.**
 
-For any fixes:
+This fork is **FROZEN** - we will NOT update it unless:
+1. A critical security vulnerability is found that affects angular-cli-ghpages
+2. A bug is discovered that affects angular-cli-ghpages functionality
+3. Node.js changes break angular-cli-ghpages compatibility
+
+**We do NOT accept:**
+- Feature requests from other projects
+- Pull requests for general commander features
+- Issues from external users
+
+For internal fixes (angular-cli-ghpages team only):
 1. Update `commander-fork/index.js`
-2. Add test in `commander-fork/__tests__/`
+2. Add test in `commander-fork/test/`
 3. Bump version to `3.0.2-fork.2`, etc.
 
 ## Original Project

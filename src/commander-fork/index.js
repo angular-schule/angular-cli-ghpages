@@ -67,6 +67,10 @@ function Option(flags, description) {
   this.flags = flags;
   this.required = flags.indexOf('<') >= 0;
   this.optional = flags.indexOf('[') >= 0;
+  // FORK FIX 1/2: Tightened negate detection to avoid false positives
+  // Original: this.negate = flags.indexOf('-no-') !== -1;
+  // Problem: Would match '-no-' anywhere, e.g., '--enable-notifications' would incorrectly match
+  // Fix: Only match '--no-' at word boundaries (start of string or after delimiter)
   this.negate = /(^|[\s,|])--no-/.test(flags);
   flags = flags.split(/[ ,|]+/);
   if (flags.length > 1 && !/^[[<]/.test(flags[1])) this.short = flags.shift();
@@ -82,8 +86,7 @@ function Option(flags, description) {
  */
 
 Option.prototype.name = function() {
-  // Strip -- first, then - (for short-only flags that end up in .long)
-  return this.long.replace(/^--/, '').replace(/^-/, '');
+  return this.long.replace(/^--/, '');
 };
 
 /**
@@ -118,7 +121,6 @@ Option.prototype.is = function(arg) {
  */
 
 function Command(name) {
-  EventEmitter.call(this);
   this.options = [];
   this._allowUnknownOption = false;
   this._name = name || '';
@@ -504,7 +506,13 @@ Command.prototype.version = function(str, flags, description) {
   flags = flags || '-V, --version';
   description = description || 'output the version number';
   var versionOption = new Option(flags, description);
-  // Use attributeName() for camelCase conversion (e.g., 'version-info' -> 'versionInfo')
+  // FORK FIX 2/2: Support short-only and custom version flags properly
+  // Original: this._versionOptionName = versionOption.long.substr(2) || 'version';
+  // Problem: .substr(2) on '-v' gives empty string, falls back to 'version',
+  //          but event is 'option:v' (or 'option:-v'), so listener never fires.
+  //          Also doesn't handle camelCase for flags like '--version-info'.
+  // Fix: Use attributeName() for proper camelCase conversion and short flag support.
+  //      Examples: '-v' -> 'v', '--version' -> 'version', '--version-info' -> 'versionInfo'
   this._versionOptionName = versionOption.attributeName();
   this.options.push(versionOption);
   this.on('option:' + versionOption.name(), function() {
@@ -661,7 +669,6 @@ Command.prototype.outputHelp = function(cb) {
   }
   process.stdout.write(cbOutput);
   this.emit(this._helpLongFlag);
-  this.emit('help'); // stable hook for custom flags
 };
 
 /**

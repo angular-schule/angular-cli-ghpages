@@ -18,8 +18,25 @@ import { Schema } from '../deploy/schema';
  * works correctly in the complete execution flow.
  */
 
+interface PublishOptions {
+  repo?: string;
+  remote?: string;
+  branch?: string;
+  message?: string;
+  user?: { name: string; email: string };
+  dotfiles?: boolean;
+  notfound?: boolean;
+  nojekyll?: boolean;
+  noDotfiles?: boolean;
+  noNotfound?: boolean;
+  noNojekyll?: boolean;
+  cname?: string;
+  add?: boolean;
+  git?: string;
+}
+
 // Captured options from gh-pages.publish()
-let capturedPublishOptions: any = null;
+let capturedPublishOptions: PublishOptions | null = null;
 
 // Mock gh-pages/lib/git module (imported by engine.ts)
 jest.mock('gh-pages/lib/git', () => {
@@ -70,6 +87,7 @@ jest.mock('fs-extra', () => ({
   native: {},
   ensureDirSync: jest.fn(),
   emptyDirSync: jest.fn(),
+  copy: jest.fn(() => Promise.resolve()),
   copySync: jest.fn(),
   removeSync: jest.fn(),
   pathExists: jest.fn(() => Promise.resolve(true)),
@@ -104,8 +122,8 @@ describe('Angular Builder Integration Tests', () => {
       await deploy(engine, context, BUILD_TARGET, options);
 
       expect(capturedPublishOptions).not.toBeNull();
-      expect(capturedPublishOptions.dotfiles).toBe(false);
-      expect(capturedPublishOptions.noDotfiles).toBe(true);
+      expect(capturedPublishOptions!.dotfiles).toBe(false);
+      expect(capturedPublishOptions!.noDotfiles).toBe(true);
     });
 
     it('should transform noNotfound: true to notfound: false in complete flow', async () => {
@@ -118,8 +136,8 @@ describe('Angular Builder Integration Tests', () => {
       await deploy(engine, context, BUILD_TARGET, options);
 
       expect(capturedPublishOptions).not.toBeNull();
-      expect(capturedPublishOptions.notfound).toBe(false);
-      expect(capturedPublishOptions.noNotfound).toBe(true);
+      expect(capturedPublishOptions!.notfound).toBe(false);
+      expect(capturedPublishOptions!.noNotfound).toBe(true);
     });
 
     it('should transform noNojekyll: true to nojekyll: false in complete flow', async () => {
@@ -132,8 +150,8 @@ describe('Angular Builder Integration Tests', () => {
       await deploy(engine, context, BUILD_TARGET, options);
 
       expect(capturedPublishOptions).not.toBeNull();
-      expect(capturedPublishOptions.nojekyll).toBe(false);
-      expect(capturedPublishOptions.noNojekyll).toBe(true);
+      expect(capturedPublishOptions!.nojekyll).toBe(false);
+      expect(capturedPublishOptions!.noNojekyll).toBe(true);
     });
 
     it('should transform all three negation flags together in complete flow', async () => {
@@ -148,12 +166,12 @@ describe('Angular Builder Integration Tests', () => {
       await deploy(engine, context, BUILD_TARGET, options);
 
       expect(capturedPublishOptions).not.toBeNull();
-      expect(capturedPublishOptions.dotfiles).toBe(false);
-      expect(capturedPublishOptions.notfound).toBe(false);
-      expect(capturedPublishOptions.nojekyll).toBe(false);
-      expect(capturedPublishOptions.noDotfiles).toBe(true);
-      expect(capturedPublishOptions.noNotfound).toBe(true);
-      expect(capturedPublishOptions.noNojekyll).toBe(true);
+      expect(capturedPublishOptions!.dotfiles).toBe(false);
+      expect(capturedPublishOptions!.notfound).toBe(false);
+      expect(capturedPublishOptions!.nojekyll).toBe(false);
+      expect(capturedPublishOptions!.noDotfiles).toBe(true);
+      expect(capturedPublishOptions!.noNotfound).toBe(true);
+      expect(capturedPublishOptions!.noNojekyll).toBe(true);
     });
 
     it('should default all boolean flags to true when not specified', async () => {
@@ -165,9 +183,9 @@ describe('Angular Builder Integration Tests', () => {
       await deploy(engine, context, BUILD_TARGET, options);
 
       expect(capturedPublishOptions).not.toBeNull();
-      expect(capturedPublishOptions.dotfiles).toBe(true);
-      expect(capturedPublishOptions.notfound).toBe(true);
-      expect(capturedPublishOptions.nojekyll).toBe(true);
+      expect(capturedPublishOptions!.dotfiles).toBe(true);
+      expect(capturedPublishOptions!.notfound).toBe(true);
+      expect(capturedPublishOptions!.nojekyll).toBe(true);
     });
   });
 
@@ -179,7 +197,7 @@ describe('Angular Builder Integration Tests', () => {
       await deploy(engine, context, BUILD_TARGET, options);
 
       expect(capturedPublishOptions).not.toBeNull();
-      expect(capturedPublishOptions.repo).toBe(repo);
+      expect(capturedPublishOptions!.repo).toBe(repo);
     });
 
     it('should pass branch through complete flow unchanged', async () => {
@@ -190,7 +208,7 @@ describe('Angular Builder Integration Tests', () => {
       await deploy(engine, context, BUILD_TARGET, options);
 
       expect(capturedPublishOptions).not.toBeNull();
-      expect(capturedPublishOptions.branch).toBe(branch);
+      expect(capturedPublishOptions!.branch).toBe(branch);
     });
 
     it('should pass message through complete flow unchanged', async () => {
@@ -201,7 +219,7 @@ describe('Angular Builder Integration Tests', () => {
       await deploy(engine, context, BUILD_TARGET, options);
 
       expect(capturedPublishOptions).not.toBeNull();
-      expect(capturedPublishOptions.message).toBe(message);
+      expect(capturedPublishOptions!.message).toBe(message);
     });
 
     it('should transform name and email into user object in complete flow', async () => {
@@ -214,7 +232,7 @@ describe('Angular Builder Integration Tests', () => {
       await deploy(engine, context, BUILD_TARGET, options);
 
       expect(capturedPublishOptions).not.toBeNull();
-      expect(capturedPublishOptions.user).toEqual(expectedUser);
+      expect(capturedPublishOptions!.user).toEqual(expectedUser);
     });
 
     it('should pass cname through complete flow unchanged', async () => {
@@ -225,7 +243,7 @@ describe('Angular Builder Integration Tests', () => {
       await deploy(engine, context, BUILD_TARGET, options);
 
       expect(capturedPublishOptions).not.toBeNull();
-      expect(capturedPublishOptions.cname).toBe(cname);
+      expect(capturedPublishOptions!.cname).toBe(cname);
     });
   });
 
@@ -238,7 +256,22 @@ describe('Angular Builder Integration Tests', () => {
       await deploy(engine, context, BUILD_TARGET, options);
 
       expect(capturedPublishOptions).not.toBeNull();
-      expect(capturedPublishOptions.add).toBe(add);
+      expect(capturedPublishOptions!.add).toBe(add);
+    });
+
+    it('should not call gh-pages.publish when dryRun is true', async () => {
+      const ghPages = require('gh-pages');
+
+      // Reset mock to clear calls from previous tests
+      ghPages.publish.mockClear();
+
+      const repo = 'https://github.com/test/repo.git';
+      const options: Schema = { repo, dryRun: true, noBuild: true };
+
+      await deploy(engine, context, BUILD_TARGET, options);
+
+      // Verify publish was not called in this test
+      expect(ghPages.publish).not.toHaveBeenCalled();
     });
   });
 
@@ -273,23 +306,23 @@ describe('Angular Builder Integration Tests', () => {
       expect(capturedPublishOptions).not.toBeNull();
 
       // Verify passthrough parameters
-      expect(capturedPublishOptions.repo).toBe(repo);
-      expect(capturedPublishOptions.remote).toBe(remote);
-      expect(capturedPublishOptions.branch).toBe(branch);
-      expect(capturedPublishOptions.message).toBe(message);
-      expect(capturedPublishOptions.cname).toBe(cname);
-      expect(capturedPublishOptions.add).toBe(add);
+      expect(capturedPublishOptions!.repo).toBe(repo);
+      expect(capturedPublishOptions!.remote).toBe(remote);
+      expect(capturedPublishOptions!.branch).toBe(branch);
+      expect(capturedPublishOptions!.message).toBe(message);
+      expect(capturedPublishOptions!.cname).toBe(cname);
+      expect(capturedPublishOptions!.add).toBe(add);
 
       // Verify user object transformation
-      expect(capturedPublishOptions.user).toEqual({ name, email });
+      expect(capturedPublishOptions!.user).toEqual({ name, email });
 
       // Verify boolean negation transformations
-      expect(capturedPublishOptions.dotfiles).toBe(false);
-      expect(capturedPublishOptions.notfound).toBe(false);
-      expect(capturedPublishOptions.nojekyll).toBe(false);
+      expect(capturedPublishOptions!.dotfiles).toBe(false);
+      expect(capturedPublishOptions!.notfound).toBe(false);
+      expect(capturedPublishOptions!.nojekyll).toBe(false);
 
       // Verify engine defaults are set
-      expect(capturedPublishOptions.git).toBe('git');
+      expect(capturedPublishOptions!.git).toBe('git');
     });
   });
 });

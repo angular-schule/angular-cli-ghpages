@@ -7,11 +7,16 @@ import {
 } from '@angular-devkit/architect/src';
 import { JsonObject, logging } from '@angular-devkit/core';
 import { BuildTarget } from '../interfaces';
+import { Schema } from './schema';
 
 import deploy from './actions';
 
+interface EngineHost {
+  run(dir: string, options: Schema, logger: logging.LoggerApi): Promise<void>;
+}
+
 let context: BuilderContext;
-const mockEngine = { run: (_: string, __: any, __2: any) => Promise.resolve() };
+const mockEngine: EngineHost = { run: (_: string, __: Schema, __2: logging.LoggerApi) => Promise.resolve() };
 
 const PROJECT = 'pirojok-project';
 const BUILD_TARGET: BuildTarget = {
@@ -59,11 +64,12 @@ describe('Deploy Angular apps', () => {
   describe('error handling', () => {
     it('throws if there is no target project', async () => {
       context.target = undefined;
+      const expectedErrorMessage = 'Cannot execute the build target';
       try {
         await deploy(mockEngine, context, BUILD_TARGET, {});
         fail();
       } catch (e) {
-        expect(e.message).toMatch(/Cannot execute the build target/);
+        expect(e.message).toBe(expectedErrorMessage);
       }
     });
 
@@ -87,7 +93,7 @@ describe('Deploy Angular apps', () => {
 });
 
 const initMocks = () => {
-  context = {
+  const mockContext: Partial<BuilderContext> = {
     target: {
       configuration: 'production',
       project: PROJECT,
@@ -103,13 +109,12 @@ const initMocks = () => {
     logger: new logging.NullLogger(),
     workspaceRoot: 'cwd',
     addTeardown: _ => {},
-    validateOptions: _ => Promise.resolve({} as any),
+    validateOptions: <T extends JsonObject = JsonObject>(_options: JsonObject) => Promise.resolve({} as T),
     getBuilderNameForTarget: () => Promise.resolve(''),
-    analytics: null as any,
     getTargetOptions: (_: Target) =>
       Promise.resolve({
         outputPath: 'dist/some-folder'
-      }),
+      } as JsonObject),
     reportProgress: (_: number, __?: number, ___?: string) => {},
     reportStatus: (_: string) => {},
     reportRunning: () => {},
@@ -119,7 +124,8 @@ const initMocks = () => {
       Promise.resolve({
         result: Promise.resolve(createBuilderOutputMock(true))
       } as BuilderRun)
-  } as any;
+  };
+  context = mockContext as BuilderContext;
 };
 
 const createBuilderOutputMock = (success: boolean): BuilderOutput => {

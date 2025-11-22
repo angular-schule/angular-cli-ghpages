@@ -414,14 +414,18 @@ describe('Edge Case Tests', () => {
   });
 
   describe('Deprecated parameters', () => {
-    it('should handle deprecated noSilent parameter gracefully', async () => {
+    it('should handle deprecated noSilent parameter gracefully and log warning', async () => {
+      const testLogger = new logging.Logger('test');
+      const warnSpy = jest.spyOn(testLogger, 'warn');
+
       const options = { noSilent: true };
+      const expectedWarning = 'The --no-silent parameter is deprecated and no longer needed. Verbose logging is now always enabled. This parameter will be ignored.';
 
-      const finalOptions = await engine.prepareOptions(options, logger);
+      const finalOptions = await engine.prepareOptions(options, testLogger);
 
-      // noSilent is deprecated and should be ignored
-      // Just verify it doesn't crash
+      // Verify it doesn't crash and warning is logged
       expect(finalOptions).toBeDefined();
+      expect(warnSpy).toHaveBeenCalledWith(expectedWarning);
     });
   });
 });

@@ -193,13 +193,13 @@ Angular CLI does NOT rename kebab-case to camelCase for boolean flags with "no" 
 ## Testing Strategy
 
 Tests use Jest and are located alongside source files with `.spec.ts` extension:
-- `angular-cli-ghpages.spec.ts` - Standalone CLI tests
 - `deploy/actions.spec.ts` - Deployment action tests
 - `engine/engine.spec.ts` - Core engine tests
 - `ng-add.spec.ts` - Schematic tests
-- `engine/parameter-passthrough.spec.ts` - Parameter transformation tests
-- `engine/edge-cases.spec.ts` - Edge case and boundary tests
-- `cli-e2e.spec.ts` - End-to-end CLI testing
+- `parameter-tests/parameter-passthrough.spec.ts` - Parameter transformation tests
+- `parameter-tests/edge-cases.spec.ts` - Edge case and boundary tests
+- `parameter-tests/cli-e2e.spec.ts` - End-to-end standalone CLI testing
+- `parameter-tests/builder-integration.spec.ts` - Angular Builder integration tests
 
 Snapshot tests are stored in `__snapshots__/` directory.
 

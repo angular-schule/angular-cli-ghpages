@@ -66,10 +66,10 @@ export async function prepareOptions(
   // see https://stackoverflow.com/a/39129886
   const util = require('util');
   let debuglog = util.debuglog;
-  util.debuglog = set => {
+  util.debuglog = (set: string) => {
     if (set === 'gh-pages') {
-      return function () {
-        let message = util.format.apply(util, arguments);
+      return function (...args: unknown[]) {
+        let message = util.format.apply(util, args);
         logger.info(message);
       };
     }
@@ -94,14 +94,26 @@ export async function prepareOptions(
     logger.info('Dry-run: No changes are applied at all.');
   }
 
-  // TODO: Add warning if only name OR only email is set (not both)
-  // When user object is not created, gh-pages uses local/global git config
-  // This might be confusing if user only sets one parameter
+  // Warn if deprecated noSilent parameter is used
+  if (origOptions.noSilent !== undefined) {
+    logger.warn(
+      'The --no-silent parameter is deprecated and no longer needed. ' +
+      'Verbose logging is now always enabled. This parameter will be ignored.'
+    );
+  }
+
+  // Handle user credentials - warn if only one is set
   if (options.name && options.email) {
     options['user'] = {
       name: options.name,
       email: options.email
     };
+  } else if (options.name || options.email) {
+    logger.warn(
+      'WARNING: Both --name and --email must be set together to configure git user. ' +
+      (options.name ? 'Only --name is set.' : 'Only --email is set.') +
+      ' Git will use the local or global git config instead.'
+    );
   }
 
   if (process.env.TRAVIS) {
@@ -189,7 +201,10 @@ export async function prepareOptions(
 }
 
 async function checkIfDistFolderExists(dir: string) {
-  if (await !fse.pathExists(dir)) {
+  // CRITICAL FIX: Operator precedence bug
+  // WRONG: await !fse.pathExists(dir) - applies ! to Promise (always false)
+  // RIGHT: !(await fse.pathExists(dir)) - awaits first, then negates boolean
+  if (!(await fse.pathExists(dir))) {
     throw new Error(
       'Dist folder does not exist. Check the dir --dir parameter or build the project first!'
     );
@@ -333,7 +348,7 @@ async function publishViaGhPages(
   });
 }
 
-async function getRemoteUrl(options) {
+async function getRemoteUrl(options: Schema & { git?: string; remote?: string }): Promise<string> {
   const git = new Git(process.cwd(), options.git);
   return await git.getRemoteUrl(options.remote);
 }

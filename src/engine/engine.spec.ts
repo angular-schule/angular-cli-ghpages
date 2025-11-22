@@ -81,7 +81,10 @@ describe('engine', () => {
       const options = {};
       const finalOptions = await engine.prepareOptions(options, logger);
 
-      expect(finalOptions.repo).toMatch(/angular-schule\/angular-cli-ghpages/);
+      // EXCEPTION to testing philosophy: Use .toContain() here because the protocol
+      // (SSH: git@github.com: vs HTTPS: https://github.com/) depends on developer's
+      // git config. We only care that the correct repo is discovered.
+      expect(finalOptions.repo).toContain('angular-schule/angular-cli-ghpages');
     });
 
     describe('remote', () => {
@@ -124,6 +127,97 @@ describe('engine', () => {
       expect(finalOptions.dotfiles).toBe(true);
       expect(finalOptions.notfound).toBe(true);
       expect(finalOptions.nojekyll).toBe(true);
+    });
+  });
+
+  describe('run - dist folder validation', () => {
+    const logger = new logging.NullLogger();
+
+    it('should throw error when dist folder does not exist', async () => {
+      // This test proves the CRITICAL operator precedence bug was fixed
+      // BUG: await !fse.pathExists(dir) - applies ! to Promise (always false, error NEVER thrown)
+      // FIX: !(await fse.pathExists(dir)) - awaits first, then negates (error IS thrown)
+
+      // Mock gh-pages module
+      jest.mock('gh-pages', () => ({
+        clean: jest.fn(),
+        publish: jest.fn()
+      }));
+
+      const fse = require('fs-extra');
+      jest.spyOn(fse, 'pathExists').mockResolvedValue(false);
+
+      const nonExistentDir = '/path/to/nonexistent/dir';
+      const expectedErrorMessage = 'Dist folder does not exist. Check the dir --dir parameter or build the project first!';
+
+      await expect(
+        engine.run(nonExistentDir, { dotfiles: true, notfound: true, nojekyll: true }, logger)
+      ).rejects.toThrow(expectedErrorMessage);
+
+      expect(fse.pathExists).toHaveBeenCalledWith(nonExistentDir);
+    });
+  });
+
+  describe('prepareOptions - user credentials warnings', () => {
+    it('should warn when only name is set without email', async () => {
+      const testLogger = new logging.Logger('test');
+      const warnSpy = jest.spyOn(testLogger, 'warn');
+
+      const options = { name: 'John Doe' };
+      const expectedWarning = 'WARNING: Both --name and --email must be set together to configure git user. Only --name is set. Git will use the local or global git config instead.';
+
+      await engine.prepareOptions(options, testLogger);
+
+      expect(warnSpy).toHaveBeenCalledWith(expectedWarning);
+    });
+
+    it('should warn when only email is set without name', async () => {
+      const testLogger = new logging.Logger('test');
+      const warnSpy = jest.spyOn(testLogger, 'warn');
+
+      const options = { email: 'john@example.com' };
+      const expectedWarning = 'WARNING: Both --name and --email must be set together to configure git user. Only --email is set. Git will use the local or global git config instead.';
+
+      await engine.prepareOptions(options, testLogger);
+
+      expect(warnSpy).toHaveBeenCalledWith(expectedWarning);
+    });
+
+    it('should NOT warn when both name and email are set', async () => {
+      const testLogger = new logging.Logger('test');
+      const warnSpy = jest.spyOn(testLogger, 'warn');
+
+      const options = { name: 'John Doe', email: 'john@example.com' };
+
+      const finalOptions = await engine.prepareOptions(options, testLogger);
+
+      expect(finalOptions.user).toEqual({ name: 'John Doe', email: 'john@example.com' });
+      expect(warnSpy).not.toHaveBeenCalledWith(expect.stringContaining('name and --email must be set together'));
+    });
+  });
+
+  describe('prepareOptions - deprecated noSilent warning', () => {
+    it('should warn when noSilent parameter is used', async () => {
+      const testLogger = new logging.Logger('test');
+      const warnSpy = jest.spyOn(testLogger, 'warn');
+
+      const options = { noSilent: true };
+      const expectedWarning = 'The --no-silent parameter is deprecated and no longer needed. Verbose logging is now always enabled. This parameter will be ignored.';
+
+      await engine.prepareOptions(options, testLogger);
+
+      expect(warnSpy).toHaveBeenCalledWith(expectedWarning);
+    });
+
+    it('should NOT warn when noSilent is not provided', async () => {
+      const testLogger = new logging.Logger('test');
+      const warnSpy = jest.spyOn(testLogger, 'warn');
+
+      const options = {};
+
+      await engine.prepareOptions(options, testLogger);
+
+      expect(warnSpy).not.toHaveBeenCalledWith(expect.stringContaining('no-silent'));
     });
   });
 });

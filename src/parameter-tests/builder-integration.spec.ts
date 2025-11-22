@@ -1,6 +1,6 @@
 import { BuilderContext, BuilderRun, ScheduleOptions, Target } from '@angular-devkit/architect/src';
 import { JsonObject, logging } from '@angular-devkit/core';
-import { BuildTarget } from '../interfaces';
+import { BuildTarget, PublishOptions } from '../interfaces';
 import { Schema } from '../deploy/schema';
 
 /**
@@ -16,24 +16,12 @@ import { Schema } from '../deploy/schema';
  * This ensures that parameter transformation from Angular Builder format
  * (noDotfiles, noNotfound, noNojekyll) to engine format (dotfiles, notfound, nojekyll)
  * works correctly in the complete execution flow.
+ *
+ * WHAT'S REAL vs MOCKED:
+ * ✅ REAL: deploy/actions.ts, engine/engine.ts, prepareOptions()
+ * ❌ MOCKED: gh-pages.publish() (to capture final options), fs-extra, gh-pages/lib/git
+ * This IS a true integration test - we test the full internal code path with external dependencies mocked.
  */
-
-interface PublishOptions {
-  repo?: string;
-  remote?: string;
-  branch?: string;
-  message?: string;
-  user?: { name: string; email: string };
-  dotfiles?: boolean;
-  notfound?: boolean;
-  nojekyll?: boolean;
-  noDotfiles?: boolean;
-  noNotfound?: boolean;
-  noNojekyll?: boolean;
-  cname?: string;
-  add?: boolean;
-  git?: string;
-}
 
 // Captured options from gh-pages.publish()
 let capturedPublishOptions: PublishOptions | null = null;

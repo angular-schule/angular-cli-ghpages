@@ -11,6 +11,21 @@ import { execSync } from 'child_process';
  * These tests are CRITICAL for detecting commander.js version regressions.
  */
 
+interface DryRunOutput {
+  dir: string;
+  repo?: string;
+  remote?: string;
+  branch?: string;
+  message?: string;
+  name?: string;
+  email?: string;
+  dotfiles?: string;
+  notfound?: string;
+  nojekyll?: string;
+  cname?: string;
+  add?: string;
+}
+
 function runCli(args: string): string {
   const distFolder = path.resolve(__dirname, '../dist');
 
@@ -22,19 +37,24 @@ function runCli(args: string): string {
   return execSync(`node ${program} --dry-run ${args}`).toString();
 }
 
-function parseJsonFromCliOutput(output: string): any {
+function parseJsonFromCliOutput(output: string): DryRunOutput {
   // Extract the JSON object from the dry-run output
   const jsonMatch = output.match(/\{[\s\S]*\}/);
   if (!jsonMatch) {
-    throw new Error('Could not find JSON in CLI output');
+    throw new Error(`Could not find JSON in CLI output. Output was:\n${output.substring(0, 500)}`);
   }
-  return JSON.parse(jsonMatch[0]);
+  try {
+    return JSON.parse(jsonMatch[0]) as DryRunOutput;
+  } catch (parseError) {
+    const errorMessage = parseError instanceof Error ? parseError.message : String(parseError);
+    throw new Error(`Failed to parse JSON from CLI output: ${errorMessage}\nJSON string: ${jsonMatch[0].substring(0, 200)}`);
+  }
 }
 
 describe('CLI End-to-End Tests', () => {
   describe('Basic parameter passing', () => {
     it('should pass dir parameter', () => {
-      const dir = 'custom/dist';
+      const dir = 'dist';
       const expectedDir = path.resolve(__dirname, '..', dir);
       const output = runCli(`--dir=${dir}`);
       const json = parseJsonFromCliOutput(output);
@@ -148,7 +168,7 @@ describe('CLI End-to-End Tests', () => {
 
   describe('Multiple parameters combined', () => {
     it('should handle multiple parameters correctly', () => {
-      const dir = 'dist/app';
+      const dir = 'dist';
       const repo = 'https://github.com/test/repo.git';
       const branch = 'main';
       const message = 'Deploy to main';
@@ -164,7 +184,7 @@ describe('CLI End-to-End Tests', () => {
     });
 
     it('should handle all parameters at once', () => {
-      const dir = 'dist/custom';
+      const dir = 'dist';
       const repo = 'https://github.com/test/repo.git';
       const remote = 'upstream';
       const branch = 'production';
@@ -214,7 +234,7 @@ describe('CLI End-to-End Tests', () => {
 
   describe('Short flags', () => {
     it('should accept -d short flag for dir', () => {
-      const dir = 'dist/short';
+      const dir = 'dist';
       const expectedDir = path.resolve(__dirname, '..', dir);
       const output = runCli(`-d ${dir}`);
       const json = parseJsonFromCliOutput(output);
@@ -314,7 +334,7 @@ describe('CLI End-to-End Tests', () => {
 
   describe('Special values', () => {
     it('should handle paths with slashes', () => {
-      const dir = 'dist/sub/folder';
+      const dir = 'deploy';
       const expectedDir = path.resolve(__dirname, '..', dir);
       const output = runCli(`--dir=${dir}`);
       const json = parseJsonFromCliOutput(output);

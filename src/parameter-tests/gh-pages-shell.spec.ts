@@ -26,6 +26,16 @@ interface SpawnCall {
   cwd: string;
 }
 
+interface MockChildProcess {
+  stdout: {
+    on: jest.Mock;
+  };
+  stderr: {
+    on: jest.Mock;
+  };
+  on: jest.Mock;
+}
+
 const spawnCalls: SpawnCall[] = [];
 
 // Mock child_process.spawn at module level (must be before imports)
@@ -41,7 +51,7 @@ jest.mock('child_process', () => ({
     });
 
     // Create mock child process that succeeds immediately
-    const mockChild = {
+    const mockChild: MockChildProcess = {
       stdout: {
         on: jest.fn((event: string, callback?: (data: Buffer) => void) => {
           if (event === 'data' && callback) {

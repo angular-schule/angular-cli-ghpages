@@ -1,4 +1,31 @@
 /**
+ * Angular outputPath configuration
+ * Can be either a string (path) or an object with base + browser properties
+ * See: https://angular.io/guide/workspace-config#output-path-configuration
+ */
+export interface AngularOutputPathObject {
+  base: string;
+  browser?: string;
+}
+
+export type AngularOutputPath = string | AngularOutputPathObject;
+
+/**
+ * Type guard to check if outputPath is an object with base/browser properties
+ */
+export function isOutputPathObject(value: unknown): value is AngularOutputPathObject {
+  return !!value && typeof value === 'object' && 'base' in value;
+}
+
+/**
+ * Git user credentials for commits
+ */
+export interface DeployUser {
+  name: string;
+  email: string;
+}
+
+/**
  * Options for gh-pages.publish()
  * Based on https://github.com/tschaub/gh-pages#options
  */

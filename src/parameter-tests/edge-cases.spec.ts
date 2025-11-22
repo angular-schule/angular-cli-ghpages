@@ -1,5 +1,6 @@
 import { logging } from '@angular-devkit/core';
 import * as engine from '../engine/engine';
+import { DeployUser } from '../interfaces';
 
 /**
  * EDGE CASE TEST SUITE
@@ -111,8 +112,9 @@ describe('Edge Case Tests', () => {
 
       const finalOptions = await engine.prepareOptions(options, logger);
 
-      expect(finalOptions.user).toBeDefined();
-      expect((finalOptions.user as any).name).toBe('山田太郎');
+      const user = finalOptions.user as DeployUser | undefined;
+      expect(user).toBeDefined();
+      expect(user?.name).toBe('山田太郎');
     });
 
     it('should handle email with plus addressing', async () => {
@@ -123,8 +125,9 @@ describe('Edge Case Tests', () => {
 
       const finalOptions = await engine.prepareOptions(options, logger);
 
-      expect(finalOptions.user).toBeDefined();
-      expect((finalOptions.user as any).email).toBe('user+deploy@example.com');
+      const user = finalOptions.user as DeployUser | undefined;
+      expect(user).toBeDefined();
+      expect(user?.email).toBe('user+deploy@example.com');
     });
 
     it('should handle branch name with slashes', async () => {
@@ -408,8 +411,9 @@ describe('Edge Case Tests', () => {
 
       const finalOptions = await engine.prepareOptions(options, logger);
 
-      expect(finalOptions.user).toBeDefined();
-      expect((finalOptions.user as any).name).toBe(longName);
+      const user = finalOptions.user as DeployUser | undefined;
+      expect(user).toBeDefined();
+      expect(user?.name).toBe(longName);
     });
   });
 

@@ -31,8 +31,12 @@ Follow the instructions for [checking and updating the Angular CLI version](#ang
 ### 1. Optional: Latest Angular version
 
 This builder requires the method `getTargetOptions()` from the Angular DevKit which was introduced [here](https://github.com/angular/angular-cli/pull/13825/files).
-All Angular projects with Angular 9 and greater are supposed to be compatible. (Actually it works with some versions of 8.x too, but you want to be up to date anyway, don't you?)
-Execute the next three steps, if your test project is still older.
+
+**Version compatibility:**
+- **v2.x:** Supports Angular 17 and higher (current version)
+- **v1.x:** Supported Angular 9-16 (now deprecated for new projects)
+
+Execute the next three steps to update your test project to the latest Angular version.
 
 1. Install the latest version of the Angular CLI.
 

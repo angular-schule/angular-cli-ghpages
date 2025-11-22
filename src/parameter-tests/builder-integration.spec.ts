@@ -36,7 +36,7 @@ jest.mock('gh-pages/lib/git', () => {
 // Mock gh-pages module
 jest.mock('gh-pages', () => ({
   clean: jest.fn(),
-  publish: jest.fn((dir: string, options: any, callback: Function) => {
+  publish: jest.fn((dir: string, options: PublishOptions, callback: (error: Error | null) => void) => {
     capturedPublishOptions = options;
     // Call callback asynchronously to simulate real gh-pages behavior
     setImmediate(() => callback(null));
@@ -313,6 +313,7 @@ describe('Angular Builder Integration Tests', () => {
       expect(capturedPublishOptions!.git).toBe('git');
     });
   });
+
 });
 
 function createMockContext(): BuilderContext {

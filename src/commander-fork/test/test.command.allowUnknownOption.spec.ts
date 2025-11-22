@@ -17,7 +17,9 @@ function resetStubStatus() {
 
 beforeEach(() => {
   stubError = jest.spyOn(console, 'error').mockImplementation(() => {});
-  stubExit = jest.spyOn(process, 'exit').mockImplementation((() => {}) as any);
+  stubExit = jest.spyOn(process, 'exit').mockImplementation((code?: number) => {
+    return undefined as never;
+  });
 });
 afterEach(() => {
   stubError.mockRestore();

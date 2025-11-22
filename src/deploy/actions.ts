@@ -2,7 +2,7 @@ import { BuilderContext, targetFromTargetString } from '@angular-devkit/architec
 import { logging } from '@angular-devkit/core';
 import path from 'path';
 
-import { BuildTarget } from '../interfaces';
+import { BuildTarget, AngularOutputPath, isOutputPathObject } from '../interfaces';
 import { Schema } from './schema';
 
 export default async function deploy(
@@ -72,11 +72,17 @@ export default async function deploy(
       );
     }
 
-    if (typeof buildOptions.outputPath === 'string') {
-      dir = path.join(buildOptions.outputPath, 'browser');
+    const outputPath = buildOptions.outputPath as AngularOutputPath;
+
+    if (typeof outputPath === 'string') {
+      dir = path.join(outputPath, 'browser');
+    } else if (isOutputPathObject(outputPath)) {
+      dir = path.join(outputPath.base, outputPath.browser ?? '');
     } else {
-      const obj = buildOptions.outputPath as any;
-      dir = path.join(obj.base, obj.browser)
+      throw new Error(
+        `Unsupported outputPath configuration in angular.json for '${buildTarget.name}'. ` +
+        `Expected string or {base, browser} object.`
+      );
     }
   }
 

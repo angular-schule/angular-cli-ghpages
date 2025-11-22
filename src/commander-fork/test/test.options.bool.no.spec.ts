@@ -5,7 +5,7 @@ describe('options.bool.no', () => {
 // Test combination of flag and --no-flag
 // (negatable flag on its own is tested in test.options.bool.js)
 
-function flagProgram(defaultValue?) {
+function flagProgram(defaultValue?: boolean) {
   const program = new commander.Command();
   program
     .option('-p, --pepper', 'add pepper', defaultValue)
@@ -74,3 +74,5 @@ programYesNo.parse(['node', 'test', '--pepper', '--no-pepper']);
 expect(programYesNo.pepper).toBe(false);
 });
 });
+
+export {};

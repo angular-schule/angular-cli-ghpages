@@ -44,7 +44,7 @@ describe('ng-add', () => {
     it('should select the first project if there is only one', async () => {
       const tree = Tree.empty();
       const angularJSON = generateAngularJson();
-      delete (angularJSON as any).projects[PROJECT_NAME]; // delete one project so that one is left
+      delete angularJSON.projects[PROJECT_NAME]; // delete one project so that one is left
       tree.create('angular.json', JSON.stringify(angularJSON));
 
       const resultTree = await ngAdd({ project: '' })(
@@ -148,7 +148,26 @@ function readJSONFromTree(tree: Tree, file: string) {
   return JSON.parse(tree.read(file)!.toString());
 }
 
-function generateAngularJson() {
+interface AngularJsonProject {
+  projectType: string;
+  root: string;
+  architect: {
+    build: {
+      options: {
+        outputPath: string;
+      };
+    };
+  };
+}
+
+interface AngularJson {
+  version: number;
+  projects: {
+    [key: string]: AngularJsonProject;
+  };
+}
+
+function generateAngularJson(): AngularJson {
   return {
     version: 1,
     projects: {

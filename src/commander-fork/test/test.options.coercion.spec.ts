@@ -6,15 +6,15 @@ const commander = require('../');
 //   , should = require('should');
 
 describe('options.coercion', () => {
-function parseRange(str) {
+function parseRange(str: string): number[] {
   return str.split('..').map(Number);
 }
 
-function increaseVerbosity(v, total) {
+function increaseVerbosity(v: string, total: number): number {
   return total + 1;
 }
 
-function collectValues(str, memo) {
+function collectValues(str: string, memo: string[]): string[] {
   memo.push(str);
   return memo;
 }
@@ -39,3 +39,5 @@ expect(program.collect).toEqual(['foo', 'bar', 'baz']);
 expect(program.verbose).toBe(5);
 });
 });
+
+export {};

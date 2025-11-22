@@ -30,6 +30,8 @@ jobs:
           npm link angular-cli-ghpages
           ng add angular-cli-ghpages
 
+      # CI test only: Verifies that the gh-pages branch gets updated
+      # This is NOT a production deployment - there is no public website for angular-cli-ghpages
       - name: Deploy
         if: github.ref == 'refs/heads/main'
         env:

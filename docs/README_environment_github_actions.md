@@ -1,6 +1,6 @@
 # angular-cli-ghpages: README for setting up deployment with GitHub Actions
 
-As Github has introduced [Github Actions](https://github.com/features/actions), I would prefer to run all my CI tasks in it only, rather than going to some other CI providers. This guide is aimed to help out developers, who want to deploy their Angular app in Github Page using [angular-cli-pages](https://github.com/angular-schule/angular-cli-ghpages).
+As GitHub has introduced [GitHub Actions](https://github.com/features/actions), I would prefer to run all my CI tasks in it only, rather than going to some other CI providers. This guide is aimed to help out developers, who want to deploy their Angular app in GitHub Pages using [angular-cli-pages](https://github.com/angular-schule/angular-cli-ghpages).
 
 ## Prerequisites
 
@@ -25,9 +25,9 @@ You can use the `GITHUB_TOKEN` to authenticate in a workflow run.
 More info can be found here:  
 [help.github.com](https://help.github.com/en/actions/configuring-and-managing-workflows/authenticating-with-the-github_token#using-the-github_token-in-a-workflow)
 
-### Setup Github Action Flow
+### Setup GitHub Action Flow
 
-1. Open up your Github repo.
+1. Open up your GitHub repo.
 
 2. Go to **Settings** . Then on the side bar, go to **Actions** then **General**.
 

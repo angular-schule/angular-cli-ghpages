@@ -3,7 +3,10 @@ const commander = require('../');
 //   , should = require('should');
 
 describe('options.version', () => {
-var capturedExitCode, capturedOutput, oldProcessExit, oldProcessStdoutWrite;
+let capturedExitCode: number;
+let capturedOutput: string;
+let exitSpy: jest.SpyInstance;
+let writeSpy: jest.SpyInstance;
 
 // program.version('0.0.1');
 
@@ -13,15 +16,25 @@ var capturedExitCode, capturedOutput, oldProcessExit, oldProcessStdoutWrite;
   program.version('0.0.1');
   capturedExitCode = -1;
   capturedOutput = '';
-  oldProcessExit = process.exit;
-  oldProcessStdoutWrite = process.stdout.write;
-  process.exit = function (code) { capturedExitCode = code; } as any;
-  process.stdout.write = function(output) { capturedOutput += output; return true; } as any;
+
+  exitSpy = jest.spyOn(process, 'exit').mockImplementation((code?: number) => {
+    capturedExitCode = code ?? 0;
+    return undefined as never;
+  });
+  writeSpy = jest.spyOn(process.stdout, 'write').mockImplementation((output: string | Uint8Array) => {
+    capturedOutput += output;
+    return true;
+  });
+
   program.parse(['node', 'test', flag]);
-  process.exit = oldProcessExit;
-  process.stdout.write = oldProcessStdoutWrite;
+
+  exitSpy.mockRestore();
+  writeSpy.mockRestore();
+
   expect(capturedOutput).toBe('0.0.1\n');
   expect(capturedExitCode).toBe(0);
   });
 })
 });
+
+export {};

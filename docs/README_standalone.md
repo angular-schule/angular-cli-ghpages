@@ -169,7 +169,7 @@ Run through without making any changes. This can be very usefull, because it out
 - Example:
   - `npx angular-cli-ghpages --cname=example.com`
 
-A CNAME file will be created enabling you to use a custom domain. [More information on Github Pages using a custom domain](https://help.github.com/articles/using-a-custom-domain-with-github-pages/).
+A CNAME file will be created enabling you to use a custom domain. [More information on GitHub Pages using a custom domain](https://help.github.com/articles/using-a-custom-domain-with-github-pages/).
 
 #### --add <a name="add"></a>
 

@@ -28,11 +28,9 @@ export default createBuilder(
     };
 
     let prerenderBuildTarget: BuildTarget | undefined;
-    if (options.prerender) {
+    if (options.prerenderTarget) {
       prerenderBuildTarget = {
-        name:
-          options.prerenderTarget ||
-          `${context.target.project}:prerender:production`
+        name: options.prerenderTarget
       };
     }
 

@@ -89,6 +89,52 @@ describe('Deploy Angular apps', () => {
         expect(e.message).toEqual('Error while building the app.');
       }
     });
+
+    it('throws if outputPath is missing from build options', async () => {
+      context.getTargetOptions = (_: Target) =>
+        Promise.resolve({} as JsonObject);
+
+      const expectedErrorMessage = `Cannot read the outputPath option of the Angular project '${BUILD_TARGET.name}' in angular.json.`;
+
+      try {
+        await deploy(mockEngine, context, BUILD_TARGET, { noBuild: false });
+        fail();
+      } catch (e) {
+        expect(e.message).toBe(expectedErrorMessage);
+      }
+    });
+
+    it('throws if outputPath has invalid shape (not string or object)', async () => {
+      context.getTargetOptions = (_: Target) =>
+        Promise.resolve({
+          outputPath: 123
+        } as JsonObject);
+
+      const expectedErrorPrefix = 'Unsupported outputPath configuration';
+
+      try {
+        await deploy(mockEngine, context, BUILD_TARGET, { noBuild: false });
+        fail();
+      } catch (e) {
+        expect(e.message).toContain(expectedErrorPrefix);
+      }
+    });
+
+    it('throws if outputPath object is missing base property', async () => {
+      context.getTargetOptions = (_: Target) =>
+        Promise.resolve({
+          outputPath: { browser: 'browser' }
+        } as JsonObject);
+
+      const expectedErrorPrefix = 'Unsupported outputPath configuration';
+
+      try {
+        await deploy(mockEngine, context, BUILD_TARGET, { noBuild: false });
+        fail();
+      } catch (e) {
+        expect(e.message).toContain(expectedErrorPrefix);
+      }
+    });
   });
 });
 

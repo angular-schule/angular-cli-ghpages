@@ -19,26 +19,25 @@ describe('Fork Fix 1: Negate detection with tightened regex', () => {
 
 describe('Fork Fix 2: Version short-only and custom flags', () => {
   describe('version() with short-only flag', () => {
-    let oldExit: any;
-    let oldWrite: any;
+    let exitSpy: jest.SpyInstance;
+    let writeSpy: jest.SpyInstance;
     let captured: {out: string, code: null | number};
 
     beforeEach(() => {
       captured = {out: '', code: null};
-      oldExit = process.exit;
-      oldWrite = process.stdout.write;
-      process.exit = ((c: any) => {
-        captured.code = c as number;
-      }) as any;
-      process.stdout.write = ((s: any) => {
+      exitSpy = jest.spyOn(process, 'exit').mockImplementation((c?: number) => {
+        captured.code = c ?? 0;
+        return undefined as never;
+      });
+      writeSpy = jest.spyOn(process.stdout, 'write').mockImplementation((s: string | Uint8Array) => {
         captured.out += s;
         return true;
-      }) as any;
+      });
     });
 
     afterEach(() => {
-      process.exit = oldExit;
-      process.stdout.write = oldWrite;
+      exitSpy.mockRestore();
+      writeSpy.mockRestore();
     });
 
     it('prints version and exits with -v short-only flag', () => {
@@ -69,24 +68,22 @@ describe('Fork Fix 2: Version short-only and custom flags', () => {
   });
 
   describe('helpOption() with custom flags', () => {
-    let oldExit: any;
-    let oldWrite: any;
+    let exitSpy: jest.SpyInstance;
+    let writeSpy: jest.SpyInstance;
     let exitCode: null | number;
 
     beforeEach(() => {
       exitCode = null;
-      oldExit = process.exit;
-      oldWrite = process.stdout.write;
-      process.exit = ((c: any) => {
-        exitCode = c as number;
+      exitSpy = jest.spyOn(process, 'exit').mockImplementation((c?: number) => {
+        exitCode = c ?? 0;
         throw new Error(`exit(${c})`);
-      }) as any;
-      process.stdout.write = (() => true) as any;
+      });
+      writeSpy = jest.spyOn(process.stdout, 'write').mockImplementation(() => true);
     });
 
     afterEach(() => {
-      process.exit = oldExit;
-      process.stdout.write = oldWrite;
+      exitSpy.mockRestore();
+      writeSpy.mockRestore();
     });
 
     it('fires help listener with default flags', () => {
@@ -109,19 +106,19 @@ describe('Fork Fix 2: Version short-only and custom flags', () => {
   });
 
   describe('opts() includes version with custom flags', () => {
-    let oldExit: any;
-    let oldWrite: any;
+    let exitSpy: jest.SpyInstance;
+    let writeSpy: jest.SpyInstance;
 
     beforeEach(() => {
-      oldExit = process.exit;
-      oldWrite = process.stdout.write;
-      process.exit = (() => {}) as any;
-      process.stdout.write = (() => true) as any;
+      exitSpy = jest.spyOn(process, 'exit').mockImplementation((code?: number) => {
+        return undefined as never;
+      });
+      writeSpy = jest.spyOn(process.stdout, 'write').mockImplementation(() => true);
     });
 
     afterEach(() => {
-      process.exit = oldExit;
-      process.stdout.write = oldWrite;
+      exitSpy.mockRestore();
+      writeSpy.mockRestore();
     });
 
     it('includes version in opts() with default flags', () => {
@@ -178,15 +175,18 @@ describe('Fork Fix 2: Version short-only and custom flags', () => {
 
   describe('unknown options with attached values', () => {
     let errSpy: jest.SpyInstance;
+    let exitSpy: jest.SpyInstance;
 
     beforeEach(() => {
       errSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
-      jest.spyOn(process, 'exit').mockImplementation((() => {}) as any);
+      exitSpy = jest.spyOn(process, 'exit').mockImplementation((code?: number) => {
+        return undefined as never;
+      });
     });
 
     afterEach(() => {
       errSpy.mockRestore();
-      (process.exit as any).mockRestore();
+      exitSpy.mockRestore();
     });
 
     describe('errors by default', () => {
@@ -232,3 +232,5 @@ describe('Fork Fix 2: Version short-only and custom flags', () => {
     });
   });
 });
+
+export {};

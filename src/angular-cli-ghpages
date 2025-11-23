@@ -51,7 +51,7 @@ commander
   )
   .option(
     '-S, --no-silent',
-    'Deprecated! This paremeter is no longer needed. It will be ignored.'
+    'Deprecated! This parameter is no longer needed. It will be ignored.'
   )
   .option(
     '-T, --no-dotfiles',

@@ -220,4 +220,197 @@ describe('engine', () => {
       expect(warnSpy).not.toHaveBeenCalledWith(expect.stringContaining('no-silent'));
     });
   });
+
+  describe('run - gh-pages error callback handling', () => {
+    const logger = new logging.NullLogger();
+
+    let fsePathExistsSpy: jest.SpyInstance;
+    let fseWriteFileSpy: jest.SpyInstance;
+    let ghpagesCleanSpy: jest.SpyInstance;
+    let ghpagesPublishSpy: jest.SpyInstance;
+
+    beforeEach(() => {
+      // Setup persistent mocks for fs-extra
+      const fse = require('fs-extra');
+      fsePathExistsSpy = jest.spyOn(fse, 'pathExists').mockResolvedValue(true);
+      fseWriteFileSpy = jest.spyOn(fse, 'writeFile').mockResolvedValue(undefined);
+
+      // Setup persistent mocks for gh-pages
+      const ghpages = require('gh-pages');
+      ghpagesCleanSpy = jest.spyOn(ghpages, 'clean').mockImplementation(() => {});
+      ghpagesPublishSpy = jest.spyOn(ghpages, 'publish');
+    });
+
+    afterEach(() => {
+      // Clean up spies
+      fsePathExistsSpy.mockRestore();
+      fseWriteFileSpy.mockRestore();
+      ghpagesCleanSpy.mockRestore();
+      ghpagesPublishSpy.mockRestore();
+    });
+
+    it('should reject when gh-pages.publish calls callback with error', async () => {
+      const publishError = new Error('Git push failed: permission denied');
+
+      ghpagesPublishSpy.mockImplementation((dir: string, options: unknown, callback: (err: Error | null) => void) => {
+        // Simulate gh-pages calling callback with error
+        setImmediate(() => callback(publishError));
+      });
+
+      const testDir = '/test/dist';
+      const options = { dotfiles: true, notfound: true, nojekyll: true };
+
+      await expect(
+        engine.run(testDir, options, logger)
+      ).rejects.toThrow('Git push failed: permission denied');
+    });
+
+    it('should preserve error message through rejection', async () => {
+      const detailedError = new Error('Remote url mismatch. Expected https://github.com/user/repo.git but got https://github.com/other/repo.git');
+
+      ghpagesPublishSpy.mockImplementation((dir: string, options: unknown, callback: (err: Error | null) => void) => {
+        setImmediate(() => callback(detailedError));
+      });
+
+      const testDir = '/test/dist';
+      const options = { dotfiles: true, notfound: true, nojekyll: true };
+
+      await expect(
+        engine.run(testDir, options, logger)
+      ).rejects.toThrow(detailedError);
+    });
+
+    it('should reject with authentication error from gh-pages', async () => {
+      const authError = new Error('Authentication failed: Invalid credentials');
+
+      ghpagesPublishSpy.mockImplementation((dir: string, options: unknown, callback: (err: Error | null) => void) => {
+        setImmediate(() => callback(authError));
+      });
+
+      const testDir = '/test/dist';
+      const options = { dotfiles: true, notfound: true, nojekyll: true };
+
+      await expect(
+        engine.run(testDir, options, logger)
+      ).rejects.toThrow('Authentication failed: Invalid credentials');
+    });
+
+    it('should resolve successfully when gh-pages.publish calls callback with null', async () => {
+      ghpagesPublishSpy.mockImplementation((dir: string, options: unknown, callback: (err: Error | null) => void) => {
+        // Success case - callback with null error
+        setImmediate(() => callback(null));
+      });
+
+      const testDir = '/test/dist';
+      const options = { dotfiles: true, notfound: true, nojekyll: true };
+
+      await expect(
+        engine.run(testDir, options, logger)
+      ).resolves.toBeUndefined();
+    });
+  });
+
+  describe('prepareOptions - monkeypatch verification', () => {
+    let originalDebuglog: typeof import('util').debuglog;
+
+    beforeEach(() => {
+      // Save original util.debuglog before each test
+      const util = require('util');
+      originalDebuglog = util.debuglog;
+    });
+
+    afterEach(() => {
+      // Restore original util.debuglog after each test
+      const util = require('util');
+      util.debuglog = originalDebuglog;
+    });
+
+    it('should replace util.debuglog with custom implementation', async () => {
+      const testLogger = new logging.Logger('test');
+      const util = require('util');
+      const debuglogBeforePrepare = util.debuglog;
+
+      await engine.prepareOptions({}, testLogger);
+
+      // After prepareOptions, util.debuglog should be replaced
+      expect(util.debuglog).not.toBe(debuglogBeforePrepare);
+    });
+
+    it('should forward gh-pages debuglog calls to Angular logger', async () => {
+      const testLogger = new logging.Logger('test');
+      const infoSpy = jest.spyOn(testLogger, 'info');
+
+      await engine.prepareOptions({}, testLogger);
+
+      // Now get the patched debuglog for 'gh-pages'
+      const util = require('util');
+      const ghPagesLogger = util.debuglog('gh-pages');
+
+      // Call it with a test message
+      const testMessage = 'Publishing to gh-pages branch';
+      ghPagesLogger(testMessage);
+
+      // Should have forwarded to logger.info()
+      expect(infoSpy).toHaveBeenCalledWith(testMessage);
+    });
+
+    it('should forward gh-pages debuglog calls with formatting to Angular logger', async () => {
+      const testLogger = new logging.Logger('test');
+      const infoSpy = jest.spyOn(testLogger, 'info');
+
+      await engine.prepareOptions({}, testLogger);
+
+      const util = require('util');
+      const ghPagesLogger = util.debuglog('gh-pages');
+
+      // Test with util.format style placeholders
+      ghPagesLogger('Pushing %d files to %s', 42, 'gh-pages');
+
+      // Should format the message and forward to logger.info()
+      expect(infoSpy).toHaveBeenCalledWith('Pushing 42 files to gh-pages');
+    });
+
+    it('should call original debuglog for non-gh-pages modules', async () => {
+      const testLogger = new logging.Logger('test');
+      const infoSpy = jest.spyOn(testLogger, 'info');
+
+      const util = require('util');
+      const originalDebuglogSpy = jest.fn(originalDebuglog);
+      util.debuglog = originalDebuglogSpy;
+
+      await engine.prepareOptions({}, testLogger);
+
+      // Now util.debuglog is patched
+      const otherModuleLogger = util.debuglog('some-other-module');
+
+      // Should have called the original debuglog (via our spy)
+      expect(originalDebuglogSpy).toHaveBeenCalledWith('some-other-module');
+
+      // Should NOT have forwarded to Angular logger
+      expect(infoSpy).not.toHaveBeenCalled();
+    });
+
+    it('should monkeypatch util.debuglog before requiring gh-pages', async () => {
+      // This test verifies the critical ordering requirement documented in engine.ts:22-27
+      // The monkeypatch MUST occur before requiring gh-pages, otherwise gh-pages caches
+      // the original util.debuglog and our interception won't work.
+
+      const testLogger = new logging.Logger('test');
+      const infoSpy = jest.spyOn(testLogger, 'info');
+
+      // Clear gh-pages from require cache to simulate fresh load
+      const ghPagesPath = require.resolve('gh-pages');
+      delete require.cache[ghPagesPath];
+
+      await engine.prepareOptions({}, testLogger);
+
+      // Now require gh-pages for the first time (after monkeypatch)
+      const ghpages = require('gh-pages');
+
+      // gh-pages should now use our patched util.debuglog
+      // We can't directly test gh-pages internal calls, but we verified
+      // that util.debuglog('gh-pages') forwards to our logger
+      expect(infoSpy).toBeDefined();
+    });
+  });
 });

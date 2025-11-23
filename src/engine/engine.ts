@@ -19,7 +19,11 @@ export async function run(
 ) {
   options = await prepareOptions(options, logger);
 
-  // this has to occur _after_ the monkeypatch of util.debuglog:
+  // CRITICAL: Must require gh-pages AFTER monkeypatching util.debuglog
+  // gh-pages calls util.debuglog('gh-pages') during module initialization to set up its logger.
+  // If we require gh-pages before monkeypatching, it caches the original util.debuglog,
+  // and our monkeypatch won't capture the logging output.
+  // See prepareOptions() for the monkeypatch implementation.
   const ghpages = require('gh-pages');
 
   // always clean the cache directory.
@@ -43,66 +47,62 @@ export async function run(
   }
 }
 
-export async function prepareOptions(
-  origOptions: Schema,
-  logger: logging.LoggerApi
-): Promise<Schema & {
-  dotfiles: boolean,
-  notfound: boolean,
-  nojekyll: boolean
-}> {
-  const options: Schema & {
-    dotfiles: boolean,
-    notfound: boolean,
-    nojekyll: boolean
-  } = {
-    ...defaults,
-    ...origOptions
-  };
-
-  // this is the place where the old `noSilent` was enabled
-  // (which is now always enabled because gh-pages is NOT silent)
-  // monkeypatch util.debuglog to get all the extra information
-  // see https://stackoverflow.com/a/39129886
+/**
+ * Setup monkeypatch for util.debuglog to intercept gh-pages logging
+ *
+ * gh-pages uses util.debuglog('gh-pages') internally for all verbose logging.
+ * We intercept it and forward to Angular logger instead of stderr.
+ *
+ * CRITICAL: This must be called BEFORE requiring gh-pages, otherwise gh-pages
+ * will cache the original util.debuglog and our interception won't work.
+ */
+export function setupMonkeypatch(logger: logging.LoggerApi): void {
   const util = require('util');
-  let debuglog = util.debuglog;
+  const originalDebuglog = util.debuglog;
+
   util.debuglog = (set: string) => {
+    // gh-pages uses util.debuglog('gh-pages') internally for all verbose logging
+    // Intercept it and forward to Angular logger instead of stderr
     if (set === 'gh-pages') {
       return function (...args: unknown[]) {
-        let message = util.format.apply(util, args);
+        const message = util.format.apply(util, args);
         logger.info(message);
       };
     }
-    return debuglog(set);
+    return originalDebuglog(set);
   };
+}
 
-  // !! Important: Angular-CLI is NOT renaming the vars here !!
-  // so noDotfiles, noNotfound, and noNojekyll come in with no change
-  // we map this to dotfiles, notfound, nojekyll to have a consistent pattern
-  // between Commander and Angular-CLI
-  if (origOptions.noDotfiles) {
+/**
+ * Map negated boolean options to positive boolean options
+ *
+ * Angular-CLI is NOT renaming the vars, so noDotfiles, noNotfound, and noNojekyll
+ * come in with no change. We map this to dotfiles, notfound, nojekyll to have a
+ * consistent pattern between Commander and Angular-CLI.
+ */
+export function mapNegatedBooleans(
+  options: Schema & { dotfiles: boolean; notfound: boolean; nojekyll: boolean },
+  origOptions: Schema
+): void {
+  if (origOptions.noDotfiles !== undefined) {
     options.dotfiles = !origOptions.noDotfiles;
   }
-  if (origOptions.noNotfound) {
+  if (origOptions.noNotfound !== undefined) {
     options.notfound = !origOptions.noNotfound;
   }
-  if (origOptions.noNojekyll) {
+  if (origOptions.noNojekyll !== undefined) {
     options.nojekyll = !origOptions.noNojekyll;
   }
+}
 
-  if (options.dryRun) {
-    logger.info('Dry-run: No changes are applied at all.');
-  }
-
-  // Warn if deprecated noSilent parameter is used
-  if (origOptions.noSilent !== undefined) {
-    logger.warn(
-      'The --no-silent parameter is deprecated and no longer needed. ' +
-      'Verbose logging is now always enabled. This parameter will be ignored.'
-    );
-  }
-
-  // Handle user credentials - warn if only one is set
+/**
+ * Handle user credentials - create user object or warn if only one is set
+ */
+export function handleUserCredentials(
+  options: Schema & { dotfiles: boolean; notfound: boolean; nojekyll: boolean },
+  origOptions: Schema,
+  logger: logging.LoggerApi
+): void {
   if (options.name && options.email) {
     options['user'] = {
       name: options.name,
@@ -115,7 +115,26 @@ export async function prepareOptions(
       ' Git will use the local or global git config instead.'
     );
   }
+}
 
+/**
+ * Warn if deprecated parameters are used
+ */
+export function warnDeprecatedParameters(origOptions: Schema, logger: logging.LoggerApi): void {
+  if (origOptions.noSilent !== undefined) {
+    logger.warn(
+      'The --no-silent parameter is deprecated and no longer needed. ' +
+      'Verbose logging is now always enabled. This parameter will be ignored.'
+    );
+  }
+}
+
+/**
+ * Append CI environment metadata to commit message
+ */
+export function appendCIMetadata(
+  options: Schema & { dotfiles: boolean; notfound: boolean; nojekyll: boolean }
+): void {
   if (process.env.TRAVIS) {
     options.message +=
       ' -- ' +
@@ -154,7 +173,17 @@ export async function prepareOptions(
       '/commit/' +
       process.env.GITHUB_SHA;
   }
+}
 
+/**
+ * Inject authentication token into repository URL
+ *
+ * Supports GH_TOKEN, PERSONAL_TOKEN, and GITHUB_TOKEN environment variables.
+ * Also handles legacy GH_TOKEN placeholder replacement for backwards compatibility.
+ */
+export async function injectTokenIntoRepoUrl(
+  options: Schema & { dotfiles: boolean; notfound: boolean; nojekyll: boolean }
+): Promise<void> {
   // NEW in 0.6.2: always discover remote URL (if not set)
   // this allows us to inject tokens from environment even if `--repo` is not set manually
   if (!options.repo) {
@@ -164,7 +193,7 @@ export async function prepareOptions(
   // for backwards compatibility only,
   // in the past --repo=https://GH_TOKEN@github.com/<username>/<repositoryname>.git was advised
   //
-  // this repalcement was also used to inject other tokens into the URL,
+  // this replacement was also used to inject other tokens into the URL,
   // so it should only be removed with the next major version
   if (
     process.env.GH_TOKEN &&
@@ -173,7 +202,7 @@ export async function prepareOptions(
   ) {
     options.repo = options.repo.replace('GH_TOKEN', process.env.GH_TOKEN);
   }
-  // preffered way: token is replaced from plain URL
+  // preferred way: token is replaced from plain URL
   else if (options.repo && !options.repo.includes('x-access-token:')) {
     if (process.env.GH_TOKEN) {
       options.repo = options.repo.replace(
@@ -195,6 +224,61 @@ export async function prepareOptions(
         `https://x-access-token:${process.env.GITHUB_TOKEN}@github.com/`
       );
     }
+  }
+}
+
+/**
+ * Prepare and validate deployment options
+ *
+ * This orchestrator function:
+ * 1. Merges defaults with user options
+ * 2. Sets up monkeypatch for gh-pages logging
+ * 3. Maps negated boolean options (noDotfiles → dotfiles)
+ * 4. Handles user credentials
+ * 5. Warns about deprecated parameters
+ * 6. Appends CI environment metadata
+ * 7. Discovers and injects remote URL with authentication tokens
+ * 8. Logs dry-run message if applicable
+ */
+export async function prepareOptions(
+  origOptions: Schema,
+  logger: logging.LoggerApi
+): Promise<Schema & {
+  dotfiles: boolean,
+  notfound: boolean,
+  nojekyll: boolean
+}> {
+  // 1. Merge defaults with user options
+  const options: Schema & {
+    dotfiles: boolean,
+    notfound: boolean,
+    nojekyll: boolean
+  } = {
+    ...defaults,
+    ...origOptions
+  };
+
+  // 2. Setup monkeypatch for gh-pages logging (MUST be before requiring gh-pages)
+  setupMonkeypatch(logger);
+
+  // 3. Map negated boolean options
+  mapNegatedBooleans(options, origOptions);
+
+  // 4. Handle user credentials
+  handleUserCredentials(options, origOptions, logger);
+
+  // 5. Warn about deprecated parameters
+  warnDeprecatedParameters(origOptions, logger);
+
+  // 6. Append CI environment metadata
+  appendCIMetadata(options);
+
+  // 7. Discover and inject remote URL with authentication tokens
+  await injectTokenIntoRepoUrl(options);
+
+  // 8. Log dry-run message if applicable
+  if (options.dryRun) {
+    logger.info('Dry-run: No changes are applied at all.');
   }
 
   return options;

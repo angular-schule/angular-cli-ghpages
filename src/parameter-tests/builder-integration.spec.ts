@@ -111,7 +111,8 @@ describe('Angular Builder Integration Tests', () => {
 
       expect(capturedPublishOptions).not.toBeNull();
       expect(capturedPublishOptions!.dotfiles).toBe(false);
-      expect(capturedPublishOptions!.noDotfiles).toBe(true);
+      // Internal options should NOT be passed to gh-pages
+      expect(capturedPublishOptions!.noDotfiles).toBeUndefined();
     });
 
     it('should transform noNotfound: true to notfound: false in complete flow', async () => {
@@ -124,8 +125,9 @@ describe('Angular Builder Integration Tests', () => {
       await deploy(engine, context, BUILD_TARGET, options);
 
       expect(capturedPublishOptions).not.toBeNull();
-      expect(capturedPublishOptions!.notfound).toBe(false);
-      expect(capturedPublishOptions!.noNotfound).toBe(true);
+      // Internal options should NOT be passed to gh-pages
+      expect(capturedPublishOptions!.notfound).toBeUndefined();
+      expect(capturedPublishOptions!.noNotfound).toBeUndefined();
     });
 
     it('should transform noNojekyll: true to nojekyll: false in complete flow', async () => {
@@ -138,8 +140,9 @@ describe('Angular Builder Integration Tests', () => {
       await deploy(engine, context, BUILD_TARGET, options);
 
       expect(capturedPublishOptions).not.toBeNull();
-      expect(capturedPublishOptions!.nojekyll).toBe(false);
-      expect(capturedPublishOptions!.noNojekyll).toBe(true);
+      // Internal options should NOT be passed to gh-pages
+      expect(capturedPublishOptions!.nojekyll).toBeUndefined();
+      expect(capturedPublishOptions!.noNojekyll).toBeUndefined();
     });
 
     it('should transform all three negation flags together in complete flow', async () => {
@@ -155,11 +158,12 @@ describe('Angular Builder Integration Tests', () => {
 
       expect(capturedPublishOptions).not.toBeNull();
       expect(capturedPublishOptions!.dotfiles).toBe(false);
-      expect(capturedPublishOptions!.notfound).toBe(false);
-      expect(capturedPublishOptions!.nojekyll).toBe(false);
-      expect(capturedPublishOptions!.noDotfiles).toBe(true);
-      expect(capturedPublishOptions!.noNotfound).toBe(true);
-      expect(capturedPublishOptions!.noNojekyll).toBe(true);
+      // Internal options should NOT be passed to gh-pages
+      expect(capturedPublishOptions!.notfound).toBeUndefined();
+      expect(capturedPublishOptions!.nojekyll).toBeUndefined();
+      expect(capturedPublishOptions!.noDotfiles).toBeUndefined();
+      expect(capturedPublishOptions!.noNotfound).toBeUndefined();
+      expect(capturedPublishOptions!.noNojekyll).toBeUndefined();
     });
 
     it('should default all boolean flags to true when not specified', async () => {
@@ -172,8 +176,9 @@ describe('Angular Builder Integration Tests', () => {
 
       expect(capturedPublishOptions).not.toBeNull();
       expect(capturedPublishOptions!.dotfiles).toBe(true);
-      expect(capturedPublishOptions!.notfound).toBe(true);
-      expect(capturedPublishOptions!.nojekyll).toBe(true);
+      // Internal options should NOT be passed to gh-pages
+      expect(capturedPublishOptions!.notfound).toBeUndefined();
+      expect(capturedPublishOptions!.nojekyll).toBeUndefined();
     });
   });
 
@@ -223,7 +228,7 @@ describe('Angular Builder Integration Tests', () => {
       expect(capturedPublishOptions!.user).toEqual(expectedUser);
     });
 
-    it('should pass cname through complete flow unchanged', async () => {
+    it('should NOT pass cname to gh-pages (internal option for CNAME file creation)', async () => {
       const repo = 'https://github.com/test/repo.git';
       const cname = 'example.com';
       const options: Schema = { repo, cname, noBuild: true };
@@ -231,7 +236,8 @@ describe('Angular Builder Integration Tests', () => {
       await deploy(engine, context, BUILD_TARGET, options);
 
       expect(capturedPublishOptions).not.toBeNull();
-      expect(capturedPublishOptions!.cname).toBe(cname);
+      // cname is internal - used to create CNAME file, not passed to gh-pages
+      expect(capturedPublishOptions!.cname).toBeUndefined();
     });
   });
 
@@ -298,16 +304,23 @@ describe('Angular Builder Integration Tests', () => {
       expect(capturedPublishOptions!.remote).toBe(remote);
       expect(capturedPublishOptions!.branch).toBe(branch);
       expect(capturedPublishOptions!.message).toBe(message);
-      expect(capturedPublishOptions!.cname).toBe(cname);
       expect(capturedPublishOptions!.add).toBe(add);
+
+      // Verify internal options are NOT passed to gh-pages
+      expect(capturedPublishOptions!.cname).toBeUndefined();
+      expect(capturedPublishOptions!.noDotfiles).toBeUndefined();
+      expect(capturedPublishOptions!.noNotfound).toBeUndefined();
+      expect(capturedPublishOptions!.noNojekyll).toBeUndefined();
+      expect(capturedPublishOptions!.notfound).toBeUndefined();
+      expect(capturedPublishOptions!.nojekyll).toBeUndefined();
+      expect(capturedPublishOptions!.name).toBeUndefined();
+      expect(capturedPublishOptions!.email).toBeUndefined();
 
       // Verify user object transformation
       expect(capturedPublishOptions!.user).toEqual({ name, email });
 
       // Verify boolean negation transformations
       expect(capturedPublishOptions!.dotfiles).toBe(false);
-      expect(capturedPublishOptions!.notfound).toBe(false);
-      expect(capturedPublishOptions!.nojekyll).toBe(false);
 
       // Verify engine defaults are set
       expect(capturedPublishOptions!.git).toBe('git');

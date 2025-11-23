@@ -3,18 +3,21 @@ import * as fse from 'fs-extra';
 import * as path from 'path';
 
 import {Schema} from '../deploy/schema';
-import {GHPages} from '../interfaces';
+import {GHPages, PublishOptions} from '../interfaces';
 import {defaults} from './defaults';
-
-import Git from 'gh-pages/lib/git';
+import {
+  PreparedOptions,
+  setupMonkeypatch,
+  mapNegatedBooleans,
+  handleUserCredentials,
+  warnDeprecatedParameters,
+  appendCIMetadata,
+  injectTokenIntoRepoUrl
+} from './engine.prepare-options-helpers';
 
 export async function run(
   dir: string,
-  options: Schema & {
-    dotfiles: boolean,
-    notfound: boolean,
-    nojekyll: boolean
-  },
+  options: PreparedOptions,
   logger: logging.LoggerApi
 ) {
   options = await prepareOptions(options, logger);
@@ -48,186 +51,6 @@ export async function run(
 }
 
 /**
- * Setup monkeypatch for util.debuglog to intercept gh-pages logging
- *
- * gh-pages uses util.debuglog('gh-pages') internally for all verbose logging.
- * We intercept it and forward to Angular logger instead of stderr.
- *
- * CRITICAL: This must be called BEFORE requiring gh-pages, otherwise gh-pages
- * will cache the original util.debuglog and our interception won't work.
- */
-export function setupMonkeypatch(logger: logging.LoggerApi): void {
-  const util = require('util');
-  const originalDebuglog = util.debuglog;
-
-  util.debuglog = (set: string) => {
-    // gh-pages uses util.debuglog('gh-pages') internally for all verbose logging
-    // Intercept it and forward to Angular logger instead of stderr
-    if (set === 'gh-pages') {
-      return function (...args: unknown[]) {
-        const message = util.format.apply(util, args);
-        logger.info(message);
-      };
-    }
-    return originalDebuglog(set);
-  };
-}
-
-/**
- * Map negated boolean options to positive boolean options
- *
- * Angular-CLI is NOT renaming the vars, so noDotfiles, noNotfound, and noNojekyll
- * come in with no change. We map this to dotfiles, notfound, nojekyll to have a
- * consistent pattern between Commander and Angular-CLI.
- */
-export function mapNegatedBooleans(
-  options: Schema & { dotfiles: boolean; notfound: boolean; nojekyll: boolean },
-  origOptions: Schema
-): void {
-  if (origOptions.noDotfiles !== undefined) {
-    options.dotfiles = !origOptions.noDotfiles;
-  }
-  if (origOptions.noNotfound !== undefined) {
-    options.notfound = !origOptions.noNotfound;
-  }
-  if (origOptions.noNojekyll !== undefined) {
-    options.nojekyll = !origOptions.noNojekyll;
-  }
-}
-
-/**
- * Handle user credentials - create user object or warn if only one is set
- */
-export function handleUserCredentials(
-  options: Schema & { dotfiles: boolean; notfound: boolean; nojekyll: boolean },
-  origOptions: Schema,
-  logger: logging.LoggerApi
-): void {
-  if (options.name && options.email) {
-    options['user'] = {
-      name: options.name,
-      email: options.email
-    };
-  } else if (options.name || options.email) {
-    logger.warn(
-      'WARNING: Both --name and --email must be set together to configure git user. ' +
-      (options.name ? 'Only --name is set.' : 'Only --email is set.') +
-      ' Git will use the local or global git config instead.'
-    );
-  }
-}
-
-/**
- * Warn if deprecated parameters are used
- */
-export function warnDeprecatedParameters(origOptions: Schema, logger: logging.LoggerApi): void {
-  if (origOptions.noSilent !== undefined) {
-    logger.warn(
-      'The --no-silent parameter is deprecated and no longer needed. ' +
-      'Verbose logging is now always enabled. This parameter will be ignored.'
-    );
-  }
-}
-
-/**
- * Append CI environment metadata to commit message
- */
-export function appendCIMetadata(
-  options: Schema & { dotfiles: boolean; notfound: boolean; nojekyll: boolean }
-): void {
-  if (process.env.TRAVIS) {
-    options.message +=
-      ' -- ' +
-      process.env.TRAVIS_COMMIT_MESSAGE +
-      ' \n\n' +
-      'Triggered by commit: https://github.com/' +
-      process.env.TRAVIS_REPO_SLUG +
-      '/commit/' +
-      process.env.TRAVIS_COMMIT +
-      '\n' +
-      'Travis CI build: https://travis-ci.org/' +
-      process.env.TRAVIS_REPO_SLUG +
-      '/builds/' +
-      process.env.TRAVIS_BUILD_ID;
-  }
-
-  if (process.env.CIRCLECI) {
-    options.message +=
-      '\n\n' +
-      'Triggered by commit: https://github.com/' +
-      process.env.CIRCLE_PROJECT_USERNAME +
-      '/' +
-      process.env.CIRCLE_PROJECT_REPONAME +
-      '/commit/' +
-      process.env.CIRCLE_SHA1 +
-      '\n' +
-      'CircleCI build: ' +
-      process.env.CIRCLE_BUILD_URL;
-  }
-
-  if (process.env.GITHUB_ACTIONS) {
-    options.message +=
-      '\n\n' +
-      'Triggered by commit: https://github.com/' +
-      process.env.GITHUB_REPOSITORY +
-      '/commit/' +
-      process.env.GITHUB_SHA;
-  }
-}
-
-/**
- * Inject authentication token into repository URL
- *
- * Supports GH_TOKEN, PERSONAL_TOKEN, and GITHUB_TOKEN environment variables.
- * Also handles legacy GH_TOKEN placeholder replacement for backwards compatibility.
- */
-export async function injectTokenIntoRepoUrl(
-  options: Schema & { dotfiles: boolean; notfound: boolean; nojekyll: boolean }
-): Promise<void> {
-  // NEW in 0.6.2: always discover remote URL (if not set)
-  // this allows us to inject tokens from environment even if `--repo` is not set manually
-  if (!options.repo) {
-    options.repo = await getRemoteUrl(options);
-  }
-
-  // for backwards compatibility only,
-  // in the past --repo=https://GH_TOKEN@github.com/<username>/<repositoryname>.git was advised
-  //
-  // this replacement was also used to inject other tokens into the URL,
-  // so it should only be removed with the next major version
-  if (
-    process.env.GH_TOKEN &&
-    options.repo &&
-    options.repo.includes('GH_TOKEN')
-  ) {
-    options.repo = options.repo.replace('GH_TOKEN', process.env.GH_TOKEN);
-  }
-  // preferred way: token is replaced from plain URL
-  else if (options.repo && !options.repo.includes('x-access-token:')) {
-    if (process.env.GH_TOKEN) {
-      options.repo = options.repo.replace(
-        'https://github.com/',
-        `https://x-access-token:${process.env.GH_TOKEN}@github.com/`
-      );
-    }
-
-    if (process.env.PERSONAL_TOKEN) {
-      options.repo = options.repo.replace(
-        'https://github.com/',
-        `https://x-access-token:${process.env.PERSONAL_TOKEN}@github.com/`
-      );
-    }
-
-    if (process.env.GITHUB_TOKEN) {
-      options.repo = options.repo.replace(
-        'https://github.com/',
-        `https://x-access-token:${process.env.GITHUB_TOKEN}@github.com/`
-      );
-    }
-  }
-}
-
-/**
  * Prepare and validate deployment options
  *
  * This orchestrator function:
@@ -243,17 +66,9 @@ export async function injectTokenIntoRepoUrl(
 export async function prepareOptions(
   origOptions: Schema,
   logger: logging.LoggerApi
-): Promise<Schema & {
-  dotfiles: boolean,
-  notfound: boolean,
-  nojekyll: boolean
-}> {
+): Promise<PreparedOptions> {
   // 1. Merge defaults with user options
-  const options: Schema & {
-    dotfiles: boolean,
-    notfound: boolean,
-    nojekyll: boolean
-  } = {
+  const options: PreparedOptions = {
     ...defaults,
     ...origOptions
   };
@@ -385,11 +200,7 @@ async function createNojekyllFile(
 async function publishViaGhPages(
   ghPages: GHPages,
   dir: string,
-  options: Schema & {
-    dotfiles: boolean,
-    notfound: boolean,
-    nojekyll: boolean
-  },
+  options: PreparedOptions,
   logger: logging.LoggerApi
 ) {
   if (options.dryRun) {
@@ -419,10 +230,23 @@ async function publishViaGhPages(
 
   logger.info('🚀 Uploading via git, please wait...');
 
+  // Only pass options that gh-pages understands
+  // If gh-pages adds new options in the future, we'll need to add them here
+  const ghPagesOptions: PublishOptions = {
+    repo: options.repo,
+    branch: options.branch,
+    message: options.message,
+    remote: options.remote,
+    git: options.git as string | undefined,
+    add: options.add,
+    dotfiles: options.dotfiles,
+    user: options.user
+  };
+
   // do NOT (!!) await ghPages.publish,
   // the promise is implemented in such a way that it always succeeds – even on errors!
   return new Promise((resolve, reject) => {
-    ghPages.publish(dir, options, error => {
+    ghPages.publish(dir, ghPagesOptions, error => {
       if (error) {
         return reject(error);
       }
@@ -430,9 +254,4 @@ async function publishViaGhPages(
       resolve(undefined);
     });
   });
-}
-
-async function getRemoteUrl(options: Schema & { git?: string; remote?: string }): Promise<string> {
-  const git = new Git(process.cwd(), options.git);
-  return await git.getRemoteUrl(options.remote);
 }

@@ -29,11 +29,13 @@ export { run as deployToGHPages } from './engine/engine';
 
 // Advanced: Extracted option processing functions for custom workflows
 export {
+  PreparedOptions,
   setupMonkeypatch,
   mapNegatedBooleans,
   handleUserCredentials,
   warnDeprecatedParameters,
   appendCIMetadata,
-  injectTokenIntoRepoUrl,
-  prepareOptions
-} from './engine/engine';
+  injectTokenIntoRepoUrl
+} from './engine/engine.prepare-options-helpers';
+
+export { prepareOptions } from './engine/engine';

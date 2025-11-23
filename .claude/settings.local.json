@@ -24,7 +24,14 @@
       "Bash(git log:*)",
       "Bash(npm test:*)",
       "Bash(gh issue view:*)",
-      "WebSearch"
+      "WebSearch",
+      "Bash(npm ls:*)",
+      "Bash(find:*)",
+      "Bash(gh pr view:*)",
+      "Bash(gh pr diff:*)",
+      "Bash(cat:*)",
+      "Bash(npm view:*)",
+      "WebFetch(domain:raw.githubusercontent.com)"
     ],
     "deny": [],
     "ask": []

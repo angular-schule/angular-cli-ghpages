@@ -173,10 +173,10 @@ Add `"types": "index.d.ts"` to package.json
 - ✅ Test: getRemoteUrl() returns correct URL from git config
 - ✅ Test: Error when not in a git repository
 - ✅ Test: Error when remote doesn't exist
-- ✅ Test: Works with minimal options (defaults to 'origin')
+- ✅ Test: Works when remote is provided from defaults
 - ✅ Test: Returns consistent URL for same remote
 - ✅ Test: Passes remote option to gh-pages getRemoteUrl method
-- ✅ Fixed: Added default 'origin' remote when undefined to prevent undefined string conversion
+- ✅ Note: No default fallback needed - prepareOptions() merges defaults.remote='origin'
 
 **Why Critical:** This internal API could break in gh-pages v6+ upgrade
 

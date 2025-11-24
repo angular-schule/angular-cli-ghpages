@@ -215,11 +215,12 @@ export async function injectTokenIntoRepoUrl(options: PreparedOptions): Promise<
  * - Option 2: Use a dedicated git library (simple-git, nodegit)
  * - Option 3: Require users to always pass --repo explicitly
  *
+ * IMPORTANT: This function expects options.remote to be set (our defaults provide 'origin')
+ * It should NOT be called with undefined remote, as gh-pages will convert it to string "undefined"
+ *
  * Exported for testing - internal use only
  */
 export async function getRemoteUrl(options: Schema & { git?: string; remote?: string }): Promise<string> {
   const git = new Git(process.cwd(), options.git);
-  // gh-pages getRemoteUrl expects remote string, defaults to 'origin' if not provided
-  const remote = options.remote || 'origin';
-  return await git.getRemoteUrl(remote);
+  return await git.getRemoteUrl(options.remote);
 }

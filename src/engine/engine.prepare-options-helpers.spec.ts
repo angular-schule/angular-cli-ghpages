@@ -15,18 +15,42 @@ describe('prepareOptions helpers - intensive tests', () => {
   let testLogger: logging.Logger;
   let infoSpy: jest.SpyInstance;
   let warnSpy: jest.SpyInstance;
+  const originalEnv = process.env;
 
   beforeEach(() => {
     testLogger = new logging.Logger('test');
     infoSpy = jest.spyOn(testLogger, 'info');
     warnSpy = jest.spyOn(testLogger, 'warn');
-    // Reset environment for each test
-    process.env = {};
+    // Create fresh copy of environment for each test
+    // This preserves PATH, HOME, etc. needed by git
+    process.env = { ...originalEnv };
+    // Clear only CI-specific vars we're testing
+    delete process.env.TRAVIS;
+    delete process.env.TRAVIS_COMMIT;
+    delete process.env.TRAVIS_COMMIT_MESSAGE;
+    delete process.env.TRAVIS_REPO_SLUG;
+    delete process.env.TRAVIS_BUILD_ID;
+    delete process.env.CIRCLECI;
+    delete process.env.CIRCLE_PROJECT_USERNAME;
+    delete process.env.CIRCLE_PROJECT_REPONAME;
+    delete process.env.CIRCLE_SHA1;
+    delete process.env.CIRCLE_BUILD_URL;
+    delete process.env.GITHUB_ACTIONS;
+    delete process.env.GITHUB_REPOSITORY;
+    delete process.env.GITHUB_SHA;
+    delete process.env.GH_TOKEN;
+    delete process.env.PERSONAL_TOKEN;
+    delete process.env.GITHUB_TOKEN;
   });
 
   afterEach(() => {
     infoSpy.mockRestore();
     warnSpy.mockRestore();
+  });
+
+  afterAll(() => {
+    // Restore original environment for other test files
+    process.env = originalEnv;
   });
 
   describe('setupMonkeypatch', () => {
@@ -280,7 +304,7 @@ describe('prepareOptions helpers - intensive tests', () => {
   describe('appendCIMetadata', () => {
     const baseMessage = 'Deploy to gh-pages';
 
-    it('should append Travis CI metadata when TRAVIS env is set', () => {
+    it('should append Travis CI metadata with exact format', () => {
       process.env.TRAVIS = 'true';
       process.env.TRAVIS_COMMIT_MESSAGE = 'Fix bug in component';
       process.env.TRAVIS_REPO_SLUG = 'user/repo';
@@ -296,12 +320,15 @@ describe('prepareOptions helpers - intensive tests', () => {
 
       helpers.appendCIMetadata(options);
 
-      expect(options.message).toContain(' -- Fix bug in component');
-      expect(options.message).toContain('Triggered by commit: https://github.com/user/repo/commit/abc123def456');
-      expect(options.message).toContain('Travis CI build: https://travis-ci.org/user/repo/builds/987654321');
+      const expectedMessage =
+        'Deploy to gh-pages -- Fix bug in component \n\n' +
+        'Triggered by commit: https://github.com/user/repo/commit/abc123def456\n' +
+        'Travis CI build: https://travis-ci.org/user/repo/builds/987654321';
+
+      expect(options.message).toBe(expectedMessage);
     });
 
-    it('should append CircleCI metadata when CIRCLECI env is set', () => {
+    it('should append CircleCI metadata with exact format', () => {
       process.env.CIRCLECI = 'true';
       process.env.CIRCLE_PROJECT_USERNAME = 'johndoe';
       process.env.CIRCLE_PROJECT_REPONAME = 'myproject';
@@ -317,11 +344,15 @@ describe('prepareOptions helpers - intensive tests', () => {
 
       helpers.appendCIMetadata(options);
 
-      expect(options.message).toContain('Triggered by commit: https://github.com/johndoe/myproject/commit/fedcba987654');
-      expect(options.message).toContain('CircleCI build: https://circleci.com/gh/johndoe/myproject/123');
+      const expectedMessage =
+        'Deploy to gh-pages\n\n' +
+        'Triggered by commit: https://github.com/johndoe/myproject/commit/fedcba987654\n' +
+        'CircleCI build: https://circleci.com/gh/johndoe/myproject/123';
+
+      expect(options.message).toBe(expectedMessage);
     });
 
-    it('should append GitHub Actions metadata when GITHUB_ACTIONS env is set', () => {
+    it('should append GitHub Actions metadata with exact format', () => {
       process.env.GITHUB_ACTIONS = 'true';
       process.env.GITHUB_REPOSITORY = 'angular-schule/angular-cli-ghpages';
       process.env.GITHUB_SHA = '1234567890abcdef';
@@ -335,7 +366,11 @@ describe('prepareOptions helpers - intensive tests', () => {
 
       helpers.appendCIMetadata(options);
 
-      expect(options.message).toContain('Triggered by commit: https://github.com/angular-schule/angular-cli-ghpages/commit/1234567890abcdef');
+      const expectedMessage =
+        'Deploy to gh-pages\n\n' +
+        'Triggered by commit: https://github.com/angular-schule/angular-cli-ghpages/commit/1234567890abcdef';
+
+      expect(options.message).toBe(expectedMessage);
     });
 
     it('should NOT modify message when no CI env is set', () => {
@@ -351,16 +386,23 @@ describe('prepareOptions helpers - intensive tests', () => {
       expect(options.message).toBe(baseMessage);
     });
 
-    it('should append metadata from multiple CI environments if present', () => {
+    it('should append metadata from multiple CI environments in correct order', () => {
+      // Set up multiple CI environments (Travis, CircleCI, GitHub Actions)
       process.env.TRAVIS = 'true';
       process.env.TRAVIS_COMMIT_MESSAGE = 'Update docs';
       process.env.TRAVIS_REPO_SLUG = 'org/repo';
       process.env.TRAVIS_COMMIT = 'abc123';
       process.env.TRAVIS_BUILD_ID = '111';
 
+      process.env.CIRCLECI = 'true';
+      process.env.CIRCLE_PROJECT_USERNAME = 'org';
+      process.env.CIRCLE_PROJECT_REPONAME = 'repo';
+      process.env.CIRCLE_SHA1 = 'def456';
+      process.env.CIRCLE_BUILD_URL = 'https://circleci.com/gh/org/repo/222';
+
       process.env.GITHUB_ACTIONS = 'true';
       process.env.GITHUB_REPOSITORY = 'org/repo';
-      process.env.GITHUB_SHA = 'def456';
+      process.env.GITHUB_SHA = 'ghi789';
 
       const options: helpers.PreparedOptions = {
         message: baseMessage,
@@ -371,8 +413,15 @@ describe('prepareOptions helpers - intensive tests', () => {
 
       helpers.appendCIMetadata(options);
 
-      expect(options.message).toContain('Travis CI build');
-      expect(options.message).toContain('Triggered by commit: https://github.com/org/repo/commit/def456');
+      // Verify Travis appears first, then CircleCI, then GitHub Actions
+      expect(options.message).toBeDefined();
+      const travisIndex = options.message!.indexOf('Travis CI build');
+      const circleIndex = options.message!.indexOf('CircleCI build');
+      const ghActionsIndex = options.message!.indexOf('Triggered by commit: https://github.com/org/repo/commit/ghi789');
+
+      expect(travisIndex).toBeGreaterThan(-1);
+      expect(circleIndex).toBeGreaterThan(travisIndex);
+      expect(ghActionsIndex).toBeGreaterThan(circleIndex);
     });
   });
 
@@ -541,30 +590,33 @@ describe('prepareOptions helpers - intensive tests', () => {
      * comment in engine.prepare-options-helpers.ts for fallback options.
      */
 
-    it('should successfully call gh-pages/lib/git Git class and return URL', async () => {
-      // This test verifies the internal API still exists and is callable
+    it('should return correct URL from git config and be consistent', async () => {
+      // This test verifies the internal API returns ACTUAL git config values
       const options = { remote: 'origin' };
 
-      // Should successfully return the git remote URL
+      // Get what git actually says
+      const { execSync } = require('child_process');
+      const expectedUrl = execSync('git config --get remote.origin.url', { encoding: 'utf8' }).trim();
+
+      // Verify getRemoteUrl returns the same value
       const result = await helpers.getRemoteUrl(options);
+      expect(result).toBe(expectedUrl);
 
-      // Verify it returns a string URL
-      expect(typeof result).toBe('string');
-      expect(result.length).toBeGreaterThan(0);
-
-      // Verify it looks like a git URL (either SSH or HTTPS)
-      const isGitUrl = result.includes('github.com') || result.startsWith('git@') || result.startsWith('https://');
-      expect(isGitUrl).toBe(true);
+      // Verify consistency across multiple calls
+      const result2 = await helpers.getRemoteUrl(options);
+      expect(result2).toBe(expectedUrl);
+      expect(result).toBe(result2);
     });
 
-    it('should pass remote option to getRemoteUrl method', async () => {
+    it('should throw helpful error for non-existent remote', async () => {
       const options = {
         remote: 'nonexistent-remote-12345' // Remote that definitely doesn't exist
       };
 
-      // Should throw because this remote doesn't exist in our test repo
-      // This verifies the remote option is passed to getRemoteUrl method
-      await expect(helpers.getRemoteUrl(options)).rejects.toThrow();
+      // Should throw with specific error message about the remote
+      await expect(helpers.getRemoteUrl(options))
+        .rejects
+        .toThrow('Failed to get remote.');
     });
 
     it('should throw helpful error when not in a git repository', async () => {
@@ -575,41 +627,15 @@ describe('prepareOptions helpers - intensive tests', () => {
 
       try {
         process.chdir(tempDir);
-        const options = {};
+        const options = { remote: 'origin' };
 
         await expect(helpers.getRemoteUrl(options))
           .rejects
-          .toThrow(); // Will throw error about not being in a git repository
+          .toThrow('run in a git repository');
       } finally {
         process.chdir(originalCwd);
         await require('fs-extra').remove(tempDir);
       }
-    });
-
-    it('should work when remote is provided from defaults', async () => {
-      // In real usage, options.remote is ALWAYS set because prepareOptions merges defaults
-      // Our defaults.ts has remote: 'origin', so options.remote is never undefined
-      const options = { remote: 'origin' };
-
-      // Should successfully return the remote URL
-      const result = await helpers.getRemoteUrl(options);
-      expect(typeof result).toBe('string');
-      expect(result.length).toBeGreaterThan(0);
-
-      // Calling again with same remote should return same URL
-      const result2 = await helpers.getRemoteUrl(options);
-      expect(result).toBe(result2);
-    });
-
-    it('should return consistent URL for same remote', async () => {
-      const options1 = { remote: 'origin' };
-      const options2 = { remote: 'origin' };
-
-      const result1 = await helpers.getRemoteUrl(options1);
-      const result2 = await helpers.getRemoteUrl(options2);
-
-      // Same remote should return same URL
-      expect(result1).toBe(result2);
     });
   });
 });

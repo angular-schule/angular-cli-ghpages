@@ -5,9 +5,24 @@ import * as engine from './engine';
 describe('engine', () => {
   describe('prepareOptions', () => {
     const logger = new logging.NullLogger();
+    const originalEnv = process.env;
 
     beforeEach(() => {
-      process.env = {};
+      // Create fresh copy of environment for each test
+      // This preserves PATH, HOME, etc. needed by git
+      process.env = { ...originalEnv };
+      // Clear only CI-specific vars we're testing
+      delete process.env.TRAVIS;
+      delete process.env.CIRCLECI;
+      delete process.env.GITHUB_ACTIONS;
+      delete process.env.GH_TOKEN;
+      delete process.env.PERSONAL_TOKEN;
+      delete process.env.GITHUB_TOKEN;
+    });
+
+    afterAll(() => {
+      // Restore original environment for other test files
+      process.env = originalEnv;
     });
 
     it('should replace the string GH_TOKEN in the repo url (for backwards compatibility)', async () => {

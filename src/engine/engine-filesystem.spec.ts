@@ -313,4 +313,115 @@ describe('engine - real filesystem tests', () => {
       expect(await fse.readFile(notFoundPath, 'utf-8')).toBe(indexContent);
     });
   });
+
+  /**
+   * PR #186 COMPATIBILITY: gh-pages v6.1.0+ File Creation
+   *
+   * Context from PR #186 analysis:
+   * - gh-pages v6.1.0 added native support for creating CNAME and .nojekyll files
+   * - See: https://github.com/tschaub/gh-pages/pull/533
+   * - We create these files BEFORE calling gh-pages (in dist/ directory)
+   * - gh-pages v6 will create them AFTER in the cache directory
+   *
+   * What we're testing:
+   * - Our file creation in dist/ works correctly (above tests)
+   * - Verify we DON'T pass cname/nojekyll options to gh-pages (they're internal to angular-cli-ghpages)
+   * - Document that gh-pages v6 will create duplicate files in cache (not a problem, just inefficient)
+   *
+   * When upgrading to gh-pages v6:
+   * - Option 1: Keep our file creation (works, but inefficient - files created twice)
+   * - Option 2: Remove our file creation and pass options to gh-pages (cleaner, but need to test backwards compat)
+   *
+   * Current status: We create files ourselves, DON'T pass options to gh-pages
+   */
+  describe('PR #186 - gh-pages v6.1.0+ compatibility', () => {
+    it('should NOT pass cname option to gh-pages (internal angular-cli-ghpages option)', async () => {
+      const indexPath = path.join(testDir, 'index.html');
+      await fse.writeFile(indexPath, '<html>test</html>');
+
+      const ghpages = require('gh-pages');
+      jest.spyOn(ghpages, 'clean').mockImplementation(() => {});
+
+      const publishSpy = jest.spyOn(ghpages, 'publish').mockImplementation(
+        (dir: string, options: {cname?: string; nojekyll?: boolean}, callback: (err: Error | null) => void) => {
+          // CRITICAL: Verify cname is NOT passed to gh-pages
+          expect(options.cname).toBeUndefined();
+          setImmediate(() => callback(null));
+        }
+      );
+
+      const options = {
+        cname: 'example.com', // We handle this internally
+        nojekyll: false,
+        notfound: false,
+        dotfiles: true
+      };
+
+      await engine.run(testDir, options, logger);
+
+      expect(publishSpy).toHaveBeenCalled();
+    });
+
+    it('should NOT pass nojekyll option to gh-pages (we handle it ourselves)', async () => {
+      const indexPath = path.join(testDir, 'index.html');
+      await fse.writeFile(indexPath, '<html>test</html>');
+
+      const ghpages = require('gh-pages');
+      jest.spyOn(ghpages, 'clean').mockImplementation(() => {});
+
+      const publishSpy = jest.spyOn(ghpages, 'publish').mockImplementation(
+        (dir: string, options: {cname?: string; nojekyll?: boolean}, callback: (err: Error | null) => void) => {
+          // CRITICAL: Verify nojekyll is NOT passed to gh-pages
+          // We create the file ourselves, gh-pages v6 would duplicate it
+          expect(options.nojekyll).toBeUndefined();
+          setImmediate(() => callback(null));
+        }
+      );
+
+      const options = {
+        nojekyll: true, // We handle this internally by creating .nojekyll file
+        notfound: false,
+        dotfiles: true
+      };
+
+      await engine.run(testDir, options, logger);
+
+      expect(publishSpy).toHaveBeenCalled();
+    });
+
+    it('should create CNAME file in dist/ (not relying on gh-pages v6 to create it)', async () => {
+      const indexPath = path.join(testDir, 'index.html');
+      await fse.writeFile(indexPath, '<html>test</html>');
+
+      const ghpages = require('gh-pages');
+      jest.spyOn(ghpages, 'clean').mockImplementation(() => {});
+      jest.spyOn(ghpages, 'publish').mockImplementation((dir: string, options: unknown, callback: (err: Error | null) => void) => {
+        // gh-pages v6 would create CNAME in cache directory
+        // But we create it in dist/ BEFORE calling gh-pages
+        setImmediate(() => callback(null));
+      });
+
+      const testDomain = 'angular-schule.github.io';
+      const options = {
+        cname: testDomain,
+        nojekyll: false,
+        notfound: false,
+        dotfiles: true
+      };
+
+      await engine.run(testDir, options, logger);
+
+      // CRITICAL: Verify CNAME exists in dist/ directory (testDir)
+      // This is the directory gh-pages will publish
+      const cnamePath = path.join(testDir, 'CNAME');
+      const exists = await fse.pathExists(cnamePath);
+      expect(exists).toBe(true);
+
+      const content = await fse.readFile(cnamePath, 'utf-8');
+      expect(content).toBe(testDomain);
+
+      // Note: gh-pages v6 will ALSO create CNAME in cache directory
+      // This means the file exists in TWO places (inefficient but not breaking)
+    });
+  });
 });

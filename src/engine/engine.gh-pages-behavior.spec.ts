@@ -713,11 +713,17 @@ describe('gh-pages v3.2.3 - behavioral snapshot', () => {
    * 1. Git clone failure and retry (branch doesn't exist)
    * 2. No changes to commit (diff-index returns 0)
    * 3. Git commit when no user configured (uses getUser)
+   * 4. Early error handling (invalid basePath) - PR #186 compatibility
    *
    * Why test error scenarios:
    * - Ensures deployments don't fail silently
    * - Verifies retry/fallback mechanisms work
    * - Documents expected error recovery behavior
+   *
+   * PR #186 Context:
+   * gh-pages v3.1.0 has a bug where early errors don't return promises.
+   * gh-pages v5.0.0+ fixes this to correctly return Promise.reject().
+   * We use callback-based approach as workaround, which works in both versions.
    */
   describe('Error scenarios', () => {
     it('should retry git clone without branch/depth options on failure', (done) => {
@@ -953,6 +959,57 @@ describe('gh-pages v3.2.3 - behavioral snapshot', () => {
         }
       });
     });
+
+    /**
+     * PR #186 Issue #1: gh-pages Promise Bug (documented here)
+     *
+     * Context from PR #186 analysis:
+     * gh-pages v3.1.0 has a bug where early error cases don't return a promise.
+     * Source: https://github.com/tschaub/gh-pages/blob/v3.1.0/lib/index.js#L78-85
+     *
+     * Evidence from source code:
+     * ```
+     * try {
+     *   if (!fs.statSync(basePath).isDirectory()) {
+     *     done(new Error('The "base" option must be an existing directory'));
+     *     return;  // ❌ NO PROMISE RETURNED!
+     *   }
+     * } catch (err) {
+     *   done(err);
+     *   return;  // ❌ NO PROMISE RETURNED!
+     * }
+     * ```
+     *
+     * Early errors include:
+     * - basePath is not a directory
+     * - basePath doesn't exist
+     * - No files match src pattern
+     *
+     * If you use await ghPages.publish(), these errors are silently swallowed!
+     *
+     * Our workaround in engine.ts:248-256:
+     * ```
+     * // do NOT (!!) await ghPages.publish,
+     * // the promise is implemented in such a way that it always succeeds – even on errors!
+     * return new Promise((resolve, reject) => {
+     *   ghPages.publish(dir, options, error => {
+     *     if (error) {
+     *       return reject(error);
+     *     }
+     *     resolve(undefined);
+     *   });
+     * });
+     * ```
+     *
+     * Fixed in gh-pages v5.0.0+: All errors correctly return Promise.reject()
+     *
+     * When upgrading to gh-pages v5+:
+     * - We can remove the callback workaround and use await directly
+     * - Need to verify all error cases are properly handled
+     * - This documentation serves as a reminder of why the workaround exists
+     *
+     * Current behavior is tested in engine.spec.ts integration tests.
+     */
   });
 
   /**

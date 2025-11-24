@@ -31,7 +31,8 @@
       "Bash(gh pr diff:*)",
       "Bash(cat:*)",
       "Bash(npm view:*)",
-      "WebFetch(domain:raw.githubusercontent.com)"
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "Bash(gh pr list:*)"
     ],
     "deny": [],
     "ask": []

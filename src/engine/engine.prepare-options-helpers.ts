@@ -199,9 +199,27 @@ export async function injectTokenIntoRepoUrl(options: PreparedOptions): Promise<
 
 /**
  * Get the remote URL from the git repository
- * Internal helper function used by injectTokenIntoRepoUrl
+ *
+ * ⚠️  WARNING: This uses gh-pages internal API (gh-pages/lib/git)
+ *
+ * UPGRADE RISK:
+ * - This function depends on gh-pages/lib/git which is an internal module
+ * - Not part of gh-pages public API - could break in any version
+ * - When upgrading gh-pages (especially to v6+), verify this still works:
+ *   1. Check if gh-pages/lib/git still exists
+ *   2. Check if Git class constructor signature is unchanged
+ *   3. Check if getRemoteUrl() method still exists and works
+ *
+ * FALLBACK OPTIONS if this breaks:
+ * - Option 1: Shell out to `git config --get remote.origin.url` directly
+ * - Option 2: Use a dedicated git library (simple-git, nodegit)
+ * - Option 3: Require users to always pass --repo explicitly
+ *
+ * Exported for testing - internal use only
  */
-async function getRemoteUrl(options: Schema & { git?: string; remote?: string }): Promise<string> {
+export async function getRemoteUrl(options: Schema & { git?: string; remote?: string }): Promise<string> {
   const git = new Git(process.cwd(), options.git);
-  return await git.getRemoteUrl(options.remote);
+  // gh-pages getRemoteUrl expects remote string, defaults to 'origin' if not provided
+  const remote = options.remote || 'origin';
+  return await git.getRemoteUrl(remote);
 }

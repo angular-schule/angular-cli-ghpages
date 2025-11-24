@@ -10,6 +10,8 @@
  * Approach: Mock child_process and gh-pages/lib/util, use real filesystem
  */
 
+import { ChildProcess } from 'child_process';
+
 const path = require('path');
 const fs = require('fs-extra');
 const os = require('os');
@@ -32,6 +34,15 @@ let spawnCalls: SpawnCall[] = [];
 // Track current test context for deterministic mock behavior
 let currentTestContext: TestContext = {};
 
+// Factory function to create mock child process compatible with gh-pages expectations
+// gh-pages lib/git.js expects: child.stdout.on, child.stderr.on, child.on('close')
+function createMockChildProcess(): Partial<ChildProcess> {
+  const child: Partial<ChildProcess> = new EventEmitter();
+  child.stdout = new EventEmitter() as unknown as ChildProcess['stdout'];
+  child.stderr = new EventEmitter() as unknown as ChildProcess['stderr'];
+  return child;
+}
+
 // Whitelist of expected git commands (fail fast on unexpected commands)
 const EXPECTED_GIT_COMMANDS = [
   'clone', 'clean', 'fetch', 'checkout', 'ls-remote', 'reset',
@@ -49,9 +60,7 @@ const mockSpawn = jest.fn((cmd: string, args: string[] | undefined, opts: unknow
     }
   }
 
-  const mockChild: any = new EventEmitter();
-  mockChild.stdout = new EventEmitter();
-  mockChild.stderr = new EventEmitter();
+  const mockChild = createMockChildProcess();
 
   // Simulate appropriate response based on git command
   setImmediate(() => {
@@ -70,12 +79,12 @@ const mockSpawn = jest.fn((cmd: string, args: string[] | undefined, opts: unknow
     // diff-index for checking if commit needed (exit 1 means changes exist)
     else if (cmd === 'git' && capturedArgs[0] === 'diff-index') {
       // Return exit code 1 to indicate changes exist
-      mockChild.emit('close', 1);
+      mockChild.emit!('close', 1);
       return;
     }
 
-    mockChild.stdout.emit('data', Buffer.from(output));
-    mockChild.emit('close', 0);
+    mockChild.stdout!.emit('data', Buffer.from(output));
+    mockChild.emit!('close', 0);
   });
 
   return mockChild;
@@ -128,10 +137,11 @@ describe('gh-pages v3.2.3 - behavioral snapshot', () => {
     basePath = path.join(tempDir, 'dist');
     await fs.ensureDir(basePath);
 
-    // Create test files
+    // Create test files (including dotfiles for testing dotfiles option)
     await fs.writeFile(path.join(basePath, 'index.html'), '<html>test</html>');
     await fs.writeFile(path.join(basePath, 'main.js'), 'console.log("test");');
     await fs.writeFile(path.join(basePath, 'styles.css'), 'body { }');
+    await fs.writeFile(path.join(basePath, '.htaccess'), 'RewriteEngine On');
   });
 
   afterAll(async () => {
@@ -465,6 +475,12 @@ describe('gh-pages v3.2.3 - behavioral snapshot', () => {
    * Why we test this:
    * - CRITICAL: We expose this option and pass it to gh-pages
    * - Must verify it affects file selection behavior
+   *
+   * Test fixture has these files:
+   * - index.html (normal file)
+   * - main.js (normal file)
+   * - styles.css (normal file)
+   * - .htaccess (dotfile)
    */
   describe('Dotfiles option', () => {
     it('should include dotfiles when dotfiles: true (our default)', (done) => {
@@ -474,14 +490,24 @@ describe('gh-pages v3.2.3 - behavioral snapshot', () => {
 
       publishAndHandle(basePath, options, done, () => {
         // gh-pages uses globby with { dot: options.dotfiles } (lib/index.js line 90)
-        // We can't directly test globby call, but we verify copy was called
-        // (copy is called with the files array that globby returned)
         expect(mockCopy).toHaveBeenCalledTimes(1);
 
-        // The files array passed to copy should be determined by dotfiles option
-        // This verifies the option is flowing through to gh-pages
         const callArgs = mockCopy.mock.calls[0];
         expect(callArgs).toBeDefined();
+        expect(callArgs.length).toBe(3);
+
+        const [files, source, destination] = callArgs as unknown as [string[], string, string];
+
+        // CRITICAL: Verify files array INCLUDES the .htaccess dotfile
+        expect(Array.isArray(files)).toBe(true);
+        expect(files.length).toBe(4); // index.html, main.js, styles.css, .htaccess
+        expect(files).toContain('index.html');
+        expect(files).toContain('main.js');
+        expect(files).toContain('styles.css');
+        expect(files).toContain('.htaccess'); // This is the dotfile
+
+        expect(source).toBe(basePath);
+        expect(destination).toContain('gh-pages');
       });
     });
 
@@ -491,11 +517,24 @@ describe('gh-pages v3.2.3 - behavioral snapshot', () => {
       const options = { repo, message: 'Deploy', dotfiles: false };
 
       publishAndHandle(basePath, options, done, () => {
-        // Verify copy was still called (just with different file list)
         expect(mockCopy).toHaveBeenCalledTimes(1);
 
         const callArgs = mockCopy.mock.calls[0];
         expect(callArgs).toBeDefined();
+        expect(callArgs.length).toBe(3);
+
+        const [files, source, destination] = callArgs as unknown as [string[], string, string];
+
+        // CRITICAL: Verify files array EXCLUDES the .htaccess dotfile
+        expect(Array.isArray(files)).toBe(true);
+        expect(files.length).toBe(3); // Only index.html, main.js, styles.css
+        expect(files).toContain('index.html');
+        expect(files).toContain('main.js');
+        expect(files).toContain('styles.css');
+        expect(files).not.toContain('.htaccess'); // Dotfile must be excluded
+
+        expect(source).toBe(basePath);
+        expect(destination).toContain('gh-pages');
       });
     });
   });
@@ -747,24 +786,22 @@ describe('gh-pages v3.2.3 - behavioral snapshot', () => {
           }
         }
 
-        const mockChild: any = new EventEmitter();
-        mockChild.stdout = new EventEmitter();
-        mockChild.stderr = new EventEmitter();
+        const mockChild = createMockChildProcess();
 
         setImmediate(() => {
           // First clone attempt with --branch and --depth should FAIL
           if (cmd === 'git' && capturedArgs[0] === 'clone' && cloneAttempts === 0) {
             cloneAttempts++;
-            mockChild.stderr.emit('data', Buffer.from('fatal: Remote branch new-branch not found'));
-            mockChild.emit('close', 128); // Git error code
+            mockChild.stderr!.emit('data', Buffer.from('fatal: Remote branch new-branch not found'));
+            mockChild.emit!('close', 128); // Git error code
             return;
           }
 
           // Second clone attempt without --branch/--depth should SUCCEED
           if (cmd === 'git' && capturedArgs[0] === 'clone' && cloneAttempts === 1) {
             cloneAttempts++;
-            mockChild.stdout.emit('data', Buffer.from(''));
-            mockChild.emit('close', 0);
+            mockChild.stdout!.emit('data', Buffer.from(''));
+            mockChild.emit!('close', 0);
             return;
           }
 
@@ -775,12 +812,12 @@ describe('gh-pages v3.2.3 - behavioral snapshot', () => {
           } else if (cmd === 'git' && capturedArgs[0] === 'ls-remote') {
             output = 'refs/heads/gh-pages';
           } else if (cmd === 'git' && capturedArgs[0] === 'diff-index') {
-            mockChild.emit('close', 1);
+            mockChild.emit!('close', 1);
             return;
           }
 
-          mockChild.stdout.emit('data', Buffer.from(output));
-          mockChild.emit('close', 0);
+          mockChild.stdout!.emit('data', Buffer.from(output));
+          mockChild.emit!('close', 0);
         });
 
         return mockChild;
@@ -836,9 +873,7 @@ describe('gh-pages v3.2.3 - behavioral snapshot', () => {
           }
         }
 
-        const mockChild: any = new EventEmitter();
-        mockChild.stdout = new EventEmitter();
-        mockChild.stderr = new EventEmitter();
+        const mockChild = createMockChildProcess();
 
         setImmediate(() => {
           let output = '';
@@ -849,12 +884,12 @@ describe('gh-pages v3.2.3 - behavioral snapshot', () => {
             output = 'refs/heads/gh-pages';
           } else if (cmd === 'git' && capturedArgs[0] === 'diff-index') {
             // Return 0 = no changes (opposite of our normal mock)
-            mockChild.emit('close', 0);
+            mockChild.emit!('close', 0);
             return;
           }
 
-          mockChild.stdout.emit('data', Buffer.from(output));
-          mockChild.emit('close', 0);
+          mockChild.stdout!.emit('data', Buffer.from(output));
+          mockChild.emit!('close', 0);
         });
 
         return mockChild;
@@ -908,9 +943,7 @@ describe('gh-pages v3.2.3 - behavioral snapshot', () => {
           }
         }
 
-        const mockChild: any = new EventEmitter();
-        mockChild.stdout = new EventEmitter();
-        mockChild.stderr = new EventEmitter();
+        const mockChild = createMockChildProcess();
 
         setImmediate(() => {
           let output = '';
@@ -921,12 +954,12 @@ describe('gh-pages v3.2.3 - behavioral snapshot', () => {
           } else if (cmd === 'git' && capturedArgs[0] === 'ls-remote') {
             output = 'refs/heads/gh-pages';
           } else if (cmd === 'git' && capturedArgs[0] === 'diff-index') {
-            mockChild.emit('close', 1);
+            mockChild.emit!('close', 1);
             return;
           }
 
-          mockChild.stdout.emit('data', Buffer.from(output));
-          mockChild.emit('close', 0);
+          mockChild.stdout!.emit('data', Buffer.from(output));
+          mockChild.emit!('close', 0);
         });
 
         return mockChild;

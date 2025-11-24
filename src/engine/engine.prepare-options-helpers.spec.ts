@@ -5,6 +5,7 @@
  * by testing each helper function independently.
  */
 
+import * as path from 'path';
 import { logging } from '@angular-devkit/core';
 
 import * as helpers from './engine.prepare-options-helpers';
@@ -520,8 +521,94 @@ describe('prepareOptions helpers - intensive tests', () => {
       expect(options.repo).toBe(inputUrl);
     });
 
-    // Note: Remote URL discovery when repo is not set is already thoroughly tested
-    // in engine.spec.ts with real git repository. That test verifies the discovery
-    // mechanism works correctly. Here we focus on token injection logic only.
+  });
+
+  describe('getRemoteUrl - gh-pages/lib/git internal API', () => {
+    /**
+     * CRITICAL: This tests our dependency on gh-pages internal API
+     *
+     * These tests will BREAK if gh-pages v6+ changes:
+     * - gh-pages/lib/git module structure
+     * - Git class constructor signature
+     * - getRemoteUrl() method signature or behavior
+     *
+     * Testing approach:
+     * - We're IN a git repository, so getRemoteUrl() succeeds and returns a URL
+     * - We verify the function is callable and returns string URLs
+     * - We test error cases by using invalid parameters
+     *
+     * If these tests fail after upgrading gh-pages, see the WARNING
+     * comment in engine.prepare-options-helpers.ts for fallback options.
+     */
+
+    it('should successfully call gh-pages/lib/git Git class and return URL', async () => {
+      // This test verifies the internal API still exists and is callable
+      const options = { remote: 'origin' };
+
+      // Should successfully return the git remote URL
+      const result = await helpers.getRemoteUrl(options);
+
+      // Verify it returns a string URL
+      expect(typeof result).toBe('string');
+      expect(result.length).toBeGreaterThan(0);
+
+      // Verify it looks like a git URL (either SSH or HTTPS)
+      const isGitUrl = result.includes('github.com') || result.startsWith('git@') || result.startsWith('https://');
+      expect(isGitUrl).toBe(true);
+    });
+
+    it('should pass remote option to getRemoteUrl method', async () => {
+      const options = {
+        remote: 'nonexistent-remote-12345' // Remote that definitely doesn't exist
+      };
+
+      // Should throw because this remote doesn't exist in our test repo
+      // This verifies the remote option is passed to getRemoteUrl method
+      await expect(helpers.getRemoteUrl(options)).rejects.toThrow();
+    });
+
+    it('should throw helpful error when not in a git repository', async () => {
+      // Change to a non-git directory
+      const originalCwd = process.cwd();
+      const tempDir = path.join(require('os').tmpdir(), 'not-a-git-repo-test-' + Date.now());
+      await require('fs-extra').ensureDir(tempDir);
+
+      try {
+        process.chdir(tempDir);
+        const options = {};
+
+        await expect(helpers.getRemoteUrl(options))
+          .rejects
+          .toThrow(); // Will throw error about not being in a git repository
+      } finally {
+        process.chdir(originalCwd);
+        await require('fs-extra').remove(tempDir);
+      }
+    });
+
+    it('should work with minimal options (defaults to origin remote)', async () => {
+      const options = {};
+
+      // Should successfully use defaults and return URL
+      const result = await helpers.getRemoteUrl(options);
+      expect(typeof result).toBe('string');
+      expect(result.length).toBeGreaterThan(0);
+
+      // Should be same as explicitly passing 'origin'
+      const explicitOptions = { remote: 'origin' };
+      const explicitResult = await helpers.getRemoteUrl(explicitOptions);
+      expect(result).toBe(explicitResult);
+    });
+
+    it('should return consistent URL for same remote', async () => {
+      const options1 = { remote: 'origin' };
+      const options2 = { remote: 'origin' };
+
+      const result1 = await helpers.getRemoteUrl(options1);
+      const result2 = await helpers.getRemoteUrl(options2);
+
+      // Same remote should return same URL
+      expect(result1).toBe(result2);
+    });
   });
 });

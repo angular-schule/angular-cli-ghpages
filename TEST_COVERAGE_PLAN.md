@@ -4,7 +4,7 @@
 1. **Add critical missing tests** (silent failures, monkeypatch, real filesystem)
 2. **Refactor prepareOptions()** to enable intensive testing of each option
 3. **Export public types** for user extensibility
-4. **Complete gh-pages-shell tests** for v6 upgrade preparation
+4. **Complete gh-pages behavioral tests** (engine.gh-pages-behavior.spec.ts) for v6 upgrade preparation
 
 ---
 
@@ -215,14 +215,15 @@ All behavioral tests for gh-pages v3.2.3 are now complete and provide comprehens
 
 ## Success Criteria
 
-- **Test Count:** 213 → 353 tests (as of Nov 2024)
+- **Test Count:** 213 → 351 tests (comprehensive suite, see test files for current count)
 - **Coverage:** ✅ All critical paths tested (error callbacks, monkeypatch, file creation, getRemoteUrl, dotfiles)
 - **Refactoring:** ✅ prepareOptions split into 6 testable functions
 - **Public API:** ✅ Types exported via public_api.ts, TypeScript declarations enabled
 - **Upgrade Prep:** ✅ v3 git behavior documented in engine.gh-pages-behavior.spec.ts
-- **gh-pages/lib/git:** ✅ Internal API dependency intensively tested with 6 focused tests
-- **Dotfiles:** ✅ Tests now verify actual file list differences, not just that copy was called
+- **gh-pages/lib/git:** ✅ Internal API dependency intensively tested (3 focused tests verifying correctness)
+- **Dotfiles:** ✅ Tests verify actual file list differences (4 files with dotfiles, 3 without)
 - **Quality:** ✅ Zero regressions, all tests passing, zero 'any' types (HARD RULE compliant)
+- **Test Safety:** ✅ process.env properly preserved (PATH, HOME, etc.) across all test files
 
 ---
 

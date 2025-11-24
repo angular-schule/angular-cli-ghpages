@@ -189,6 +189,64 @@ npm run publish-to-npm
 npm dist-tag add angular-cli-ghpages@0.6.0-rc.0 next
 ```
 
+## Programmatic Usage
+
+For advanced use cases, `angular-cli-ghpages` can be used programmatically in Node.js scripts:
+
+```typescript
+import { deployToGHPages, defaults, Schema } from 'angular-cli-ghpages';
+
+// Deploy with custom options
+const options: Schema = {
+  ...defaults,
+  dir: 'dist/my-app/browser',
+  repo: 'https://github.com/user/repo.git',
+  message: 'Custom deploy message',
+  branch: 'gh-pages',
+  name: 'Deploy Bot',
+  email: 'bot@example.com'
+};
+
+// Simple logger implementation
+const logger = {
+  info: (msg: string) => console.log(msg),
+  warn: (msg: string) => console.warn(msg),
+  error: (msg: string) => console.error(msg),
+  debug: (msg: string) => console.debug(msg),
+  fatal: (msg: string) => console.error(msg)
+};
+
+try {
+  await deployToGHPages('dist/my-app/browser', options, logger);
+  console.log('Deployment successful!');
+} catch (error) {
+  console.error('Deployment failed:', error);
+}
+```
+
+### Available Types
+
+The package exports these TypeScript types for programmatic usage:
+
+- `Schema` - Complete options interface
+- `PreparedOptions` - Internal options after processing
+- `DeployUser` - User credentials type
+- `GHPages` - gh-pages library wrapper interface
+- `defaults` - Default configuration object
+
+### Advanced: Angular Builder Integration
+
+For custom Angular builders:
+
+```typescript
+import { angularDeploy } from 'angular-cli-ghpages';
+
+// Inside your custom builder
+const result = await angularDeploy(context, builderConfig, 'your-project-name');
+```
+
+**Note:** The CLI (`ng deploy`) remains the primary and recommended way to use this tool. Programmatic usage is considered advanced/experimental and may change between versions.
+
 ## Keeping track of all the forks
 
 [ngx-deploy-starter](https://github.com/angular-schule/ngx-deploy-starter/) and

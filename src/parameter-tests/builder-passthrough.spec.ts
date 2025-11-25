@@ -241,6 +241,72 @@ describe('Angular Builder Parameter Passthrough', () => {
     });
   });
 
+  describe('baseHref parameter', () => {
+    it('should pass baseHref parameter', async () => {
+      const baseHref = '/my-app/';
+      const options: Schema = { baseHref, noBuild: true };
+
+      await deploy(mockEngine, context, BUILD_TARGET, options);
+
+      expect(capturedOptions).not.toBeNull();
+      expect(capturedOptions!.baseHref).toBe(baseHref);
+    });
+
+    it('should handle baseHref with trailing slash', async () => {
+      const baseHref = '/app/';
+      const options: Schema = { baseHref, noBuild: true };
+
+      await deploy(mockEngine, context, BUILD_TARGET, options);
+
+      // Passthrough - same variable proves no transformation
+      expect(capturedOptions).not.toBeNull();
+      expect(capturedOptions!.baseHref).toBe(baseHref);
+    });
+
+    it('should handle baseHref without trailing slash', async () => {
+      const baseHref = '/app';
+      const options: Schema = { baseHref, noBuild: true };
+
+      await deploy(mockEngine, context, BUILD_TARGET, options);
+
+      // Passthrough - same variable proves no transformation
+      expect(capturedOptions).not.toBeNull();
+      expect(capturedOptions!.baseHref).toBe(baseHref);
+    });
+
+    it('should handle empty baseHref', async () => {
+      const baseHref = '';
+      const options: Schema = { baseHref, noBuild: true };
+
+      await deploy(mockEngine, context, BUILD_TARGET, options);
+
+      // Even empty string should pass through
+      expect(capturedOptions).not.toBeNull();
+      expect(capturedOptions!.baseHref).toBe(baseHref);
+    });
+
+    it('should handle absolute URL as baseHref', async () => {
+      const baseHref = 'https://example.com/app/';
+      const options: Schema = { baseHref, noBuild: true };
+
+      await deploy(mockEngine, context, BUILD_TARGET, options);
+
+      // Passthrough - absolute URLs allowed
+      expect(capturedOptions).not.toBeNull();
+      expect(capturedOptions!.baseHref).toBe(baseHref);
+    });
+
+    it('should handle baseHref with special characters', async () => {
+      const baseHref = '/my-app_v2.0/';
+      const options: Schema = { baseHref, noBuild: true };
+
+      await deploy(mockEngine, context, BUILD_TARGET, options);
+
+      expect(capturedOptions).not.toBeNull();
+      expect(capturedOptions!.baseHref).toBe(baseHref);
+    });
+  });
+
   describe('Special values', () => {
     it('should handle URLs correctly', async () => {
       const repo = 'https://github.com/org/repo-name.git';

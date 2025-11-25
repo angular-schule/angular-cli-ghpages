@@ -213,6 +213,32 @@ We intentionally rely on the existing test suite for upgrade verification rather
 
 We do NOT maintain automated tooling to run tests against both versions simultaneously. This is intentional - the manual comparison process ensures careful evaluation of each change. If automated comparison becomes necessary, it can be added later.
 
+### Known Upgrade Tripwires
+
+The following tests are **INTENTIONALLY pinned** to gh-pages v3.2.3 behavior and **EXPECTED to fail** on upgrade:
+
+1. **getRemoteUrl Error Messages** (`engine.prepare-options-helpers.spec.ts`):
+   - Exact error text assertions for:
+     - "not a git repository" errors
+     - "No such remote 'xyz'" errors
+     - "remote.XYZ.url not found" errors
+   - **Action on upgrade**: Review gh-pages v6 error messages and update assertions to match new text
+   - **Why pinned**: These guard against silent API changes in gh-pages/lib/git.js
+
+2. **Dotfiles Behavior** (`engine.gh-pages-behavior.spec.ts`):
+   - File list assertions verify exact files published with `dotfiles: true/false`
+   - Tests assert specific file counts (4 files vs 3 files)
+   - **Action on upgrade**: Verify actual file lists with gh-pages v6 and update expectations
+   - **Why pinned**: Ensures dotfiles logic didn't change behavior
+
+3. **PublishOptions Mapping** (`engine.gh-pages-integration.spec.ts`):
+   - Tests verify which options are passed vs filtered
+   - Hardcoded list of options that should NOT reach gh-pages.publish
+   - **Action on upgrade**: Check if gh-pages v6 accepts new options or rejects old ones
+   - **Why pinned**: Guards against breaking changes in gh-pages API surface
+
+**These are FEATURES, not bugs** - they provide upgrade verification and ensure conscious adaptation rather than silent breakage.
+
 ---
 
 ## Implementation Order
@@ -246,6 +272,29 @@ We do NOT maintain automated tooling to run tests against both versions simultan
 - **Dotfiles:** ✅ Tests verify actual file list differences (4 files with dotfiles, 3 without)
 - **Quality:** ✅ Zero regressions, all tests passing, zero 'any' types (HARD RULE compliant)
 - **Test Safety:** ✅ process.env properly preserved using originalEnv pattern in all test files
+
+---
+
+## Test Environment Requirements
+
+Tests assume the following environment setup (enforced by test-prerequisites.spec.ts):
+
+1. **Git Availability**:
+   - Git executable on PATH
+   - Running in a git repository
+   - Origin remote configured
+
+2. **Working Directory**:
+   - Tests run from project root (uses `process.cwd()`)
+   - Assumes origin points to angular-schule/angular-cli-ghpages (or SSH equivalent)
+
+3. **Real Git Integration Tests**:
+   - `engine.prepare-options-helpers.spec.ts` getRemoteUrl tests depend on actual git repo
+   - See `test-prerequisites.spec.ts` for canonical environment validation
+
+**CI Setup**: Ensure CI clones the repo normally and runs tests from repo root.
+
+**Portability**: Tests use `process.cwd()` for dynamic path resolution, not hard-coded paths.
 
 ---
 

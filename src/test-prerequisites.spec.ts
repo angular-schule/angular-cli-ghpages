@@ -11,6 +11,8 @@ import { execSync } from 'child_process';
  */
 
 describe('Test Prerequisites', () => {
+  const projectRoot = process.cwd();
+
   describe('Git availability', () => {
     let gitVersion: string;
 
@@ -62,7 +64,7 @@ describe('Test Prerequisites', () => {
         gitDir = execSync('git rev-parse --git-dir', {
           encoding: 'utf8',
           stdio: 'pipe',
-          cwd: '/Users/johanneshoppe/Work/angular-schule/angular-cli-ghpages'
+          cwd: projectRoot
         }).trim();
       } catch (error) {
         throw new Error(
@@ -74,13 +76,13 @@ describe('Test Prerequisites', () => {
             'angular-cli-ghpages tests must run within a git repository.\n' +
             '\n' +
             'Current directory:\n' +
-            '  /Users/johanneshoppe/Work/angular-schule/angular-cli-ghpages\n' +
+            `  ${projectRoot}\n` +
             '\n' +
             'To fix this:\n' +
             '\n' +
             '  If you cloned this repository:\n' +
             '    # Ensure you are in the correct directory\n' +
-            '    cd /Users/johanneshoppe/Work/angular-schule/angular-cli-ghpages\n' +
+            `    cd ${projectRoot}\n` +
             '    git status\n' +
             '\n' +
             '  If you downloaded as ZIP:\n' +
@@ -110,7 +112,7 @@ describe('Test Prerequisites', () => {
         remoteUrl = execSync('git config --get remote.origin.url', {
           encoding: 'utf8',
           stdio: 'pipe',
-          cwd: '/Users/johanneshoppe/Work/angular-schule/angular-cli-ghpages'
+          cwd: projectRoot
         }).trim();
       } catch (error) {
         throw new Error(

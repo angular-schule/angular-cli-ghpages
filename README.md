@@ -18,6 +18,7 @@
 6. [📦 Deployment Options](#options)
    - [--base-href](#base-href)
    - [--build-target](#build-target)
+   - [--prerender-target](#prerender-target)
    - [--no-build](#no-build)
    - [--repo](#repo)
    - [--message](#message)

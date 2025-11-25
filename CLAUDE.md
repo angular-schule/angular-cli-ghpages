@@ -133,11 +133,18 @@ actions.ts (deploy function)
 
 ### Build Target Resolution
 
-**Important:** With Angular 17+, the build target resolution is complex due to different builder types. The code tries to guess the correct build target:
+**Important:** With Angular 17+, the build target resolution follows a strict precedence order. The builder evaluates targets in this order and uses the first one found:
 
-1. First tries explicit `--build-target` option
-2. Falls back to `${project}:build:production`
-3. For prerendering: uses `prerenderTarget` or `${project}:prerender:production`
+**Precedence (highest to lowest):**
+1. `prerenderTarget` - For SSG/prerendering builds (if specified, overrides all others)
+2. `browserTarget` - Legacy/alternative build target (if specified)
+3. `buildTarget` - Standard build target (if specified)
+4. Default - `${project}:build:production`
+
+**Implementation details:**
+- Static build target: `browserTarget || buildTarget || default` (see `src/deploy/builder.ts:23-26`)
+- Final target: `prerenderTarget || staticBuildTarget` (see `src/deploy/builder.ts:45-50`)
+- If `prerenderTarget` is set, it takes absolute precedence regardless of other targets
 
 Output directory resolution:
 - Checks `angular.json` for `outputPath`

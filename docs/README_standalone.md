@@ -51,6 +51,45 @@ ionic build --prod -- --base-href=https://USERNAME.github.io/REPOSITORY_NAME/`
 npx angular-cli-ghpages --dir=www
 ```
 
+## Build Target Parameters (Angular Builder Only)
+
+The following parameters are **only available** when using `ng deploy` (Angular Builder integration) and are **not supported** by the standalone CLI:
+
+- `--build-target` / `buildTarget`
+- `--browser-target` / `browserTarget`
+- `--prerender-target` / `prerenderTarget`
+- `--no-build` / `noBuild`
+- `--base-href` / `baseHref` (only as a build option; use `ng build --base-href` instead)
+
+These parameters control Angular CLI's build process integration and automatic build triggering.
+
+**When using the standalone CLI** (`npx angular-cli-ghpages`):
+- You must **build your project separately** before deployment
+- Use `--dir` to specify the pre-built output directory
+- The standalone CLI will **not** trigger any build process
+
+**Example standalone workflow:**
+
+```bash
+# 1. Build your project first
+ng build --configuration=production --base-href=/my-app/
+
+# 2. Then deploy the built output
+npx angular-cli-ghpages --dir=dist/my-app/browser
+```
+
+**For SSG/Prerendering with standalone CLI:**
+
+```bash
+# 1. Prerender your project first
+ng run my-app:prerender:production
+
+# 2. Then deploy the prerendered output
+npx angular-cli-ghpages --dir=dist/my-app/browser
+```
+
+If you need automatic build integration, use `ng deploy` instead of the standalone CLI. See the [main README](../README.md) for Angular Builder usage.
+
 ## Extra
 
 For your convenience, the command will recognize the [environment variable](https://docs.travis-ci.com/user/environment-variables/#Defining-Variables-in-Repository-Settings) `GH_TOKEN` and will replace this pattern in the `--repo` string.

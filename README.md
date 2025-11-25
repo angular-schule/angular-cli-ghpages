@@ -259,6 +259,59 @@ NOW:
 ng deploy --build-target=test
 ```
 
+#### --prerender-target <a name="prerender-target"></a>
+
+- **optional**
+- Default: `undefined` (string)
+- Example:
+  - `ng deploy --prerender-target=myapp:prerender:production`
+
+For applications using Static Site Generation (SSG), you can specify a prerender target instead of a build target. This is useful when your Angular application uses the `@angular/ssr` package and you want to deploy the prerendered output.
+
+**When to use prerenderTarget:**
+- Your project has a `prerender` target configured in `angular.json`
+- You want to deploy statically prerendered HTML files
+- You're using Angular Universal or `@angular/ssr` for static prerendering
+
+**Example configuration in angular.json:**
+
+```json
+{
+  "projects": {
+    "my-app": {
+      "architect": {
+        "prerender": {
+          "builder": "@angular-devkit/build-angular:prerender",
+          "options": {
+            "routes": ["/", "/about", "/contact"]
+          },
+          "configurations": {
+            "production": {
+              "browserTarget": "my-app:build:production"
+            }
+          }
+        },
+        "deploy": {
+          "builder": "angular-cli-ghpages:deploy",
+          "options": {
+            "prerenderTarget": "my-app:prerender:production",
+            "baseHref": "/my-app/"
+          }
+        }
+      }
+    }
+  }
+}
+```
+
+Now you can simply run:
+
+```sh
+ng deploy
+```
+
+**Target Precedence:** If `prerenderTarget` is specified, it takes precedence over both `buildTarget` and `browserTarget`. This command has no effect if the option `--no-build` is active.
+
 #### --no-build <a name="no-build"></a>
 
 - **optional**

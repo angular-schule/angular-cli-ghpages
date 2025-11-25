@@ -17,10 +17,35 @@ import * as engine from '../engine/engine';
 
 describe('Parameter Passthrough Tests', () => {
   let logger: logging.LoggerApi;
+  const originalEnv = process.env;
 
   beforeEach(() => {
     logger = new logging.NullLogger();
-    process.env = {};
+    // Create fresh copy of environment for each test
+    // This preserves PATH, HOME, etc. needed by git
+    process.env = { ...originalEnv };
+    // Clear only CI-specific vars we're testing
+    delete process.env.TRAVIS;
+    delete process.env.TRAVIS_COMMIT_MESSAGE;
+    delete process.env.TRAVIS_REPO_SLUG;
+    delete process.env.TRAVIS_COMMIT;
+    delete process.env.TRAVIS_BUILD_ID;
+    delete process.env.CIRCLECI;
+    delete process.env.CIRCLE_PROJECT_USERNAME;
+    delete process.env.CIRCLE_PROJECT_REPONAME;
+    delete process.env.CIRCLE_SHA1;
+    delete process.env.CIRCLE_BUILD_URL;
+    delete process.env.GITHUB_ACTIONS;
+    delete process.env.GITHUB_REPOSITORY;
+    delete process.env.GITHUB_SHA;
+    delete process.env.GH_TOKEN;
+    delete process.env.PERSONAL_TOKEN;
+    delete process.env.GITHUB_TOKEN;
+  });
+
+  afterAll(() => {
+    // Restore original environment for other test files
+    process.env = originalEnv;
   });
 
   describe('Parameter: repo', () => {

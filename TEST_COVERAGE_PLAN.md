@@ -223,7 +223,7 @@ All behavioral tests for gh-pages v3.2.3 are now complete and provide comprehens
 - **gh-pages/lib/git:** ✅ Internal API dependency intensively tested (3 focused tests verifying correctness)
 - **Dotfiles:** ✅ Tests verify actual file list differences (4 files with dotfiles, 3 without)
 - **Quality:** ✅ Zero regressions, all tests passing, zero 'any' types (HARD RULE compliant)
-- **Test Safety:** ✅ process.env properly preserved (PATH, HOME, etc.) across all test files
+- **Test Safety:** ✅ process.env properly preserved using originalEnv pattern in all test files
 
 ---
 

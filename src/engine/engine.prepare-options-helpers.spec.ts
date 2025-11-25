@@ -613,10 +613,10 @@ describe('prepareOptions helpers - intensive tests', () => {
         remote: 'nonexistent-remote-12345' // Remote that definitely doesn't exist
       };
 
-      // Should throw with specific error message about the remote
+      // gh-pages v3.2.3 throws this exact error message for non-existent remotes
       await expect(helpers.getRemoteUrl(options))
         .rejects
-        .toThrow('Failed to get remote.');
+        .toThrow('Failed to get remote.nonexistent-remote-12345.url (task must either be run in a git repository with a configured nonexistent-remote-12345 remote or must be configured with the "repo" option).');
     });
 
     it('should throw helpful error when not in a git repository', async () => {
@@ -629,9 +629,10 @@ describe('prepareOptions helpers - intensive tests', () => {
         process.chdir(tempDir);
         const options = { remote: 'origin' };
 
+        // gh-pages v3.2.3 throws this exact error message when not in a git repo
         await expect(helpers.getRemoteUrl(options))
           .rejects
-          .toThrow('run in a git repository');
+          .toThrow('Failed to get remote.origin.url (task must either be run in a git repository with a configured origin remote or must be configured with the "repo" option).');
       } finally {
         process.chdir(originalCwd);
         await require('fs-extra').remove(tempDir);

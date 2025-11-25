@@ -590,6 +590,14 @@ describe('prepareOptions helpers - intensive tests', () => {
      * comment in engine.prepare-options-helpers.ts for fallback options.
      */
 
+    /**
+     * Environment assumptions for this test:
+     * - Tests must be run from a git clone of angular-schule/angular-cli-ghpages
+     * - The "origin" remote must exist and point to that repository
+     * - git must be installed and on PATH
+     *
+     * If run from a bare copy of files (no .git), this test will fail by design.
+     */
     it('should return correct URL from git config and be consistent', async () => {
       // This test verifies the internal API returns ACTUAL git config values
       const options = { remote: 'origin' };
@@ -613,7 +621,8 @@ describe('prepareOptions helpers - intensive tests', () => {
         remote: 'nonexistent-remote-12345' // Remote that definitely doesn't exist
       };
 
-      // gh-pages v3.2.3 throws this exact error message for non-existent remotes
+      // Expected message from gh-pages v3.2.3 (lib/git.js lines 213-223)
+      // If this fails after upgrading gh-pages, the internal API changed
       await expect(helpers.getRemoteUrl(options))
         .rejects
         .toThrow('Failed to get remote.nonexistent-remote-12345.url (task must either be run in a git repository with a configured nonexistent-remote-12345 remote or must be configured with the "repo" option).');
@@ -629,7 +638,8 @@ describe('prepareOptions helpers - intensive tests', () => {
         process.chdir(tempDir);
         const options = { remote: 'origin' };
 
-        // gh-pages v3.2.3 throws this exact error message when not in a git repo
+        // Expected message from gh-pages v3.2.3 (lib/git.js lines 213-223)
+        // Note: gh-pages returns same error for both "not in git repo" and "remote doesn't exist"
         await expect(helpers.getRemoteUrl(options))
           .rejects
           .toThrow('Failed to get remote.origin.url (task must either be run in a git repository with a configured origin remote or must be configured with the "repo" option).');

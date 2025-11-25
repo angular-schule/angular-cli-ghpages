@@ -90,15 +90,24 @@ describe('engine', () => {
     });
 
     // NEW in 0.6.2: always discover remote URL (if not set)
+    /**
+     * Environment assumptions for this test:
+     * - Tests must be run from a git clone of angular-schule/angular-cli-ghpages
+     * - The "origin" remote must exist and point to that repository
+     * - git must be installed and on PATH
+     *
+     * If run from a bare copy of files (no .git), this test will fail by design.
+     */
     // this allows us to inject tokens from environment even if --repo is not set manually
     // it uses gh-pages lib directly for this
     it('should discover the remote url, if no --repo is set', async () => {
       const options = {};
       const finalOptions = await engine.prepareOptions(options, logger);
 
-      // EXCEPTION to testing philosophy: Use .toContain() here because the protocol
-      // (SSH: git@github.com: vs HTTPS: https://github.com/) depends on developer's
-      // git config. We only care that the correct repo is discovered.
+      // Justification for .toContain():
+      // The protocol (SSH vs HTTPS) depends on developer's git config.
+      // Our testing philosophy allows .toContain() for substrings in long/variable messages.
+      // We only care that the correct repo path is discovered.
       expect(finalOptions.repo).toContain('angular-schule/angular-cli-ghpages');
     });
 

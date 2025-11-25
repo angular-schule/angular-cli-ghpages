@@ -43,7 +43,13 @@ function createMockChildProcess(): Partial<ChildProcess> {
   return child;
 }
 
-// Whitelist of expected git commands (fail fast on unexpected commands)
+/**
+ * Whitelist of expected git commands from gh-pages v3.2.3
+ *
+ * Strict whitelist: If gh-pages adds new git subcommands in v6,
+ * this array must be updated first and tests will fail loudly.
+ * This is intentional - we want to know about any new git operations.
+ */
 const EXPECTED_GIT_COMMANDS = [
   'clone', 'clean', 'fetch', 'checkout', 'ls-remote', 'reset',
   'rm', 'add', 'config', 'diff-index', 'commit', 'tag', 'push', 'update-ref'

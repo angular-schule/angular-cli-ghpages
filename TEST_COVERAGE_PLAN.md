@@ -191,6 +191,28 @@ Add `"types": "index.d.ts"` to package.json
 
 All behavioral tests for gh-pages v3.2.3 are now complete and provide comprehensive baseline for v6 upgrade.
 
+### 4.3 Upgrade Strategy for gh-pages v6+
+
+**Manual Upgrade Process:**
+
+We intentionally rely on the existing test suite for upgrade verification rather than maintaining a dual-version test harness:
+
+1. **Establish baseline:** Run `npm test` with gh-pages v3.2.3 - all 351 tests should pass
+2. **Upgrade:** Update gh-pages dependency to v6.x in package.json
+3. **Run tests:** Execute `npm test` with v6 and capture all failures
+4. **Analyze failures systematically:**
+   - Check `engine.prepare-options-helpers.spec.ts` getRemoteUrl tests first (likely internal API changes)
+   - Review `engine.gh-pages-behavior.spec.ts` for behavioral changes
+   - Examine `engine.gh-pages-integration.spec.ts` for API signature changes
+5. **Categorize each failure:**
+   - **Expected breaking changes** in gh-pages v6 → adapt our code
+   - **Bugs in gh-pages v6** → report upstream or work around
+   - **Our incorrect assumptions about v3** → fix our tests
+
+**No Dual-Version Harness:**
+
+We do NOT maintain automated tooling to run tests against both versions simultaneously. This is intentional - the manual comparison process ensures careful evaluation of each change. If automated comparison becomes necessary, it can be added later.
+
 ---
 
 ## Implementation Order
@@ -215,7 +237,7 @@ All behavioral tests for gh-pages v3.2.3 are now complete and provide comprehens
 
 ## Success Criteria
 
-- **Test Count:** 213 → 351 tests (comprehensive suite, see test files for current count)
+- **Test Count:** 213 → 351 tests (historical milestone - use `npm test` output for current count)
 - **Coverage:** ✅ All critical paths tested (error callbacks, monkeypatch, file creation, getRemoteUrl, dotfiles)
 - **Refactoring:** ✅ prepareOptions split into 6 testable functions
 - **Public API:** ✅ Types exported via public_api.ts, TypeScript declarations enabled

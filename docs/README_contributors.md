@@ -155,6 +155,10 @@ cd angular-cli-ghpages/src
 npm test
 ```
 
+**Environment Requirements:**
+
+Some tests (remote URL discovery and `getRemoteUrl` integration tests) expect to run inside a real git clone of this repository with an `origin` remote configured. Running tests from a zip file or bare copy without `.git` is not supported and will cause test failures.
+
 ### 5. Debugging
 
 To debug angular-cli-ghpages you need to:
@@ -246,6 +250,27 @@ const result = await angularDeploy(context, builderConfig, 'your-project-name');
 ```
 
 **Note:** The CLI (`ng deploy`) remains the primary and recommended way to use this tool. Programmatic usage is considered advanced/experimental and may change between versions.
+
+## Dependency on gh-pages Internal API
+
+### Remote URL Discovery
+
+The `getRemoteUrl` function in `src/engine/engine.prepare-options-helpers.ts` calls into `gh-pages/lib/git`, which is an **internal API** not documented in gh-pages' public interface. This dependency carries upgrade risk.
+
+**What we depend on:**
+- `new Git(process.cwd(), options.git).getRemoteUrl(options.remote)` from `gh-pages/lib/git`
+- The exact error message format when remote doesn't exist or not in a git repository
+
+**Upgrade process for gh-pages v6+:**
+
+1. Check test failures in `src/engine/engine.prepare-options-helpers.spec.ts` first, specifically the `getRemoteUrl` test block
+2. If those tests fail, it likely indicates a breaking change in gh-pages' internal Git API
+3. Options:
+   - If `gh-pages/lib/git` still exists with same interface: update our error message assertions
+   - If the internal API changed significantly: implement our own git remote discovery using `child_process.execSync('git config --get remote.{remote}.url')`
+   - If gh-pages added a public API for this: switch to the public API
+
+**Current baseline:** Tests are pinned to gh-pages v3.2.3 behavior and error messages.
 
 ## Keeping track of all the forks
 

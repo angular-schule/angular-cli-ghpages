@@ -197,7 +197,7 @@ All behavioral tests for gh-pages v3.2.3 are now complete and provide comprehens
 
 We intentionally rely on the existing test suite for upgrade verification rather than maintaining a dual-version test harness:
 
-1. **Establish baseline:** Run `npm test` with gh-pages v3.2.3 - all 351 tests should pass
+1. **Establish baseline:** Run `npm test` with gh-pages v3.2.3 - all tests should pass
 2. **Upgrade:** Update gh-pages dependency to v6.x in package.json
 3. **Run tests:** Execute `npm test` with v6 and capture all failures
 4. **Analyze failures systematically:**
@@ -263,7 +263,7 @@ The following tests are **INTENTIONALLY pinned** to gh-pages v3.2.3 behavior and
 
 ## Success Criteria
 
-- **Test Count:** 213 → 351 tests (historical milestone - use `npm test` output for current count)
+- **Test Count:** Run `npm test` to see current count
 - **Coverage:** ✅ All critical paths tested (error callbacks, monkeypatch, file creation, getRemoteUrl, dotfiles)
 - **Refactoring:** ✅ prepareOptions split into 6 testable functions
 - **Public API:** ✅ Types exported via public_api.ts, TypeScript declarations enabled

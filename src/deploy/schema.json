@@ -13,11 +13,13 @@
     },
     "browserTarget": {
       "type": "string",
-      "description": "Legacy alias for buildTarget. A named build target, as specified in the `configurations` section of angular.json. Note: browserTarget takes precedence over buildTarget if both are specified, but prerenderTarget takes precedence over both. Most users should use buildTarget instead."
+      "deprecated": true,
+      "x-deprecated": "Use buildTarget instead. Kept for backwards compatibility.",
+      "description": "DEPRECATED: Use buildTarget instead. Legacy alias kept for backwards compatibility only."
     },
     "prerenderTarget": {
       "type": "string",
-      "description": "A named build target, as specified in the `configurations` section of angular.json. Each named target is accompanied by a configuration of option defaults for that target. This is equivalent to calling the command `ng build --configuration=XXX`."
+      "description": "Architect target for prerendering/SSG. Takes precedence over buildTarget when specified. Requires a prerender target configured in angular.json."
     },
     "noBuild": {
       "type": "boolean",

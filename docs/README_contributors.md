@@ -21,6 +21,8 @@ npm run build
 npm test
 ```
 
+**Test Prerequisites**: Tests must run from a git clone with `origin` remote configured. See `src/test-prerequisites.spec.ts` for validation details.
+
 ## Local development
 
 If you want to try the latest package locally without installing it from NPM, use the following instructions.

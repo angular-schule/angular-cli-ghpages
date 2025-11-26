@@ -197,6 +197,27 @@ Angular CLI does NOT rename kebab-case to camelCase for boolean flags with "no" 
 
 4. **Breaking Changes in v2**: Changed from guessing build conventions in Angular 17+. Projects may need explicit `--build-target` specification.
 
+## Documentation Philosophy
+
+### Deprecation Handling
+
+**User-Facing Documentation (README.md)**:
+- **DO NOT promote deprecated options** in examples or main sections
+- Hide compatibility-only options from users: `browserTarget`, `noSilent`
+- Only show options users should actually use
+
+**Where Deprecated Options Belong**:
+- ✅ `schema.json` with `"deprecated": true` flag
+- ✅ CLAUDE.md (for contributors)
+- ✅ BREAKING CHANGES sections (when explaining migrations)
+- ❌ Configuration File examples
+- ❌ Main Deployment Options sections
+
+**Avoid Test Count Bragging**:
+- Don't include specific test counts in documentation
+- Numbers go stale immediately and provide no value
+- Let `npm test` output speak for itself
+
 ## Testing Strategy
 
 Tests use Jest and are located alongside source files with `.spec.ts` extension:
@@ -207,6 +228,8 @@ Tests use Jest and are located alongside source files with `.spec.ts` extension:
 - `parameter-tests/edge-cases.spec.ts` - Edge case and boundary tests
 - `parameter-tests/cli-e2e.spec.ts` - End-to-end standalone CLI testing
 - `parameter-tests/builder-integration.spec.ts` - Angular Builder integration tests
+- `parameter-tests/build-target.spec.ts` - Build target resolution matrix (buildTarget/browserTarget/prerenderTarget/noBuild)
+- `test-prerequisites.spec.ts` - Environment validation (git availability, repository setup, origin remote)
 
 Snapshot tests are stored in `__snapshots__/` directory.
 

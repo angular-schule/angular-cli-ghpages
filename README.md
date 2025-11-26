@@ -275,7 +275,7 @@ ng deploy --build-target=test
 
 Specifies the Angular architect target to use for prerendering instead of buildTarget.
 
-**Target Precedence:** If `prerenderTarget` is specified, it takes precedence over both `buildTarget` and `browserTarget`. This option has no effect if `--no-build` is active.
+**Target Precedence:** If `prerenderTarget` is specified, it takes precedence over `buildTarget`. This option has no effect if `--no-build` is active.
 
 #### --no-build <a name="no-build"></a>
 

@@ -83,10 +83,9 @@ You can also use `prerenderTarget` instead of `buildTarget` for prerendered/SSG 
 **Target Resolution Precedence:**
 
 Build target options are resolved in this priority order:
-1. `prerenderTarget` (if specified) — highest priority, overrides all others
-2. `browserTarget` (deprecated, kept for compatibility)
-3. `buildTarget`
-4. Default: `${project}:build:production` if none specified
+1. `prerenderTarget` (if specified) — highest priority
+2. `buildTarget`
+3. Default: `${project}:build:production` if none specified
 
 There is no support for `universalBuildTarget` or `serverTarget` because GitHub Pages only supports static assets and no Server-Side Rendering!
 

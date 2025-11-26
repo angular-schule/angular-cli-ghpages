@@ -82,10 +82,10 @@ You can also use `prerenderTarget` instead of `buildTarget` for prerendered/SSG 
 
 **Target Resolution Precedence:**
 
-When multiple build target options are specified, they are resolved in this order:
+Build target options are resolved in this priority order:
 1. `prerenderTarget` (if specified) — highest priority, overrides all others
 2. `browserTarget` (deprecated, kept for compatibility)
-3. `buildTarget` (recommended)
+3. `buildTarget`
 4. Default: `${project}:build:production` if none specified
 
 There is no support for `universalBuildTarget` or `serverTarget` because GitHub Pages only supports static assets and no Server-Side Rendering!
@@ -424,7 +424,7 @@ This can be very useful because it outputs what would happen without doing anyth
 
 ## 📁 Configuration File <a name="configuration-file"></a>
 
-To avoid all these command-line cmd options, you can write down your configuration in the `angular.json` file in the `options` attribute of your deploy project's architect. Just change the kebab-case to lower camel case. Commonly used options in lower camel case (see schema.json for complete list including deprecated options):
+To avoid all these command-line cmd options, you can write down your configuration in the `angular.json` file in the `options` attribute of your deploy project's architect. Just change the kebab-case to lower camel case. Commonly used options in lower camel case (see `src/deploy/schema.json` for the complete list including deprecated options):
 
 - baseHref
 - buildTarget

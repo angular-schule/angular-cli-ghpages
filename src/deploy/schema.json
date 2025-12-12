@@ -60,7 +60,7 @@
     },
     "noDotfiles": {
       "type": "boolean",
-      "description": "Includes dotfiles by default. Execute with --no-dotfiles to ignore files starting with `.`.",
+      "description": "Exclude dotfiles (files starting with `.`) from deployment.",
       "default": false
     },
     "noNotfound": {
@@ -70,7 +70,7 @@
     },
     "noNojekyll": {
       "type": "boolean",
-      "description": "By default a .nojekyll file is created, because we assume you don't want to compile the build again with Jekyll.",
+      "description": "Skip creating the .nojekyll file.",
       "default": false
     },
     "cname": {

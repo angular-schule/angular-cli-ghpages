@@ -33,13 +33,21 @@
 import { logging } from '@angular-devkit/core';
 
 import * as engine from '../engine/engine';
+import { cleanupMonkeypatch } from '../engine/engine.prepare-options-helpers';
 import { defaults } from '../engine/defaults';
 
 describe('PR #186 - Commander Boolean Defaults Compatibility', () => {
   let logger: logging.LoggerApi;
 
   beforeEach(() => {
+    // Clean up any previous monkeypatch so each test starts fresh
+    cleanupMonkeypatch();
     logger = new logging.NullLogger();
+  });
+
+  afterAll(() => {
+    // Clean up monkeypatch after all tests
+    cleanupMonkeypatch();
   });
 
   describe('defaults.ts values', () => {

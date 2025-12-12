@@ -1,6 +1,7 @@
 import { logging } from '@angular-devkit/core';
 
 import * as engine from './engine';
+import { cleanupMonkeypatch } from './engine.prepare-options-helpers';
 
 describe('engine', () => {
   describe('prepareOptions', () => {
@@ -8,6 +9,9 @@ describe('engine', () => {
     const originalEnv = process.env;
 
     beforeEach(() => {
+      // Clean up any previous monkeypatch so each test starts fresh
+      cleanupMonkeypatch();
+
       // Create fresh copy of environment for each test
       // This preserves PATH, HOME, etc. needed by git
       process.env = { ...originalEnv };
@@ -21,6 +25,8 @@ describe('engine', () => {
     });
 
     afterAll(() => {
+      // Clean up monkeypatch after all tests
+      cleanupMonkeypatch();
       // Restore original environment for other test files
       process.env = originalEnv;
     });
@@ -335,18 +341,14 @@ describe('engine', () => {
   });
 
   describe('prepareOptions - monkeypatch verification', () => {
-    let originalDebuglog: typeof import('util').debuglog;
-
     beforeEach(() => {
-      // Save original util.debuglog before each test
-      const util = require('util');
-      originalDebuglog = util.debuglog;
+      // Clean up monkeypatch before each test to start fresh
+      cleanupMonkeypatch();
     });
 
     afterEach(() => {
-      // Restore original util.debuglog after each test
-      const util = require('util');
-      util.debuglog = originalDebuglog;
+      // Clean up monkeypatch after each test
+      cleanupMonkeypatch();
     });
 
     it('should replace util.debuglog with custom implementation', async () => {
@@ -399,7 +401,8 @@ describe('engine', () => {
       const infoSpy = jest.spyOn(testLogger, 'info');
 
       const util = require('util');
-      const originalDebuglogSpy = jest.fn(originalDebuglog);
+      const originalDebuglogFn = util.debuglog;
+      const originalDebuglogSpy = jest.fn(originalDebuglogFn);
       util.debuglog = originalDebuglogSpy;
 
       await engine.prepareOptions({}, testLogger);
@@ -436,6 +439,23 @@ describe('engine', () => {
       const ghPagesLogger = util.debuglog('gh-pages');
       ghPagesLogger('test message');
       expect(infoSpy).toHaveBeenCalledWith('test message');
+    });
+
+    it('should restore original util.debuglog when cleanupMonkeypatch is called', async () => {
+      const testLogger = new logging.Logger('test');
+      const util = require('util');
+      const debuglogBeforeSetup = util.debuglog;
+
+      await engine.prepareOptions({}, testLogger);
+
+      // After prepareOptions, util.debuglog should be patched
+      expect(util.debuglog).not.toBe(debuglogBeforeSetup);
+
+      // Call cleanup
+      cleanupMonkeypatch();
+
+      // After cleanup, util.debuglog should be restored
+      expect(util.debuglog).toBe(debuglogBeforeSetup);
     });
   });
 });

@@ -2,6 +2,7 @@ import { BuilderContext, BuilderRun, ScheduleOptions, Target } from '@angular-de
 import { JsonObject, logging } from '@angular-devkit/core';
 import { BuildTarget, PublishOptions } from '../interfaces';
 import { Schema } from '../deploy/schema';
+import { cleanupMonkeypatch } from '../engine/engine.prepare-options-helpers';
 
 /**
  * ANGULAR BUILDER INTEGRATION TESTS
@@ -95,8 +96,15 @@ describe('Angular Builder Integration Tests', () => {
   };
 
   beforeEach(() => {
+    // Clean up any previous monkeypatch so each test starts fresh
+    cleanupMonkeypatch();
     capturedPublishOptions = null;
     context = createMockContext();
+  });
+
+  afterAll(() => {
+    // Clean up monkeypatch after all tests
+    cleanupMonkeypatch();
   });
 
   describe('Boolean negation transformation (CRITICAL)', () => {

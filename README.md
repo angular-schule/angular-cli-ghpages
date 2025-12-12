@@ -428,6 +428,7 @@ This can be very useful because it outputs what would happen without doing anyth
 
 To avoid all these command-line cmd options, you can write down your configuration in the `angular.json` file in the `options` attribute of your deploy project's architect. Just change the kebab-case to lower camel case. Commonly used options in lower camel case (see `src/deploy/schema.json` for the complete list including deprecated options):
 
+<!-- deprecated options (browserTarget, noSilent) hidden per deprecation policy -->
 - baseHref
 - buildTarget
 - prerenderTarget

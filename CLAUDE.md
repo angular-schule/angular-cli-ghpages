@@ -209,6 +209,7 @@ The engine appends CI metadata to commit messages when running on:
 - Uses Jest (`npm test`), tests in `*.spec.ts` files
 - Requires git clone with `origin` remote (see `test-prerequisites.spec.ts`)
 - All tests preserve/restore `process.env` using `originalEnv` pattern
+- **No test counts in documentation** - they become stale quickly and are bragging
 
 ### Testing Rules
 

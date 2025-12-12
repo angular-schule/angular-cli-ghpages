@@ -15,6 +15,7 @@ import * as os from 'os';
 import * as path from 'path';
 
 import * as engine from './engine';
+import { cleanupMonkeypatch } from './engine.prepare-options-helpers';
 
 describe('engine - real filesystem tests', () => {
   const logger = new logging.Logger('test');
@@ -22,6 +23,9 @@ describe('engine - real filesystem tests', () => {
   let loggerInfoSpy: jest.SpyInstance;
 
   beforeEach(async () => {
+    // Clean up any previous monkeypatch so each test starts fresh
+    cleanupMonkeypatch();
+
     // Create a unique temp directory for each test
     const tmpBase = os.tmpdir();
     const uniqueDir = `angular-cli-ghpages-test-${Date.now()}-${Math.random().toString(36).substring(7)}`;
@@ -38,6 +42,11 @@ describe('engine - real filesystem tests', () => {
       await fse.remove(testDir);
     }
     loggerInfoSpy.mockRestore();
+  });
+
+  afterAll(() => {
+    // Clean up monkeypatch after all tests
+    cleanupMonkeypatch();
   });
 
   describe('.nojekyll file creation', () => {

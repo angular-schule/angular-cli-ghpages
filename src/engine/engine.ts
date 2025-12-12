@@ -27,6 +27,7 @@ export async function run(
   // If we require gh-pages before monkeypatching, it caches the original util.debuglog,
   // and our monkeypatch won't capture the logging output.
   // See prepareOptions() for the monkeypatch implementation.
+  // TODO: After gh-pages v6 upgrade, try converting to static import if monkeypatch timing allows
   const ghpages = require('gh-pages');
 
   // always clean the cache directory.
@@ -137,8 +138,9 @@ async function createNotFoundFile(
     await fse.copy(indexHtml, notFoundFile);
     logger.info('404.html file created');
   } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
     logger.info('index.html could not be copied to 404.html. Proceeding without it.');
-    logger.debug('Diagnostic info: ' + err.message);
+    logger.debug('Diagnostic info: ' + message);
     return;
   }
 }
@@ -167,7 +169,8 @@ async function createCnameFile(
     await fse.writeFile(cnameFile, options.cname);
     logger.info('CNAME file created');
   } catch (err) {
-    throw new Error('CNAME file could not be created. ' + err.message);
+    const message = err instanceof Error ? err.message : String(err);
+    throw new Error('CNAME file could not be created. ' + message);
   }
 }
 
@@ -193,7 +196,8 @@ async function createNojekyllFile(
     await fse.writeFile(nojekyllFile, '');
     logger.info('.nojekyll file created');
   } catch (err) {
-    throw new Error('.nojekyll file could not be created. ' + err.message);
+    const message = err instanceof Error ? err.message : String(err);
+    throw new Error('.nojekyll file could not be created. ' + message);
   }
 }
 
@@ -204,6 +208,10 @@ async function publishViaGhPages(
   logger: logging.LoggerApi
 ) {
   if (options.dryRun) {
+    // Note: options.repo may contain auth tokens. This is acceptable because:
+    // 1. CI environments (GitHub Actions, etc.) automatically mask secrets in logs
+    // 2. Dry-run is typically used for debugging, where seeing the full URL helps
+    // 3. Local dry-runs don't persist logs
     logger.info(
       `Dry-run / SKIPPED: publishing folder '${dir}' with the following options: ` +
       JSON.stringify(

@@ -100,7 +100,6 @@ describe('Test Prerequisites', () => {
       }
 
       // If we got here, we are in a git repository
-      expect(gitDir).toBeDefined();
       expect(gitDir.length).toBeGreaterThan(0);
     });
 
@@ -148,14 +147,9 @@ describe('Test Prerequisites', () => {
       }
 
       // If we got here, origin is configured
-      expect(remoteUrl).toBeDefined();
       expect(remoteUrl.length).toBeGreaterThan(0);
       // Verify it looks like a valid git URL (either HTTPS or SSH)
-      expect(
-        remoteUrl.includes('github.com') ||
-          remoteUrl.includes('http') ||
-          remoteUrl.includes('git@')
-      ).toBe(true);
+      expect(remoteUrl).toMatch(/^(https?:\/\/|git@)/);
     });
   });
 

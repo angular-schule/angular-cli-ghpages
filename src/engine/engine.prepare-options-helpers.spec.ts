@@ -57,13 +57,15 @@ describe('prepareOptions helpers - intensive tests', () => {
     let originalDebuglog: typeof import('util').debuglog;
 
     beforeEach(() => {
+      // First, clean up any previous monkeypatch state
+      helpers.cleanupMonkeypatch();
       const util = require('util');
       originalDebuglog = util.debuglog;
     });
 
     afterEach(() => {
-      const util = require('util');
-      util.debuglog = originalDebuglog;
+      // Use our cleanup function to properly restore state
+      helpers.cleanupMonkeypatch();
     });
 
     it('should replace util.debuglog with custom implementation', () => {

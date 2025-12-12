@@ -89,6 +89,6 @@ export default async function deploy(
   await engine.run(
     dir,
     options,
-    (context.logger as unknown) as logging.LoggerApi
+    context.logger
   );
 }

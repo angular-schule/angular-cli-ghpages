@@ -6,8 +6,10 @@
  */
 
 import { logging } from '@angular-devkit/core';
+import * as util from 'util';
 
 import { Schema } from '../deploy/schema';
+// Internal API dependency - by design. See getRemoteUrl() JSDoc for rationale and fallback options.
 import Git from 'gh-pages/lib/git';
 
 /**
@@ -21,6 +23,11 @@ export type PreparedOptions = Schema & {
   user?: { name: string; email: string };
 };
 
+// Store original debuglog for cleanup (using CommonJS require for mutable access)
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const utilMutable = require('util');
+let originalDebuglog: typeof util.debuglog | null = null;
+
 /**
  * Setup monkeypatch for util.debuglog to intercept gh-pages logging
  *
@@ -29,12 +36,20 @@ export type PreparedOptions = Schema & {
  *
  * CRITICAL: This must be called BEFORE requiring gh-pages, otherwise gh-pages
  * will cache the original util.debuglog and our interception won't work.
+ *
+ * NOTE: We use require('util') instead of ES import because ES module namespace
+ * objects are read-only. CommonJS require returns a mutable object that we can patch.
  */
 export function setupMonkeypatch(logger: logging.LoggerApi): void {
-  const util = require('util');
-  const originalDebuglog = util.debuglog;
+  // Guard against multiple calls - only patch once
+  // If we're already patched, just return (prevents stack overflow from recursive calls)
+  if (originalDebuglog !== null) {
+    return;
+  }
 
-  util.debuglog = (set: string) => {
+  originalDebuglog = utilMutable.debuglog;
+
+  utilMutable.debuglog = (set: string) => {
     // gh-pages uses util.debuglog('gh-pages') internally for all verbose logging
     // Intercept it and forward to Angular logger instead of stderr
     if (set === 'gh-pages') {
@@ -43,8 +58,19 @@ export function setupMonkeypatch(logger: logging.LoggerApi): void {
         logger.info(message);
       };
     }
-    return originalDebuglog(set);
+    return originalDebuglog!(set);
   };
+}
+
+/**
+ * Cleanup monkeypatch - restore original util.debuglog
+ * Exported for testing
+ */
+export function cleanupMonkeypatch(): void {
+  if (originalDebuglog) {
+    utilMutable.debuglog = originalDebuglog;
+    originalDebuglog = null;
+  }
 }
 
 /**
@@ -110,40 +136,40 @@ export function appendCIMetadata(options: PreparedOptions): void {
   if (process.env.TRAVIS) {
     options.message +=
       ' -- ' +
-      process.env.TRAVIS_COMMIT_MESSAGE +
+      (process.env.TRAVIS_COMMIT_MESSAGE || '') +
       ' \n\n' +
       'Triggered by commit: https://github.com/' +
-      process.env.TRAVIS_REPO_SLUG +
+      (process.env.TRAVIS_REPO_SLUG || '') +
       '/commit/' +
-      process.env.TRAVIS_COMMIT +
+      (process.env.TRAVIS_COMMIT || '') +
       '\n' +
       'Travis CI build: https://travis-ci.org/' +
-      process.env.TRAVIS_REPO_SLUG +
+      (process.env.TRAVIS_REPO_SLUG || '') +
       '/builds/' +
-      process.env.TRAVIS_BUILD_ID;
+      (process.env.TRAVIS_BUILD_ID || '');
   }
 
   if (process.env.CIRCLECI) {
     options.message +=
       '\n\n' +
       'Triggered by commit: https://github.com/' +
-      process.env.CIRCLE_PROJECT_USERNAME +
+      (process.env.CIRCLE_PROJECT_USERNAME || '') +
       '/' +
-      process.env.CIRCLE_PROJECT_REPONAME +
+      (process.env.CIRCLE_PROJECT_REPONAME || '') +
       '/commit/' +
-      process.env.CIRCLE_SHA1 +
+      (process.env.CIRCLE_SHA1 || '') +
       '\n' +
       'CircleCI build: ' +
-      process.env.CIRCLE_BUILD_URL;
+      (process.env.CIRCLE_BUILD_URL || '');
   }
 
   if (process.env.GITHUB_ACTIONS) {
     options.message +=
       '\n\n' +
       'Triggered by commit: https://github.com/' +
-      process.env.GITHUB_REPOSITORY +
+      (process.env.GITHUB_REPOSITORY || '') +
       '/commit/' +
-      process.env.GITHUB_SHA;
+      (process.env.GITHUB_SHA || '');
   }
 }
 
@@ -218,6 +244,8 @@ export async function injectTokenIntoRepoUrl(options: PreparedOptions): Promise<
  * Exported for testing - internal use only
  */
 export async function getRemoteUrl(options: Schema & { git?: string; remote?: string }): Promise<string> {
+  // process.cwd() returns the directory from which ng deploy was invoked.
+  // This is the expected behavior - users run ng deploy from their project root.
   const git = new Git(process.cwd(), options.git);
   return await git.getRemoteUrl(options.remote);
 }

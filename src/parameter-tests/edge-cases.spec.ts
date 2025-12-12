@@ -1,5 +1,6 @@
 import { logging } from '@angular-devkit/core';
 import * as engine from '../engine/engine';
+import { cleanupMonkeypatch } from '../engine/engine.prepare-options-helpers';
 import { DeployUser } from '../interfaces';
 
 /**
@@ -21,6 +22,9 @@ describe('Edge Case Tests', () => {
   const originalEnv = process.env;
 
   beforeEach(() => {
+    // Clean up any previous monkeypatch so each test starts fresh
+    cleanupMonkeypatch();
+
     logger = new logging.NullLogger();
     // Create fresh copy of environment for each test
     // This preserves PATH, HOME, etc. needed by git
@@ -45,6 +49,8 @@ describe('Edge Case Tests', () => {
   });
 
   afterAll(() => {
+    // Clean up monkeypatch after all tests
+    cleanupMonkeypatch();
     // Restore original environment for other test files
     process.env = originalEnv;
   });
@@ -311,9 +317,9 @@ describe('Edge Case Tests', () => {
     it('should handle Travis CI with missing environment variables', async () => {
       const message = 'Deploy';
       const expectedMessage =
-        'Deploy -- undefined \n\n' +
-        'Triggered by commit: https://github.com/undefined/commit/undefined\n' +
-        'Travis CI build: https://travis-ci.org/undefined/builds/undefined';
+        'Deploy --  \n\n' +
+        'Triggered by commit: https://github.com//commit/\n' +
+        'Travis CI build: https://travis-ci.org//builds/';
 
       const options = { message };
       process.env.TRAVIS = 'true';
@@ -321,7 +327,7 @@ describe('Edge Case Tests', () => {
 
       const finalOptions = await engine.prepareOptions(options, logger);
 
-      // When env vars are undefined, they get stringified as "undefined"
+      // When env vars are undefined, they are replaced with empty strings
       expect(finalOptions.message).toBe(expectedMessage);
     });
 
@@ -329,8 +335,8 @@ describe('Edge Case Tests', () => {
       const message = 'Deploy';
       const expectedMessage =
         'Deploy\n\n' +
-        'Triggered by commit: https://github.com/undefined/undefined/commit/undefined\n' +
-        'CircleCI build: undefined';
+        'Triggered by commit: https://github.com///commit/\n' +
+        'CircleCI build: ';
 
       const options = { message };
       process.env.CIRCLECI = 'true';
@@ -338,7 +344,7 @@ describe('Edge Case Tests', () => {
 
       const finalOptions = await engine.prepareOptions(options, logger);
 
-      // When env vars are undefined, they get stringified as "undefined"
+      // When env vars are undefined, they are replaced with empty strings
       expect(finalOptions.message).toBe(expectedMessage);
     });
 
@@ -346,7 +352,7 @@ describe('Edge Case Tests', () => {
       const message = 'Deploy';
       const expectedMessage =
         'Deploy\n\n' +
-        'Triggered by commit: https://github.com/undefined/commit/undefined';
+        'Triggered by commit: https://github.com//commit/';
 
       const options = { message };
       process.env.GITHUB_ACTIONS = 'true';
@@ -354,7 +360,7 @@ describe('Edge Case Tests', () => {
 
       const finalOptions = await engine.prepareOptions(options, logger);
 
-      // When env vars are undefined, they get stringified as "undefined"
+      // When env vars are undefined, they are replaced with empty strings
       expect(finalOptions.message).toBe(expectedMessage);
     });
 

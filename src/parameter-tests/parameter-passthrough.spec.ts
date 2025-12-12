@@ -1,5 +1,6 @@
 import { logging } from '@angular-devkit/core';
 import * as engine from '../engine/engine';
+import { cleanupMonkeypatch } from '../engine/engine.prepare-options-helpers';
 
 /**
  * CRITICAL TEST SUITE: Parameter Passthrough Validation
@@ -20,6 +21,9 @@ describe('Parameter Passthrough Tests', () => {
   const originalEnv = process.env;
 
   beforeEach(() => {
+    // Clean up any previous monkeypatch so each test starts fresh
+    cleanupMonkeypatch();
+
     logger = new logging.NullLogger();
     // Create fresh copy of environment for each test
     // This preserves PATH, HOME, etc. needed by git
@@ -44,6 +48,8 @@ describe('Parameter Passthrough Tests', () => {
   });
 
   afterAll(() => {
+    // Clean up monkeypatch after all tests
+    cleanupMonkeypatch();
     // Restore original environment for other test files
     process.env = originalEnv;
   });

@@ -12,6 +12,7 @@
 import { logging } from '@angular-devkit/core';
 
 import * as engine from './engine';
+import { cleanupMonkeypatch } from './engine.prepare-options-helpers';
 
 // Mock fs-extra at module level to avoid conflicts with other test files
 jest.mock('fs-extra', () => ({
@@ -36,6 +37,9 @@ describe('engine - gh-pages integration', () => {
   let ghpagesPublishSpy: jest.SpyInstance;
 
   beforeEach(() => {
+    // Clean up any previous monkeypatch so each test starts fresh
+    cleanupMonkeypatch();
+
     const ghpages = require('gh-pages');
 
     // Clear any existing mocks from previous tests
@@ -72,6 +76,8 @@ describe('engine - gh-pages integration', () => {
   });
 
   afterAll(() => {
+    // Clean up monkeypatch after all tests
+    cleanupMonkeypatch();
     // Restore original environment for other test files
     process.env = originalEnv;
   });

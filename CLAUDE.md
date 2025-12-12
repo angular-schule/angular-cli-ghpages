@@ -14,6 +14,8 @@ All development commands must be run from the `src` directory:
 cd src
 ```
 
+**IMPORTANT:** The `src/.npmrc` file contains `ignore-scripts=false` to override global npm settings. **DO NOT DELETE OR MODIFY this file** - it's required for build scripts to run.
+
 ### Build
 ```bash
 npm run build

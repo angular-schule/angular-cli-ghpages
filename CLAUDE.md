@@ -167,11 +167,11 @@ The engine appends CI metadata to commit messages when running on:
 
 ### Option Name Mapping
 
-**CRITICAL:** Angular CLI does NOT rename kebab-case to camelCase for boolean flags with "no" prefix. The engine handles this mapping:
+**CRITICAL:** Angular CLI passes `--no-X` flags as `noX: true`, NOT as `X: false`. The engine must manually invert these:
 
-- CLI: `--no-dotfiles` → Code: `noDotfiles` → Internal: `dotfiles: false`
-- CLI: `--no-notfound` → Code: `noNotfound` → Internal: `notfound: false`
-- CLI: `--no-nojekyll` → Code: `noNojekyll` → Internal: `nojekyll: false`
+- `--no-dotfiles` → Angular passes `{ noDotfiles: true }` → Engine converts to `{ dotfiles: false }`
+- `--no-notfound` → Angular passes `{ noNotfound: true }` → Engine converts to `{ notfound: false }`
+- `--no-nojekyll` → Angular passes `{ noNojekyll: true }` → Engine converts to `{ nojekyll: false }`
 
 ## Important Conventions
 

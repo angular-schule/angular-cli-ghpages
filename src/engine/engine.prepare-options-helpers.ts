@@ -173,22 +173,19 @@ export async function injectTokenIntoRepoUrl(options: PreparedOptions): Promise<
     options.repo = options.repo.replace('GH_TOKEN', process.env.GH_TOKEN);
   }
   // preferred way: token is replaced from plain URL
+  // Note: Only the first available token is used (GH_TOKEN > PERSONAL_TOKEN > GITHUB_TOKEN)
   else if (options.repo && !options.repo.includes('x-access-token:')) {
     if (process.env.GH_TOKEN) {
       options.repo = options.repo.replace(
         'https://github.com/',
         `https://x-access-token:${process.env.GH_TOKEN}@github.com/`
       );
-    }
-
-    if (process.env.PERSONAL_TOKEN) {
+    } else if (process.env.PERSONAL_TOKEN) {
       options.repo = options.repo.replace(
         'https://github.com/',
         `https://x-access-token:${process.env.PERSONAL_TOKEN}@github.com/`
       );
-    }
-
-    if (process.env.GITHUB_TOKEN) {
+    } else if (process.env.GITHUB_TOKEN) {
       options.repo = options.repo.replace(
         'https://github.com/',
         `https://x-access-token:${process.env.GITHUB_TOKEN}@github.com/`

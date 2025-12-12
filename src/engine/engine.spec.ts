@@ -415,7 +415,7 @@ describe('engine', () => {
     });
 
     it('should monkeypatch util.debuglog before requiring gh-pages', async () => {
-      // This test verifies the critical ordering requirement documented in engine.ts:22-27
+      // This test verifies the critical ordering requirement:
       // The monkeypatch MUST occur before requiring gh-pages, otherwise gh-pages caches
       // the original util.debuglog and our interception won't work.
 
@@ -429,12 +429,13 @@ describe('engine', () => {
       await engine.prepareOptions({}, testLogger);
 
       // Now require gh-pages for the first time (after monkeypatch)
-      const ghpages = require('gh-pages');
+      require('gh-pages');
 
-      // gh-pages should now use our patched util.debuglog
-      // We can't directly test gh-pages internal calls, but we verified
-      // that util.debuglog('gh-pages') forwards to our logger
-      expect(infoSpy).toBeDefined();
+      // Verify our patched debuglog('gh-pages') forwards to the logger
+      const util = require('util');
+      const ghPagesLogger = util.debuglog('gh-pages');
+      ghPagesLogger('test message');
+      expect(infoSpy).toHaveBeenCalledWith('test message');
     });
   });
 });

@@ -53,9 +53,8 @@ describe('ng-add', () => {
       );
 
       const resultConfig = readJSONFromTree(resultTree, 'angular.json');
-      expect(
-        resultConfig.projects[OTHER_PROJECT_NAME].architect.deploy
-      ).toBeTruthy();
+      const deployTarget = resultConfig.projects[OTHER_PROJECT_NAME].architect.deploy;
+      expect(deployTarget.builder).toBe('angular-cli-ghpages:deploy');
     });
   });
 

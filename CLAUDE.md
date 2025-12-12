@@ -139,8 +139,8 @@ actions.ts (deploy function)
 **Note:** `browserTarget` is deliberately HIDDEN from user-facing documentation per deprecation policy, even though it still works internally for backward compatibility.
 
 **Implementation details:**
-- Static build target: `browserTarget || buildTarget || default` (see `src/deploy/builder.ts:23-26`)
-- Final target: `prerenderTarget || staticBuildTarget` (see `src/deploy/builder.ts:45-50`)
+- Static build target: `browserTarget || buildTarget || default` (see `src/deploy/builder.ts`)
+- Final target: `prerenderTarget || staticBuildTarget` (see `src/deploy/builder.ts`)
 
 Output directory resolution:
 - Checks `angular.json` for `outputPath`
@@ -177,7 +177,10 @@ The engine appends CI metadata to commit messages when running on:
 
 1. **No Server-Side Rendering**: GitHub Pages only supports static files. SSR/Universal build targets are not supported.
 
-2. **404.html Handling**: By default creates `404.html` as copy of `index.html` to handle SPA routing on GitHub Pages. For Cloudflare Pages, disable with `--no-notfound`.
+2. **404.html Handling**:
+   - **GitHub Pages**: Requires `404.html` workaround (only way to get SPA routing, but returns HTTP 404 status)
+   - **Cloudflare Pages**: MUST NOT have `404.html` - its presence disables native SPA mode
+   - **Future**: Consider changing default or auto-detecting deployment target
 
 3. **Jekyll Bypass**: Creates `.nojekyll` to prevent GitHub Pages from processing files through Jekyll (which would break files starting with `_` or `.txt` in assets).
 

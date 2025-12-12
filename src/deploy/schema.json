@@ -65,7 +65,7 @@
     },
     "noNotfound": {
       "type": "boolean",
-      "description": "By default a 404.html file is created, because this is the only known workaround to avoid 404 error messages on GitHub Pages. For Cloudflare Pages we highly recommend to disable the 404.html file by setting this switch to true!",
+      "description": "By default a 404.html file is created for SPA routing on GitHub Pages. For Cloudflare Pages, you must use --no-notfound to enable native SPA routing.",
       "default": false
     },
     "noNojekyll": {

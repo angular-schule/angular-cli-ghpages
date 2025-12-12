@@ -50,7 +50,8 @@ export default createBuilder(
       await deploy(engine, context, finalBuildTarget, options);
     } catch (e) {
       context.logger.error('❌ An error occurred when trying to deploy:');
-      context.logger.error(e.message);
+      const message = e instanceof Error ? e.message : String(e);
+      context.logger.error(message);
       return { success: false };
     }
 

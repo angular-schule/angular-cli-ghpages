@@ -34,13 +34,12 @@ jest.mock('gh-pages/lib/git', () => {
   }));
 });
 
-// Mock gh-pages module
+// Mock gh-pages module - gh-pages v5+ uses Promise-based API
 jest.mock('gh-pages', () => ({
   clean: jest.fn(),
-  publish: jest.fn((dir: string, options: PublishOptions, callback: (error: Error | null) => void) => {
+  publish: jest.fn((dir: string, options: PublishOptions) => {
     capturedPublishOptions = options;
-    // Call callback asynchronously to simulate real gh-pages behavior
-    setImmediate(() => callback(null));
+    return Promise.resolve();
   })
 }));
 
@@ -133,7 +132,8 @@ describe('Angular Builder Integration Tests', () => {
       await deploy(engine, context, BUILD_TARGET, options);
 
       expect(capturedPublishOptions).not.toBeNull();
-      // Internal options should NOT be passed to gh-pages
+      // notfound is internal to angular-cli-ghpages, NOT passed to gh-pages
+      // (notfound controls 404.html creation which we do ourselves)
       expect(capturedPublishOptions!.notfound).toBeUndefined();
       expect(capturedPublishOptions!.noNotfound).toBeUndefined();
     });
@@ -148,8 +148,8 @@ describe('Angular Builder Integration Tests', () => {
       await deploy(engine, context, BUILD_TARGET, options);
 
       expect(capturedPublishOptions).not.toBeNull();
-      // Internal options should NOT be passed to gh-pages
-      expect(capturedPublishOptions!.nojekyll).toBeUndefined();
+      // nojekyll IS passed to gh-pages v6+ (delegated to gh-pages)
+      expect(capturedPublishOptions!.nojekyll).toBe(false);
       expect(capturedPublishOptions!.noNojekyll).toBeUndefined();
     });
 
@@ -166,9 +166,11 @@ describe('Angular Builder Integration Tests', () => {
 
       expect(capturedPublishOptions).not.toBeNull();
       expect(capturedPublishOptions!.dotfiles).toBe(false);
-      // Internal options should NOT be passed to gh-pages
+      // nojekyll IS passed to gh-pages v6+ (delegated)
+      expect(capturedPublishOptions!.nojekyll).toBe(false);
+      // notfound is internal (404.html creation by angular-cli-ghpages)
       expect(capturedPublishOptions!.notfound).toBeUndefined();
-      expect(capturedPublishOptions!.nojekyll).toBeUndefined();
+      // negated options should NOT be passed
       expect(capturedPublishOptions!.noDotfiles).toBeUndefined();
       expect(capturedPublishOptions!.noNotfound).toBeUndefined();
       expect(capturedPublishOptions!.noNojekyll).toBeUndefined();
@@ -184,9 +186,10 @@ describe('Angular Builder Integration Tests', () => {
 
       expect(capturedPublishOptions).not.toBeNull();
       expect(capturedPublishOptions!.dotfiles).toBe(true);
-      // Internal options should NOT be passed to gh-pages
+      // nojekyll IS passed to gh-pages v6+ (delegated)
+      expect(capturedPublishOptions!.nojekyll).toBe(true);
+      // notfound is internal (404.html creation by angular-cli-ghpages)
       expect(capturedPublishOptions!.notfound).toBeUndefined();
-      expect(capturedPublishOptions!.nojekyll).toBeUndefined();
     });
   });
 
@@ -236,7 +239,7 @@ describe('Angular Builder Integration Tests', () => {
       expect(capturedPublishOptions!.user).toEqual(expectedUser);
     });
 
-    it('should NOT pass cname to gh-pages (internal option for CNAME file creation)', async () => {
+    it('should pass cname to gh-pages v6+ (delegated to gh-pages)', async () => {
       const repo = 'https://github.com/test/repo.git';
       const cname = 'example.com';
       const options: Schema = { repo, cname, noBuild: true };
@@ -244,8 +247,8 @@ describe('Angular Builder Integration Tests', () => {
       await deploy(engine, context, BUILD_TARGET, options);
 
       expect(capturedPublishOptions).not.toBeNull();
-      // cname is internal - used to create CNAME file, not passed to gh-pages
-      expect(capturedPublishOptions!.cname).toBeUndefined();
+      // cname IS now passed to gh-pages v6+ (delegated file creation)
+      expect(capturedPublishOptions!.cname).toBe(cname);
     });
   });
 
@@ -314,13 +317,17 @@ describe('Angular Builder Integration Tests', () => {
       expect(capturedPublishOptions!.message).toBe(message);
       expect(capturedPublishOptions!.add).toBe(add);
 
-      // Verify internal options are NOT passed to gh-pages
-      expect(capturedPublishOptions!.cname).toBeUndefined();
+      // cname and nojekyll ARE passed to gh-pages v6+ (delegated)
+      expect(capturedPublishOptions!.cname).toBe(cname);
+      expect(capturedPublishOptions!.nojekyll).toBe(false);
+
+      // notfound is internal (404.html creation by angular-cli-ghpages)
+      expect(capturedPublishOptions!.notfound).toBeUndefined();
+
+      // Negated options should NOT be passed
       expect(capturedPublishOptions!.noDotfiles).toBeUndefined();
       expect(capturedPublishOptions!.noNotfound).toBeUndefined();
       expect(capturedPublishOptions!.noNojekyll).toBeUndefined();
-      expect(capturedPublishOptions!.notfound).toBeUndefined();
-      expect(capturedPublishOptions!.nojekyll).toBeUndefined();
       expect(capturedPublishOptions!.name).toBeUndefined();
       expect(capturedPublishOptions!.email).toBeUndefined();
 

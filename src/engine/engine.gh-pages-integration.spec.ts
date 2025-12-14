@@ -55,13 +55,9 @@ describe('engine - gh-pages integration', () => {
       ghpagesPublishSpy = jest.spyOn(ghpages, 'publish');
     }
 
-    // Set default mock implementations
+    // Set default mock implementations - gh-pages v5+ uses Promise-based API
     ghpagesCleanSpy.mockImplementation(() => {});
-    ghpagesPublishSpy.mockImplementation(
-      (dir: string, options: unknown, callback: (err: Error | null) => void) => {
-        setImmediate(() => callback(null));
-      }
-    );
+    ghpagesPublishSpy.mockResolvedValue(undefined);
 
     // Create fresh copy of environment for each test
     // This preserves PATH, HOME, etc. needed by git
@@ -129,10 +125,10 @@ describe('engine - gh-pages integration', () => {
       await engine.run(testDir, options, logger);
 
       expect(ghpagesPublishSpy).toHaveBeenCalledTimes(1);
+      // gh-pages v5+ uses Promise-based API (no callback)
       expect(ghpagesPublishSpy).toHaveBeenCalledWith(
         testDir,
-        expect.any(Object),
-        expect.any(Function)
+        expect.any(Object)
       );
     });
 
@@ -343,27 +339,29 @@ describe('engine - gh-pages integration', () => {
       await engine.run(testDir, options, logger);
 
       const actualOptions = ghpagesPublishSpy.mock.calls[0][1] as Record<string, unknown>;
+      // notfound remains internal - 404.html is still created by angular-cli-ghpages
       expect(actualOptions.notfound).toBeUndefined();
     });
 
-    it('should NOT pass internal nojekyll option to gh-pages', async () => {
+    it('should pass nojekyll option to gh-pages v6+', async () => {
       const testDir = '/test/dist';
       const options = {
         dotfiles: true,
         notfound: true,
-        nojekyll: true // Internal only, used for .nojekyll creation
+        nojekyll: true // gh-pages v6+ handles .nojekyll file creation
       };
 
       await engine.run(testDir, options, logger);
 
       const actualOptions = ghpagesPublishSpy.mock.calls[0][1] as Record<string, unknown>;
-      expect(actualOptions.nojekyll).toBeUndefined();
+      // nojekyll IS now passed to gh-pages v6+ (delegated file creation)
+      expect(actualOptions.nojekyll).toBe(true);
     });
 
-    it('should NOT pass cname option to gh-pages (handled by CNAME file creation)', async () => {
+    it('should pass cname option to gh-pages v6+', async () => {
       const testDir = '/test/dist';
       const options = {
-        cname: 'example.com', // Internal only, creates CNAME file
+        cname: 'example.com', // gh-pages v6+ handles CNAME file creation
         dotfiles: true,
         notfound: true,
         nojekyll: true
@@ -372,7 +370,8 @@ describe('engine - gh-pages integration', () => {
       await engine.run(testDir, options, logger);
 
       const actualOptions = ghpagesPublishSpy.mock.calls[0][1] as Record<string, unknown>;
-      expect(actualOptions.cname).toBeUndefined();
+      // cname IS now passed to gh-pages v6+ (delegated file creation)
+      expect(actualOptions.cname).toBe('example.com');
     });
   });
 
@@ -493,11 +492,12 @@ describe('engine - gh-pages integration', () => {
       await engine.run(testDir, options, logger);
 
       const actualOptions = ghpagesPublishSpy.mock.calls[0][1] as Record<string, unknown>;
+      // notfound remains internal - 404.html is still created by angular-cli-ghpages
       expect(actualOptions.notfound).toBeUndefined();
       expect(actualOptions.noNotfound).toBeUndefined();
     });
 
-    it('should NOT pass transformed noNojekyll/nojekyll to gh-pages', async () => {
+    it('should pass transformed noNojekyll to nojekyll: false to gh-pages v6+', async () => {
       const testDir = '/test/dist';
       const options = {
         noNojekyll: true,
@@ -509,31 +509,30 @@ describe('engine - gh-pages integration', () => {
       await engine.run(testDir, options, logger);
 
       const actualOptions = ghpagesPublishSpy.mock.calls[0][1] as Record<string, unknown>;
-      expect(actualOptions.nojekyll).toBeUndefined();
+      // nojekyll IS now passed to gh-pages v6+ (delegated file creation)
+      expect(actualOptions.nojekyll).toBe(false);
       expect(actualOptions.noNojekyll).toBeUndefined();
     });
   });
 
-  describe('callback handling integration', () => {
-    it('should invoke gh-pages.publish() with a callback function', async () => {
+  describe('Promise handling integration', () => {
+    // gh-pages v5+ uses Promise-based API (we no longer use callback-based approach)
+
+    it('should invoke gh-pages.publish() without callback (Promise-based)', async () => {
       const testDir = '/test/dist';
       const options = { dotfiles: true, notfound: true, nojekyll: true };
 
       await engine.run(testDir, options, logger);
 
+      // gh-pages v5+ Promise API: publish(dir, options) - no callback
       expect(ghpagesPublishSpy).toHaveBeenCalledWith(
         expect.any(String),
-        expect.any(Object),
-        expect.any(Function)
+        expect.any(Object)
       );
     });
 
-    it('should resolve when gh-pages callback is called with null', async () => {
-      ghpagesPublishSpy.mockImplementation(
-        (dir: string, options: unknown, callback: (err: Error | null) => void) => {
-          setImmediate(() => callback(null));
-        }
-      );
+    it('should resolve when gh-pages.publish() resolves', async () => {
+      ghpagesPublishSpy.mockResolvedValue(undefined);
 
       const testDir = '/test/dist';
       const options = { dotfiles: true, notfound: true, nojekyll: true };
@@ -543,13 +542,9 @@ describe('engine - gh-pages integration', () => {
       ).resolves.toBeUndefined();
     });
 
-    it('should reject when gh-pages callback is called with error', async () => {
+    it('should reject when gh-pages.publish() rejects', async () => {
       const publishError = new Error('Git push failed');
-      ghpagesPublishSpy.mockImplementation(
-        (dir: string, options: unknown, callback: (err: Error | null) => void) => {
-          setImmediate(() => callback(publishError));
-        }
-      );
+      ghpagesPublishSpy.mockRejectedValue(publishError);
 
       const testDir = '/test/dist';
       const options = { dotfiles: true, notfound: true, nojekyll: true };

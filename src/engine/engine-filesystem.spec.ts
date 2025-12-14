@@ -2,11 +2,12 @@
  * Real filesystem integration tests for file creation
  *
  * These tests use actual temporary directories to verify that:
- * - .nojekyll files are created correctly
- * - CNAME files are created with correct content
- * - 404.html is copied from index.html
+ * - 404.html is copied from index.html (handled by angular-cli-ghpages)
  * - Dry-run mode prevents file creation
  * - Error handling works as expected
+ *
+ * Note: CNAME and .nojekyll files are now handled by gh-pages v6+ via options.
+ * See "gh-pages v6 delegation" tests below for verification.
  */
 
 import { logging } from '@angular-devkit/core';
@@ -49,136 +50,6 @@ describe('engine - real filesystem tests', () => {
     cleanupMonkeypatch();
   });
 
-  describe('.nojekyll file creation', () => {
-    it('should create .nojekyll file with empty content when nojekyll is true', async () => {
-      // Mock gh-pages to prevent actual git operations
-      const ghpages = require('gh-pages');
-      jest.spyOn(ghpages, 'clean').mockImplementation(() => {});
-      jest.spyOn(ghpages, 'publish').mockImplementation((dir: string, options: unknown, callback: (err: Error | null) => void) => {
-        setImmediate(() => callback(null));
-      });
-
-      const options = {
-        nojekyll: true,
-        notfound: false,
-        dotfiles: true
-      };
-
-      await engine.run(testDir, options, logger);
-
-      const nojekyllPath = path.join(testDir, '.nojekyll');
-      const exists = await fse.pathExists(nojekyllPath);
-      expect(exists).toBe(true);
-
-      const content = await fse.readFile(nojekyllPath, 'utf-8');
-      expect(content).toBe('');
-    });
-
-    it('should NOT create .nojekyll file when nojekyll is false', async () => {
-      const ghpages = require('gh-pages');
-      jest.spyOn(ghpages, 'clean').mockImplementation(() => {});
-      jest.spyOn(ghpages, 'publish').mockImplementation((dir: string, options: unknown, callback: (err: Error | null) => void) => {
-        setImmediate(() => callback(null));
-      });
-
-      const options = {
-        nojekyll: false,
-        notfound: false,
-        dotfiles: true
-      };
-
-      await engine.run(testDir, options, logger);
-
-      const nojekyllPath = path.join(testDir, '.nojekyll');
-      const exists = await fse.pathExists(nojekyllPath);
-      expect(exists).toBe(false);
-    });
-
-    it('should NOT create .nojekyll file when dry-run is true', async () => {
-      const ghpages = require('gh-pages');
-      jest.spyOn(ghpages, 'clean').mockImplementation(() => {});
-
-      const options = {
-        nojekyll: true,
-        notfound: false,
-        dotfiles: true,
-        dryRun: true
-      };
-
-      await engine.run(testDir, options, logger);
-
-      const nojekyllPath = path.join(testDir, '.nojekyll');
-      const exists = await fse.pathExists(nojekyllPath);
-      expect(exists).toBe(false);
-    });
-  });
-
-  describe('CNAME file creation', () => {
-    it('should create CNAME file with correct domain content', async () => {
-      const ghpages = require('gh-pages');
-      jest.spyOn(ghpages, 'clean').mockImplementation(() => {});
-      jest.spyOn(ghpages, 'publish').mockImplementation((dir: string, options: unknown, callback: (err: Error | null) => void) => {
-        setImmediate(() => callback(null));
-      });
-
-      const testDomain = 'example.com';
-      const options = {
-        cname: testDomain,
-        nojekyll: false,
-        notfound: false,
-        dotfiles: true
-      };
-
-      await engine.run(testDir, options, logger);
-
-      const cnamePath = path.join(testDir, 'CNAME');
-      const exists = await fse.pathExists(cnamePath);
-      expect(exists).toBe(true);
-
-      const content = await fse.readFile(cnamePath, 'utf-8');
-      expect(content).toBe(testDomain);
-    });
-
-    it('should NOT create CNAME file when cname option is not provided', async () => {
-      const ghpages = require('gh-pages');
-      jest.spyOn(ghpages, 'clean').mockImplementation(() => {});
-      jest.spyOn(ghpages, 'publish').mockImplementation((dir: string, options: unknown, callback: (err: Error | null) => void) => {
-        setImmediate(() => callback(null));
-      });
-
-      const options = {
-        nojekyll: false,
-        notfound: false,
-        dotfiles: true
-      };
-
-      await engine.run(testDir, options, logger);
-
-      const cnamePath = path.join(testDir, 'CNAME');
-      const exists = await fse.pathExists(cnamePath);
-      expect(exists).toBe(false);
-    });
-
-    it('should NOT create CNAME file when dry-run is true', async () => {
-      const ghpages = require('gh-pages');
-      jest.spyOn(ghpages, 'clean').mockImplementation(() => {});
-
-      const options = {
-        cname: 'example.com',
-        nojekyll: false,
-        notfound: false,
-        dotfiles: true,
-        dryRun: true
-      };
-
-      await engine.run(testDir, options, logger);
-
-      const cnamePath = path.join(testDir, 'CNAME');
-      const exists = await fse.pathExists(cnamePath);
-      expect(exists).toBe(false);
-    });
-  });
-
   describe('404.html file creation', () => {
     it('should create 404.html as exact copy of index.html when notfound is true', async () => {
       // First create an index.html file
@@ -188,9 +59,7 @@ describe('engine - real filesystem tests', () => {
 
       const ghpages = require('gh-pages');
       jest.spyOn(ghpages, 'clean').mockImplementation(() => {});
-      jest.spyOn(ghpages, 'publish').mockImplementation((dir: string, options: unknown, callback: (err: Error | null) => void) => {
-        setImmediate(() => callback(null));
-      });
+      jest.spyOn(ghpages, 'publish').mockResolvedValue(undefined);
 
       const options = {
         notfound: true,
@@ -214,9 +83,7 @@ describe('engine - real filesystem tests', () => {
 
       const ghpages = require('gh-pages');
       jest.spyOn(ghpages, 'clean').mockImplementation(() => {});
-      jest.spyOn(ghpages, 'publish').mockImplementation((dir: string, options: unknown, callback: (err: Error | null) => void) => {
-        setImmediate(() => callback(null));
-      });
+      jest.spyOn(ghpages, 'publish').mockResolvedValue(undefined);
 
       const options = {
         notfound: false,
@@ -236,9 +103,7 @@ describe('engine - real filesystem tests', () => {
 
       const ghpages = require('gh-pages');
       jest.spyOn(ghpages, 'clean').mockImplementation(() => {});
-      jest.spyOn(ghpages, 'publish').mockImplementation((dir: string, options: unknown, callback: (err: Error | null) => void) => {
-        setImmediate(() => callback(null));
-      });
+      jest.spyOn(ghpages, 'publish').mockResolvedValue(undefined);
 
       const options = {
         notfound: true,
@@ -283,84 +148,155 @@ describe('engine - real filesystem tests', () => {
     });
   });
 
-  describe('multiple files creation', () => {
-    it('should create all three files (.nojekyll, CNAME, 404.html) when all options are enabled', async () => {
-      // Create index.html for 404.html copy
+  /**
+   * gh-pages v6+ Delegation Tests
+   *
+   * gh-pages v6.1.0 added native support for creating CNAME and .nojekyll files:
+   * - See: https://github.com/tschaub/gh-pages/pull/533
+   *
+   * We now delegate file creation to gh-pages via the cname/nojekyll options
+   * instead of creating them ourselves. This is cleaner and avoids duplication.
+   *
+   * What we're testing:
+   * - Verify we DO pass cname option to gh-pages when provided
+   * - Verify we DO pass nojekyll option to gh-pages when enabled
+   * - Verify 404.html is still created by us (gh-pages doesn't handle this)
+   */
+  describe('gh-pages v6 delegation - cname and nojekyll', () => {
+    it('should pass cname option to gh-pages when provided', async () => {
       const indexPath = path.join(testDir, 'index.html');
-      const indexContent = '<html><body>App</body></html>';
-      await fse.writeFile(indexPath, indexContent);
+      await fse.writeFile(indexPath, '<html>test</html>');
 
       const ghpages = require('gh-pages');
       jest.spyOn(ghpages, 'clean').mockImplementation(() => {});
-      jest.spyOn(ghpages, 'publish').mockImplementation((dir: string, options: unknown, callback: (err: Error | null) => void) => {
-        setImmediate(() => callback(null));
-      });
+
+      let capturedOptions: { cname?: string; nojekyll?: boolean } = {};
+      const publishSpy = jest.spyOn(ghpages, 'publish').mockImplementation(
+        (dir: string, options: { cname?: string; nojekyll?: boolean }) => {
+          capturedOptions = options;
+          return Promise.resolve();
+        }
+      );
+
+      const testDomain = 'example.com';
+      const options = {
+        cname: testDomain,
+        nojekyll: false,
+        notfound: false,
+        dotfiles: true
+      };
+
+      await engine.run(testDir, options, logger);
+
+      expect(publishSpy).toHaveBeenCalled();
+      expect(capturedOptions.cname).toBe(testDomain);
+    });
+
+    it('should pass nojekyll option to gh-pages when enabled', async () => {
+      const indexPath = path.join(testDir, 'index.html');
+      await fse.writeFile(indexPath, '<html>test</html>');
+
+      const ghpages = require('gh-pages');
+      jest.spyOn(ghpages, 'clean').mockImplementation(() => {});
+
+      let capturedOptions: { cname?: string; nojekyll?: boolean } = {};
+      const publishSpy = jest.spyOn(ghpages, 'publish').mockImplementation(
+        (dir: string, options: { cname?: string; nojekyll?: boolean }) => {
+          capturedOptions = options;
+          return Promise.resolve();
+        }
+      );
+
+      const options = {
+        nojekyll: true,
+        notfound: false,
+        dotfiles: true
+      };
+
+      await engine.run(testDir, options, logger);
+
+      expect(publishSpy).toHaveBeenCalled();
+      expect(capturedOptions.nojekyll).toBe(true);
+    });
+
+    it('should pass both cname and nojekyll options when both enabled', async () => {
+      const indexPath = path.join(testDir, 'index.html');
+      await fse.writeFile(indexPath, '<html>test</html>');
+
+      const ghpages = require('gh-pages');
+      jest.spyOn(ghpages, 'clean').mockImplementation(() => {});
+
+      let capturedOptions: { cname?: string; nojekyll?: boolean } = {};
+      const publishSpy = jest.spyOn(ghpages, 'publish').mockImplementation(
+        (dir: string, options: { cname?: string; nojekyll?: boolean }) => {
+          capturedOptions = options;
+          return Promise.resolve();
+        }
+      );
 
       const testDomain = 'test.example.com';
       const options = {
+        cname: testDomain,
         nojekyll: true,
         notfound: true,
-        cname: testDomain,
         dotfiles: true
       };
 
       await engine.run(testDir, options, logger);
 
-      // Verify .nojekyll
-      const nojekyllPath = path.join(testDir, '.nojekyll');
-      expect(await fse.pathExists(nojekyllPath)).toBe(true);
-      expect(await fse.readFile(nojekyllPath, 'utf-8')).toBe('');
+      expect(publishSpy).toHaveBeenCalled();
+      expect(capturedOptions.cname).toBe(testDomain);
+      expect(capturedOptions.nojekyll).toBe(true);
 
-      // Verify CNAME
-      const cnamePath = path.join(testDir, 'CNAME');
-      expect(await fse.pathExists(cnamePath)).toBe(true);
-      expect(await fse.readFile(cnamePath, 'utf-8')).toBe(testDomain);
-
-      // Verify 404.html
+      // Verify 404.html is still created by us (not delegated to gh-pages)
       const notFoundPath = path.join(testDir, '404.html');
       expect(await fse.pathExists(notFoundPath)).toBe(true);
-      expect(await fse.readFile(notFoundPath, 'utf-8')).toBe(indexContent);
     });
-  });
 
-  /**
-   * PR #186 COMPATIBILITY: gh-pages v6.1.0+ File Creation
-   *
-   * Context from PR #186 analysis:
-   * - gh-pages v6.1.0 added native support for creating CNAME and .nojekyll files
-   * - See: https://github.com/tschaub/gh-pages/pull/533
-   * - We create these files BEFORE calling gh-pages (in dist/ directory)
-   * - gh-pages v6 will create them AFTER in the cache directory
-   *
-   * What we're testing:
-   * - Our file creation in dist/ works correctly (above tests)
-   * - Verify we DON'T pass cname/nojekyll options to gh-pages (they're internal to angular-cli-ghpages)
-   * - Document that gh-pages v6 will create duplicate files in cache (not a problem, just inefficient)
-   *
-   * When upgrading to gh-pages v6:
-   * - Option 1: Keep our file creation (works, but inefficient - files created twice)
-   * - Option 2: Remove our file creation and pass options to gh-pages (cleaner, but need to test backwards compat)
-   *
-   * Current status: We create files ourselves, DON'T pass options to gh-pages
-   */
-  describe('PR #186 - gh-pages v6.1.0+ compatibility', () => {
-    it('should NOT pass cname option to gh-pages (internal angular-cli-ghpages option)', async () => {
+    it('should NOT pass cname when not provided (undefined)', async () => {
       const indexPath = path.join(testDir, 'index.html');
       await fse.writeFile(indexPath, '<html>test</html>');
 
       const ghpages = require('gh-pages');
       jest.spyOn(ghpages, 'clean').mockImplementation(() => {});
 
+      let capturedOptions: { cname?: string; nojekyll?: boolean } = {};
       const publishSpy = jest.spyOn(ghpages, 'publish').mockImplementation(
-        (dir: string, options: {cname?: string; nojekyll?: boolean}, callback: (err: Error | null) => void) => {
-          // CRITICAL: Verify cname is NOT passed to gh-pages
-          expect(options.cname).toBeUndefined();
-          setImmediate(() => callback(null));
+        (dir: string, options: { cname?: string; nojekyll?: boolean }) => {
+          capturedOptions = options;
+          return Promise.resolve();
         }
       );
 
       const options = {
-        cname: 'example.com', // We handle this internally
+        nojekyll: false,
+        notfound: false,
+        dotfiles: true
+        // cname not provided
+      };
+
+      await engine.run(testDir, options, logger);
+
+      expect(publishSpy).toHaveBeenCalled();
+      expect(capturedOptions.cname).toBeUndefined();
+    });
+
+    it('should pass nojekyll: false when disabled', async () => {
+      const indexPath = path.join(testDir, 'index.html');
+      await fse.writeFile(indexPath, '<html>test</html>');
+
+      const ghpages = require('gh-pages');
+      jest.spyOn(ghpages, 'clean').mockImplementation(() => {});
+
+      let capturedOptions: { cname?: string; nojekyll?: boolean } = {};
+      const publishSpy = jest.spyOn(ghpages, 'publish').mockImplementation(
+        (dir: string, options: { cname?: string; nojekyll?: boolean }) => {
+          capturedOptions = options;
+          return Promise.resolve();
+        }
+      );
+
+      const options = {
         nojekyll: false,
         notfound: false,
         dotfiles: true
@@ -369,68 +305,7 @@ describe('engine - real filesystem tests', () => {
       await engine.run(testDir, options, logger);
 
       expect(publishSpy).toHaveBeenCalled();
-    });
-
-    it('should NOT pass nojekyll option to gh-pages (we handle it ourselves)', async () => {
-      const indexPath = path.join(testDir, 'index.html');
-      await fse.writeFile(indexPath, '<html>test</html>');
-
-      const ghpages = require('gh-pages');
-      jest.spyOn(ghpages, 'clean').mockImplementation(() => {});
-
-      const publishSpy = jest.spyOn(ghpages, 'publish').mockImplementation(
-        (dir: string, options: {cname?: string; nojekyll?: boolean}, callback: (err: Error | null) => void) => {
-          // CRITICAL: Verify nojekyll is NOT passed to gh-pages
-          // We create the file ourselves, gh-pages v6 would duplicate it
-          expect(options.nojekyll).toBeUndefined();
-          setImmediate(() => callback(null));
-        }
-      );
-
-      const options = {
-        nojekyll: true, // We handle this internally by creating .nojekyll file
-        notfound: false,
-        dotfiles: true
-      };
-
-      await engine.run(testDir, options, logger);
-
-      expect(publishSpy).toHaveBeenCalled();
-    });
-
-    it('should create CNAME file in dist/ (not relying on gh-pages v6 to create it)', async () => {
-      const indexPath = path.join(testDir, 'index.html');
-      await fse.writeFile(indexPath, '<html>test</html>');
-
-      const ghpages = require('gh-pages');
-      jest.spyOn(ghpages, 'clean').mockImplementation(() => {});
-      jest.spyOn(ghpages, 'publish').mockImplementation((dir: string, options: unknown, callback: (err: Error | null) => void) => {
-        // gh-pages v6 would create CNAME in cache directory
-        // But we create it in dist/ BEFORE calling gh-pages
-        setImmediate(() => callback(null));
-      });
-
-      const testDomain = 'angular-schule.github.io';
-      const options = {
-        cname: testDomain,
-        nojekyll: false,
-        notfound: false,
-        dotfiles: true
-      };
-
-      await engine.run(testDir, options, logger);
-
-      // CRITICAL: Verify CNAME exists in dist/ directory (testDir)
-      // This is the directory gh-pages will publish
-      const cnamePath = path.join(testDir, 'CNAME');
-      const exists = await fse.pathExists(cnamePath);
-      expect(exists).toBe(true);
-
-      const content = await fse.readFile(cnamePath, 'utf-8');
-      expect(content).toBe(testDomain);
-
-      // Note: gh-pages v6 will ALSO create CNAME in cache directory
-      // This means the file exists in TWO places (inefficient but not breaking)
+      expect(capturedOptions.nojekyll).toBe(false);
     });
   });
 });

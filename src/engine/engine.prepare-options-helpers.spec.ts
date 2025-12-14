@@ -578,7 +578,7 @@ describe('prepareOptions helpers - intensive tests', () => {
     /**
      * CRITICAL: This tests our dependency on gh-pages internal API
      *
-     * These tests will BREAK if gh-pages v6+ changes:
+     * These tests will BREAK if gh-pages changes:
      * - gh-pages/lib/git module structure
      * - Git class constructor signature
      * - getRemoteUrl() method signature or behavior
@@ -623,7 +623,7 @@ describe('prepareOptions helpers - intensive tests', () => {
         remote: 'nonexistent-remote-12345' // Remote that definitely doesn't exist
       };
 
-      // Expected message from gh-pages v3.2.3 (lib/git.js lines 213-223)
+      // Expected message from gh-pages v6.3.0 (lib/git.js)
       // If this fails after upgrading gh-pages, the internal API changed
       await expect(helpers.getRemoteUrl(options))
         .rejects
@@ -640,7 +640,7 @@ describe('prepareOptions helpers - intensive tests', () => {
         process.chdir(tempDir);
         const options = { remote: 'origin' };
 
-        // Expected message from gh-pages v3.2.3 (lib/git.js lines 213-223)
+        // Expected message from gh-pages v6.3.0 (lib/git.js)
         // Note: gh-pages returns same error for both "not in git repo" and "remote doesn't exist"
         await expect(helpers.getRemoteUrl(options))
           .rejects

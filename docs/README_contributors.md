@@ -272,7 +272,7 @@ The `getRemoteUrl` function in `src/engine/engine.prepare-options-helpers.ts` ca
    - If the internal API changed significantly: implement our own git remote discovery using `child_process.execSync('git config --get remote.{remote}.url')`
    - If gh-pages added a public API for this: switch to the public API
 
-**Current baseline:** Tests are pinned to gh-pages v3.2.3 behavior and error messages.
+**Current baseline:** Tests are pinned to gh-pages v6.3.0 behavior and error messages.
 
 ## Keeping track of all the forks
 

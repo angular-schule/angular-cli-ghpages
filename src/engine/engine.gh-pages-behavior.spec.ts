@@ -1,5 +1,5 @@
 /**
- * Behavioral snapshot tests for gh-pages v3.2.3
+ * Behavioral snapshot tests for gh-pages v6.3.0
  *
  * These tests capture the EXACT internal behavior of gh-pages.publish().
  * Focus: Git commands executed in correct order with correct arguments.
@@ -44,9 +44,9 @@ function createMockChildProcess(): Partial<ChildProcess> {
 }
 
 /**
- * Whitelist of expected git commands from gh-pages v3.2.3
+ * Whitelist of expected git commands from gh-pages v6.3.0
  *
- * Strict whitelist: If gh-pages adds new git subcommands in v6,
+ * Strict whitelist: If gh-pages changes git subcommands in future versions,
  * this array must be updated first and tests will fail loudly.
  * This is intentional - we want to know about any new git operations.
  */
@@ -133,7 +133,7 @@ function publishAndHandle(
   });
 }
 
-describe('gh-pages v3.2.3 - behavioral snapshot', () => {
+describe('gh-pages v6.3.0 - behavioral snapshot', () => {
   let tempDir: string;
   let basePath: string;
 
@@ -765,10 +765,10 @@ describe('gh-pages v3.2.3 - behavioral snapshot', () => {
    * - Verifies retry/fallback mechanisms work
    * - Documents expected error recovery behavior
    *
-   * PR #186 Context:
-   * gh-pages v3.1.0 has a bug where early errors don't return promises.
-   * gh-pages v5.0.0+ fixes this to correctly return Promise.reject().
-   * We use callback-based approach as workaround, which works in both versions.
+   * Historical note:
+   * gh-pages v3.1.0 had a bug where early errors didn't return promises.
+   * gh-pages v5.0.0+ fixed this to correctly return Promise.reject().
+   * We now use the Promise-based API directly (await ghPages.publish()).
    */
   describe('Error scenarios', () => {
     it('should retry git clone without branch/depth options on failure', (done) => {
@@ -1024,61 +1024,84 @@ describe('gh-pages v3.2.3 - behavioral snapshot', () => {
      * - basePath doesn't exist
      * - No files match src pattern
      *
-     * If you use await ghPages.publish(), these errors are silently swallowed!
+     * In gh-pages v3.x, if you used await ghPages.publish(), these errors were silently swallowed!
      *
-     * Our workaround in engine.ts:248-256:
+     * HISTORICAL: Our old workaround (REMOVED in v6 upgrade):
      * ```
      * // do NOT (!!) await ghPages.publish,
      * // the promise is implemented in such a way that it always succeeds – even on errors!
      * return new Promise((resolve, reject) => {
      *   ghPages.publish(dir, options, error => {
-     *     if (error) {
-     *       return reject(error);
-     *     }
+     *     if (error) { return reject(error); }
      *     resolve(undefined);
      *   });
      * });
      * ```
      *
-     * Fixed in gh-pages v5.0.0+: All errors correctly return Promise.reject()
-     *
-     * When upgrading to gh-pages v5+:
-     * - We can remove the callback workaround and use await directly
-     * - Need to verify all error cases are properly handled
-     * - This documentation serves as a reminder of why the workaround exists
+     * CURRENT (gh-pages v6.3.0):
+     * - Fixed in gh-pages v5.0.0+: All errors correctly return Promise.reject()
+     * - We now use `await ghPages.publish()` directly (engine.ts:203-204)
+     * - The Promise bug is fixed, all error cases properly reject
+     * - This documentation preserved for historical context only
      *
      * Current behavior is tested in engine.spec.ts integration tests.
      */
   });
 
   /**
+   * gh-pages v6+ CNAME and .nojekyll file creation
+   *
+   * IMPORTANT: File creation tests are in engine.gh-pages-filecreation.spec.ts
+   * Those tests run WITHOUT mocks to verify actual file creation behavior.
+   *
+   * This mocked test file cannot test actual file creation because:
+   * - We mock child_process.spawn (git commands)
+   * - gh-pages creates files in git.cwd which is set during clone
+   * - Since clone is mocked, the directory structure isn't created
+   *
+   * See engine.gh-pages-filecreation.spec.ts for real file creation tests.
+   */
+
+  /**
    * gh-pages.clean() behavior
    *
    * What does clean() do?
-   * - Removes the entire gh-pages cache directory
-   * - Cache location: find-cache-dir determines location (usually ~/.cache/gh-pages or node_modules/.cache/gh-pages)
-   * - Source: gh-pages lib/index.js lines 242-244
+   * - Removes repo-specific cache subdirectories inside the gh-pages cache folder
+   * - Cache location: find-cache-dir determines base location (usually node_modules/.cache/gh-pages)
+   * - Structure: {cache-dir}/{filenamified-repo-url}/
+   * - Source: gh-pages lib/index.js
    *
    * Why this matters:
    * - Fixes "Remote url mismatch" errors
    * - Clears stale git state
    * - angular-cli-ghpages calls this before every deployment
    *
-   * This test verifies cache directory is ACTUALLY removed, not just that clean() doesn't throw
+   * Note: clean() removes repo-specific subdirectories, not the entire cache parent directory
    */
   describe('gh-pages.clean() behavior', () => {
-    it('should actually remove cache directory from filesystem', async () => {
-      // We need to use find-cache-dir to determine where gh-pages will look
-      const findCacheDir = require('find-cache-dir');
-      const cacheDir = findCacheDir({ name: 'gh-pages' });
+    it('should execute clean() without throwing errors', () => {
+      // clean() synchronously removes repo-specific cache directories
+      // This test verifies it doesn't throw - actual deletion is repo-specific
+      expect(() => ghPages.clean()).not.toThrow();
+    });
 
-      // If no cache dir exists, create one to test deletion
-      if (cacheDir && !(await fs.pathExists(cacheDir))) {
-        await fs.ensureDir(cacheDir);
-        await fs.writeFile(path.join(cacheDir, 'test-marker.txt'), 'should be deleted');
+    it('should remove repo-specific cache directory', async () => {
+      const findCacheDir = require('find-cache-dir');
+      const filenamify = require('filenamify');
+
+      const cacheBaseDir = findCacheDir({ name: 'gh-pages' });
+      if (!cacheBaseDir) {
+        // Skip if no cache dir available (e.g., in some CI environments)
+        return;
       }
 
-      const existedBefore = cacheDir ? await fs.pathExists(cacheDir) : false;
+      // Create a fake repo-specific cache directory
+      const fakeRepoUrl = 'https://github.com/test/clean-test-repo.git';
+      const repoCacheDir = path.join(cacheBaseDir, filenamify(fakeRepoUrl, { replacement: '!' }));
+
+      await fs.ensureDir(repoCacheDir);
+      await fs.writeFile(path.join(repoCacheDir, 'marker.txt'), 'should be deleted');
+      expect(await fs.pathExists(repoCacheDir)).toBe(true);
 
       // Execute clean
       ghPages.clean();
@@ -1086,14 +1109,9 @@ describe('gh-pages v3.2.3 - behavioral snapshot', () => {
       // Give filesystem time to process deletion
       await new Promise(resolve => setTimeout(resolve, 100));
 
-      if (cacheDir && existedBefore) {
-        // CRITICAL: Directory must be actually removed
-        const existsAfter = await fs.pathExists(cacheDir);
-        expect(existsAfter).toBe(false);
-      } else {
-        // If no cache dir was found, at least verify clean() doesn't throw
-        expect(() => ghPages.clean()).not.toThrow();
-      }
+      // Repo-specific directory should be removed
+      const existsAfter = await fs.pathExists(repoCacheDir);
+      expect(existsAfter).toBe(false);
     });
   });
 });

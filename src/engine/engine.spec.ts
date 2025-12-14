@@ -251,7 +251,9 @@ describe('engine', () => {
     });
   });
 
-  describe('run - gh-pages error callback handling', () => {
+  describe('run - gh-pages Promise error handling', () => {
+    // gh-pages v5+ supports Promise-based API (fixed the bug where early errors didn't reject)
+    // We now use await ghPages.publish() directly instead of callback-based approach
     const logger = new logging.NullLogger();
 
     let fsePathExistsSpy: jest.SpyInstance;
@@ -279,13 +281,11 @@ describe('engine', () => {
       ghpagesPublishSpy.mockRestore();
     });
 
-    it('should reject when gh-pages.publish calls callback with error', async () => {
+    it('should reject when gh-pages.publish rejects with error', async () => {
       const publishError = new Error('Git push failed: permission denied');
 
-      ghpagesPublishSpy.mockImplementation((dir: string, options: unknown, callback: (err: Error | null) => void) => {
-        // Simulate gh-pages calling callback with error
-        setImmediate(() => callback(publishError));
-      });
+      // gh-pages v5+ properly rejects with errors
+      ghpagesPublishSpy.mockRejectedValue(publishError);
 
       const testDir = '/test/dist';
       const options = { dotfiles: true, notfound: true, nojekyll: true };
@@ -298,9 +298,7 @@ describe('engine', () => {
     it('should preserve error message through rejection', async () => {
       const detailedError = new Error('Remote url mismatch. Expected https://github.com/user/repo.git but got https://github.com/other/repo.git');
 
-      ghpagesPublishSpy.mockImplementation((dir: string, options: unknown, callback: (err: Error | null) => void) => {
-        setImmediate(() => callback(detailedError));
-      });
+      ghpagesPublishSpy.mockRejectedValue(detailedError);
 
       const testDir = '/test/dist';
       const options = { dotfiles: true, notfound: true, nojekyll: true };
@@ -313,9 +311,7 @@ describe('engine', () => {
     it('should reject with authentication error from gh-pages', async () => {
       const authError = new Error('Authentication failed: Invalid credentials');
 
-      ghpagesPublishSpy.mockImplementation((dir: string, options: unknown, callback: (err: Error | null) => void) => {
-        setImmediate(() => callback(authError));
-      });
+      ghpagesPublishSpy.mockRejectedValue(authError);
 
       const testDir = '/test/dist';
       const options = { dotfiles: true, notfound: true, nojekyll: true };
@@ -325,11 +321,9 @@ describe('engine', () => {
       ).rejects.toThrow('Authentication failed: Invalid credentials');
     });
 
-    it('should resolve successfully when gh-pages.publish calls callback with null', async () => {
-      ghpagesPublishSpy.mockImplementation((dir: string, options: unknown, callback: (err: Error | null) => void) => {
-        // Success case - callback with null error
-        setImmediate(() => callback(null));
-      });
+    it('should resolve successfully when gh-pages.publish resolves', async () => {
+      // gh-pages v5+ resolves the Promise on success
+      ghpagesPublishSpy.mockResolvedValue(undefined);
 
       const testDir = '/test/dist';
       const options = { dotfiles: true, notfound: true, nojekyll: true };

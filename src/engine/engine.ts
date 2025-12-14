@@ -27,7 +27,7 @@ export async function run(
   // If we require gh-pages before monkeypatching, it caches the original util.debuglog,
   // and our monkeypatch won't capture the logging output.
   // See prepareOptions() for the monkeypatch implementation.
-  // TODO: After gh-pages v6 upgrade, try converting to static import if monkeypatch timing allows
+  // Note: Dynamic import required for monkeypatch timing (static import would cache before patch)
   const ghpages = require('gh-pages');
 
   // always clean the cache directory.
@@ -40,8 +40,7 @@ export async function run(
 
   await checkIfDistFolderExists(dir);
   await createNotFoundFile(dir, options, logger);
-  await createCnameFile(dir, options, logger);
-  await createNojekyllFile(dir, options, logger);
+  // Note: CNAME and .nojekyll files are now created by gh-pages v6+ via options
   await publishViaGhPages(ghpages, dir, options, logger);
 
   if (!options.dryRun) {
@@ -145,61 +144,8 @@ async function createNotFoundFile(
   }
 }
 
-async function createCnameFile(
-  dir: string,
-  options: {
-    cname?: string,
-    dryRun?: boolean
-  },
-  logger: logging.LoggerApi
-) {
-  if (!options.cname) {
-    return;
-  }
-
-  const cnameFile = path.join(dir, 'CNAME');
-  if (options.dryRun) {
-    logger.info(
-      'Dry-run / SKIPPED: creating of CNAME file with content: ' + options.cname
-    );
-    return;
-  }
-
-  try {
-    await fse.writeFile(cnameFile, options.cname);
-    logger.info('CNAME file created');
-  } catch (err) {
-    const message = err instanceof Error ? err.message : String(err);
-    throw new Error('CNAME file could not be created. ' + message);
-  }
-}
-
-async function createNojekyllFile(
-  dir: string,
-  options: {
-    nojekyll: boolean,
-    dryRun?: boolean
-  },
-  logger: logging.LoggerApi
-) {
-  if (!options.nojekyll) {
-    return;
-  }
-
-  const nojekyllFile = path.join(dir, '.nojekyll');
-  if (options.dryRun) {
-    logger.info('Dry-run / SKIPPED: creating a .nojekyll file');
-    return;
-  }
-
-  try {
-    await fse.writeFile(nojekyllFile, '');
-    logger.info('.nojekyll file created');
-  } catch (err) {
-    const message = err instanceof Error ? err.message : String(err);
-    throw new Error('.nojekyll file could not be created. ' + message);
-  }
-}
+// CNAME and .nojekyll files are now handled by gh-pages v6+ via the cname/nojekyll options
+// Previously we created these files ourselves before publishing, but gh-pages PR #533 added native support
 
 async function publishViaGhPages(
   ghPages: GHPages,
@@ -239,7 +185,7 @@ async function publishViaGhPages(
   logger.info('🚀 Uploading via git, please wait...');
 
   // Only pass options that gh-pages understands
-  // If gh-pages adds new options in the future, we'll need to add them here
+  // gh-pages v6+ supports cname and nojekyll options natively (PR #533)
   const ghPagesOptions: PublishOptions = {
     repo: options.repo,
     branch: options.branch,
@@ -248,18 +194,12 @@ async function publishViaGhPages(
     git: options.git as string | undefined,
     add: options.add,
     dotfiles: options.dotfiles,
-    user: options.user
+    user: options.user,
+    cname: options.cname,
+    nojekyll: options.nojekyll
   };
 
-  // do NOT (!!) await ghPages.publish,
-  // the promise is implemented in such a way that it always succeeds – even on errors!
-  return new Promise((resolve, reject) => {
-    ghPages.publish(dir, ghPagesOptions, error => {
-      if (error) {
-        return reject(error);
-      }
-
-      resolve(undefined);
-    });
-  });
+  // gh-pages v5+ fixed the Promise bug where errors didn't reject properly
+  // We can now safely await the promise directly
+  await ghPages.publish(dir, ghPagesOptions);
 }

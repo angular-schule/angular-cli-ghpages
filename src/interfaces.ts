@@ -49,7 +49,9 @@ export interface PublishOptions {
 }
 
 export interface GHPages {
+  // gh-pages v5+ supports both callback and Promise-based APIs
   publish(dir: string, options: PublishOptions, callback: (error: Error | null) => void): void;
+  publish(dir: string, options: PublishOptions): Promise<void>;
   clean?(): void;
 }
 

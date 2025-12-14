@@ -228,7 +228,7 @@ export async function injectTokenIntoRepoUrl(options: PreparedOptions): Promise<
  * UPGRADE RISK:
  * - This function depends on gh-pages/lib/git which is an internal module
  * - Not part of gh-pages public API - could break in any version
- * - When upgrading gh-pages (especially to v6+), verify this still works:
+ * - When upgrading gh-pages, verify this still works:
  *   1. Check if gh-pages/lib/git still exists
  *   2. Check if Git class constructor signature is unchanged
  *   3. Check if getRemoteUrl() method still exists and works

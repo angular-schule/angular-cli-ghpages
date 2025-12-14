@@ -104,7 +104,7 @@ export function handleUserCredentials(
   logger: logging.LoggerApi
 ): void {
   if (options.name && options.email) {
-    options['user'] = {
+    options.user = {
       name: options.name,
       email: options.email
     };

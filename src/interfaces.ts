@@ -28,6 +28,10 @@ export interface DeployUser {
 /**
  * Options for gh-pages.publish()
  * Based on https://github.com/tschaub/gh-pages#options
+ *
+ * Note: Only includes options that gh-pages actually accepts.
+ * Internal options (notfound, noDotfiles, noNotfound, noNojekyll, dryRun)
+ * are handled by angular-cli-ghpages before calling gh-pages.
  */
 export interface PublishOptions {
   repo?: string;
@@ -36,15 +40,10 @@ export interface PublishOptions {
   message?: string;
   user?: { name: string; email: string };
   dotfiles?: boolean;
-  notfound?: boolean;
   nojekyll?: boolean;
-  noDotfiles?: boolean;
-  noNotfound?: boolean;
-  noNojekyll?: boolean;
   cname?: string;
   add?: boolean;
   git?: string;
-  dryRun?: boolean;
   [key: string]: unknown; // Allow additional gh-pages options
 }
 

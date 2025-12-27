@@ -5,7 +5,7 @@ on:
     branches: [main, big-update]
 
 jobs:
-  build-test-and-deploy:
+  build-and-test:
     runs-on: ubuntu-latest
 
     steps:
@@ -13,7 +13,7 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 24
+          node-version: 22
           cache: npm
           cache-dependency-path: src/package-lock.json
 
@@ -24,20 +24,80 @@ jobs:
           npm run build
           npm run test
 
-      - name: Verify ng add works
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: src/dist
+          retention-days: 1
+
+  # Test ng add and ng deploy across multiple Angular versions (sequentially)
+  # This catches breaking changes in angular.json structure
+  # Each test creates its own git repo and deploys locally to verify the full flow
+  test-angular-versions:
+    needs: build-and-test
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Configure git
         run: |
-          cd src/dist && npm link && cd ../..
-          npm install -g @angular/cli
-          ng new test-app --defaults
-          cd test-app
+          git config --global user.name "CI Bot"
+          git config --global user.email "ci@test.local"
+
+      - name: Download build artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist
+
+      - name: Link angular-cli-ghpages
+        working-directory: dist
+        run: npm link
+
+      - name: Test Angular 18
+        run: |
+          cd /tmp
+          npx @angular/cli@18 new test-app-18 --defaults
+          cd test-app-18
           npm link angular-cli-ghpages
           ng add angular-cli-ghpages
+          ng deploy
+          git branch -a | grep gh-pages
+          echo "Angular 18: build + deploy successful"
 
-      # CI test only: Verifies that the gh-pages branch gets updated
-      # This is NOT a production deployment - there is no public website for angular-cli-ghpages
-      - name: Deploy
-        if: github.ref == 'refs/heads/main'
-        working-directory: test-app
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: ng deploy --name="The Buildbot" --email="buildbot@angular2buch.de" --cname=angular-cli-ghpages.angular.schule
+      - name: Test Angular 19
+        run: |
+          cd /tmp
+          npx @angular/cli@19 new test-app-19 --defaults
+          cd test-app-19
+          npm link angular-cli-ghpages
+          ng add angular-cli-ghpages
+          ng deploy
+          git branch -a | grep gh-pages
+          echo "Angular 19: build + deploy successful"
+
+      - name: Test Angular 20
+        run: |
+          cd /tmp
+          npx @angular/cli@20 new test-app-20 --defaults
+          cd test-app-20
+          npm link angular-cli-ghpages
+          ng add angular-cli-ghpages
+          ng deploy
+          git branch -a | grep gh-pages
+          echo "Angular 20: build + deploy successful"
+
+      - name: Test Angular 21
+        run: |
+          cd /tmp
+          npx @angular/cli@21 new test-app-21 --defaults
+          cd test-app-21
+          npm link angular-cli-ghpages
+          ng add angular-cli-ghpages
+          ng deploy
+          git branch -a | grep gh-pages
+          echo "Angular 21: build + deploy successful"

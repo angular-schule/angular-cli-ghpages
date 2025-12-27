@@ -34,14 +34,26 @@ jobs:
   # Test ng add and ng deploy across multiple Angular versions (sequentially)
   # This catches breaking changes in angular.json structure
   # Each test creates its own git repo and deploys locally to verify the full flow
+  #
+  # Why checkout + npm ci? The ng-add.js requires @angular-devkit/core which must
+  # be resolvable from the dist folder. Node.js resolves modules by traversing up
+  # from the file's location, so we need src/node_modules available.
   test-angular-versions:
     needs: build-and-test
     runs-on: ubuntu-latest
 
     steps:
+      - uses: actions/checkout@v4
+
       - uses: actions/setup-node@v4
         with:
           node-version: 22
+          cache: npm
+          cache-dependency-path: src/package-lock.json
+
+      - name: Install dependencies for module resolution
+        working-directory: src
+        run: npm ci
 
       - name: Configure git
         run: |
@@ -52,12 +64,14 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: dist
-          path: dist
+          path: src/dist
 
       - name: Link angular-cli-ghpages
-        working-directory: dist
+        working-directory: src/dist
         run: npm link
 
+      # Test projects are created OUTSIDE the repo to get their own git repos
+      # (Angular CLI creates a git repo by default with --defaults)
       - name: Test Angular 18
         run: |
           cd /tmp

@@ -191,6 +191,27 @@ describe('Deploy Angular apps', () => {
       // actions.ts successfully handled the object case)
       expect(capturedDir).not.toBeNull();
     });
+
+    it('uses correct dir when outputPath is object with empty browser (Angular 19 SPA style)', async () => {
+      // Angular 19 can use browser: "" to output directly to base folder
+      let capturedDir: string | null = null;
+
+      const mockEngineWithCapture: EngineHost = {
+        run: (dir: string, _options: Schema, _logger: logging.LoggerApi) => {
+          capturedDir = dir;
+          return Promise.resolve();
+        }
+      };
+
+      context.getTargetOptions = (_: Target) =>
+        Promise.resolve({
+          outputPath: { base: 'dist/my-app', browser: '' }
+        } as JsonObject);
+
+      await deploy(mockEngineWithCapture, context, BUILD_TARGET, { noBuild: false });
+
+      expect(capturedDir).toBe('dist/my-app');
+    });
   });
 });
 

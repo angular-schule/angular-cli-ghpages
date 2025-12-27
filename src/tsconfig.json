@@ -29,6 +29,5 @@
     "strictMetadataEmit": true,
     "enableSummariesForJit": false
   },
-  "exclude": ["node_modules", "dist"],
-  "typeRoots": ["node_modules/@types"]
+  "exclude": ["node_modules", "dist"]
 }

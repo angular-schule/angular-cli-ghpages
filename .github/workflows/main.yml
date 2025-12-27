@@ -2,31 +2,34 @@ name: Build and test
 
 on:
   push:
-    branches: [main]
+    branches: [main, big-update]
 
 jobs:
-  build-and-deploy:
+  build-test-and-deploy:
     runs-on: ubuntu-latest
 
     steps:
       - uses: actions/checkout@v4
+
       - uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: 24
+          cache: npm
+          cache-dependency-path: src/package-lock.json
 
-      - name: Prepare
+      - name: Build and test
+        working-directory: src
         run: |
-          cd src
-          npm install
+          npm ci
           npm run build
           npm run test
-          cd dist
-          npm link
-          cd ..
-          cd ..
+
+      - name: Verify ng add works
+        run: |
+          cd src/dist && npm link && cd ../..
           npm install -g @angular/cli
-          ng new your-angular-project --defaults
-          cd your-angular-project
+          ng new test-app --defaults
+          cd test-app
           npm link angular-cli-ghpages
           ng add angular-cli-ghpages
 
@@ -34,8 +37,7 @@ jobs:
       # This is NOT a production deployment - there is no public website for angular-cli-ghpages
       - name: Deploy
         if: github.ref == 'refs/heads/main'
+        working-directory: test-app
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          cd your-angular-project
-          ng deploy --name="The Buildbot" --email="buildbot@angular2buch.de" --cname=angular-cli-ghpages.angular.schule
+        run: ng deploy --name="The Buildbot" --email="buildbot@angular2buch.de" --cname=angular-cli-ghpages.angular.schule

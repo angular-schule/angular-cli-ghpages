@@ -86,15 +86,24 @@ describe('Deploy Angular apps', () => {
       ).rejects.toThrow('Error while building the app.');
     });
 
-    it('throws if outputPath is missing from build options', async () => {
+    it('uses default path when outputPath is undefined (Angular 20+)', async () => {
+      // Angular 20+ omits outputPath, uses default: dist/<project>/browser
+      let capturedDir: string | null = null;
+
+      const mockEngineWithCapture: EngineHost = {
+        run: (dir: string, _options: Schema, _logger: logging.LoggerApi) => {
+          capturedDir = dir;
+          return Promise.resolve();
+        }
+      };
+
       context.getTargetOptions = (_: Target) =>
         Promise.resolve({} as JsonObject);
 
-      const expectedErrorMessage = `Cannot read the outputPath option of the Angular project '${BUILD_TARGET.name}' in angular.json.`;
+      await deploy(mockEngineWithCapture, context, BUILD_TARGET, { noBuild: false });
 
-      await expect(
-        deploy(mockEngine, context, BUILD_TARGET, { noBuild: false })
-      ).rejects.toThrow(expectedErrorMessage);
+      // Default path is dist/<project-name>/browser
+      expect(capturedDir).toBe(`dist/${PROJECT}/browser`);
     });
 
     it('throws if outputPath has invalid shape (not string or object)', async () => {

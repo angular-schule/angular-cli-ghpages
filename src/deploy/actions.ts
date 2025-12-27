@@ -60,21 +60,21 @@ export default async function deploy(
     );
 
     // Output path configuration
-    // The outputPath option can be either
+    // The outputPath option can be either:
+    // - undefined (Angular 20+): uses default dist/<project-name>/browser
     // - a String which will be used as the base value + default value 'browser'
     // - or an Object for more fine-tune configuration.
     // see https://angular.io/guide/workspace-config#output-path-configuration
     // see https://github.com/angular/angular-cli/pull/26675
 
-    if (!buildOptions.outputPath) {
-      throw new Error(
-        `Cannot read the outputPath option of the Angular project '${buildTarget.name}' in angular.json.`
-      );
-    }
+    const outputPath = buildOptions.outputPath as AngularOutputPath | undefined;
 
-    const outputPath = buildOptions.outputPath as AngularOutputPath;
-
-    if (typeof outputPath === 'string') {
+    if (outputPath === undefined) {
+      // Angular 20+ default: dist/<project-name>/browser
+      // Extract project name from buildTarget.name (format: "project:target:configuration")
+      const projectName = buildTarget.name.split(':')[0];
+      dir = path.join('dist', projectName, 'browser');
+    } else if (typeof outputPath === 'string') {
       dir = path.join(outputPath, 'browser');
     } else if (isOutputPathObject(outputPath)) {
       dir = path.join(outputPath.base, outputPath.browser ?? '');

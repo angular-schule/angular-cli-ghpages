@@ -88,6 +88,7 @@ import * as engine from '../engine/engine';
 
 describe('Angular Builder Integration Tests', () => {
   let context: BuilderContext;
+  let originalEnv: NodeJS.ProcessEnv;
 
   const PROJECT = 'test-project';
   const BUILD_TARGET: BuildTarget = {
@@ -95,10 +96,21 @@ describe('Angular Builder Integration Tests', () => {
   };
 
   beforeEach(() => {
+    // Save and clear CI environment variables to ensure consistent test behavior
+    originalEnv = { ...process.env };
+    delete process.env.TRAVIS;
+    delete process.env.CIRCLECI;
+    delete process.env.GITHUB_ACTIONS;
+
     // Clean up any previous monkeypatch so each test starts fresh
     cleanupMonkeypatch();
     capturedPublishOptions = null;
     context = createMockContext();
+  });
+
+  afterEach(() => {
+    // Restore original environment
+    process.env = originalEnv;
   });
 
   afterAll(() => {

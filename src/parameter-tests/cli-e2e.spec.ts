@@ -34,7 +34,13 @@ function runCli(args: string): string {
   }
 
   const program = path.resolve(__dirname, '../dist/angular-cli-ghpages');
-  return execSync(`node ${program} --dry-run ${args}`).toString();
+  // Clear CI environment variables to ensure consistent test behavior across environments
+  const env = { ...process.env };
+  delete env.TRAVIS;
+  delete env.CIRCLECI;
+  delete env.GITHUB_ACTIONS;
+
+  return execSync(`node ${program} --dry-run ${args}`, { env }).toString();
 }
 
 function parseJsonFromCliOutput(output: string): DryRunOutput {

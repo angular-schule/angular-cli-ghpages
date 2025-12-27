@@ -33,7 +33,11 @@
       "Bash(npm view:*)",
       "WebFetch(domain:raw.githubusercontent.com)",
       "Bash(gh pr list:*)",
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "WebFetch(domain:angular.dev)",
+      "WebFetch(domain:v19.angular.dev)",
+      "WebFetch(domain:v18.angular.dev)",
+      "WebFetch(domain:www.npmjs.com)"
     ],
     "deny": [],
     "ask": []

@@ -64,8 +64,8 @@ jobs:
           npx @angular/cli@18 new test-app-18 --defaults
           cd test-app-18
           npm link angular-cli-ghpages
-          ng add angular-cli-ghpages
-          ng deploy
+          npx ng add angular-cli-ghpages
+          npx ng deploy
           git branch -a | grep gh-pages
           echo "Angular 18: build + deploy successful"
 
@@ -75,8 +75,8 @@ jobs:
           npx @angular/cli@19 new test-app-19 --defaults
           cd test-app-19
           npm link angular-cli-ghpages
-          ng add angular-cli-ghpages
-          ng deploy
+          npx ng add angular-cli-ghpages
+          npx ng deploy
           git branch -a | grep gh-pages
           echo "Angular 19: build + deploy successful"
 
@@ -86,8 +86,8 @@ jobs:
           npx @angular/cli@20 new test-app-20 --defaults
           cd test-app-20
           npm link angular-cli-ghpages
-          ng add angular-cli-ghpages
-          ng deploy
+          npx ng add angular-cli-ghpages
+          npx ng deploy
           git branch -a | grep gh-pages
           echo "Angular 20: build + deploy successful"
 
@@ -97,7 +97,7 @@ jobs:
           npx @angular/cli@21 new test-app-21 --defaults
           cd test-app-21
           npm link angular-cli-ghpages
-          ng add angular-cli-ghpages
-          ng deploy
+          npx ng add angular-cli-ghpages
+          npx ng deploy
           git branch -a | grep gh-pages
           echo "Angular 21: build + deploy successful"

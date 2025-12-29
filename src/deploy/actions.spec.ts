@@ -152,7 +152,9 @@ describe('Deploy Angular apps', () => {
       expect(capturedDir).toBe('dist/my-app/browser');
     });
 
-    it('uses correct dir when outputPath is object with only base (OP1)', async () => {
+    it('uses correct dir when outputPath is object with only base (defaults browser to "browser")', async () => {
+      // When browser property is undefined, Angular defaults to 'browser'
+      // per Angular CLI schema: https://angular.io/guide/workspace-config#output-path-configuration
       let capturedDir: string | null = null;
 
       const mockEngineWithCapture: EngineHost = {
@@ -169,7 +171,7 @@ describe('Deploy Angular apps', () => {
 
       await deploy(mockEngineWithCapture, context, BUILD_TARGET, { noBuild: false });
 
-      expect(capturedDir).toBe('dist/my-app');
+      expect(capturedDir).toBe('dist/my-app/browser');
     });
 
     it('uses isOutputPathObject type guard to handle object outputPath (OP2)', async () => {

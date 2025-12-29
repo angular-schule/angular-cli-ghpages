@@ -77,7 +77,9 @@ export default async function deploy(
     } else if (typeof outputPath === 'string') {
       dir = path.join(outputPath, 'browser');
     } else if (isOutputPathObject(outputPath)) {
-      dir = path.join(outputPath.base, outputPath.browser ?? '');
+      // browser defaults to 'browser' per Angular CLI schema
+      // Explicit empty string '' means no subfolder (browser files directly in base)
+      dir = path.join(outputPath.base, outputPath.browser ?? 'browser');
     } else {
       throw new Error(
         `Unsupported outputPath configuration in angular.json for '${buildTarget.name}'. ` +

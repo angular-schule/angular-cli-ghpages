@@ -20,11 +20,9 @@ export default createBuilder(
       throw new Error('Cannot deploy the application without a target');
     }
 
-    const staticBuildTarget = {
+    const staticBuildTarget: BuildTarget = {
       name:
-        options.browserTarget ||
-        options.buildTarget ||
-        `${context.target.project}:build:production`
+        options.buildTarget || `${context.target.project}:build:production`
     };
 
     let prerenderBuildTarget: BuildTarget | undefined;

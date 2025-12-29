@@ -70,10 +70,13 @@
     "typescript": "~5.2.2"
   },
   "dependencies": {
-    "@angular-devkit/architect": "~0.1800.0",
-    "@angular-devkit/core": "^18.0.0",
-    "@angular-devkit/schematics": "^18.0.0",
+    "@angular-devkit/architect": ">=0.1800.0",
+    "@angular-devkit/core": ">=18.0.0",
+    "@angular-devkit/schematics": ">=18.0.0",
     "fs-extra": "^11.2.0",
     "gh-pages": "6.3.0"
+  },
+  "peerDependencies": {
+    "@angular/cli": ">=18.0.0"
   }
 }

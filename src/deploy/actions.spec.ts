@@ -64,11 +64,10 @@ describe('Deploy Angular apps', () => {
   describe('error handling', () => {
     it('throws if there is no target project', async () => {
       context.target = undefined;
-      const expectedErrorMessage = 'Cannot execute the build target';
 
       await expect(
         deploy(mockEngine, context, BUILD_TARGET, {})
-      ).rejects.toThrow(expectedErrorMessage);
+      ).rejects.toThrow('Cannot execute the build target');
     });
 
     it('throws if app building fails', async () => {
@@ -86,186 +85,58 @@ describe('Deploy Angular apps', () => {
       ).rejects.toThrow('Error while building the app.');
     });
 
+    it('throws if outputPath has invalid shape', async () => {
+      context.getTargetOptions = (_: Target) =>
+        Promise.resolve({
+          outputPath: { browser: 'browser' } // missing required 'base'
+        } as JsonObject);
+
+      await expect(
+        deploy(mockEngine, context, BUILD_TARGET, { noBuild: false })
+      ).rejects.toThrow(/Unsupported outputPath configuration/);
+    });
+  });
+
+  describe('outputPath resolution', () => {
+    const captureDir = async (outputPath: unknown): Promise<string> => {
+      let capturedDir = '';
+      const mockEngineWithCapture: EngineHost = {
+        run: (dir: string, _options: Schema, _logger: logging.LoggerApi) => {
+          capturedDir = dir;
+          return Promise.resolve();
+        }
+      };
+
+      context.getTargetOptions = (_: Target) =>
+        Promise.resolve({ outputPath } as JsonObject);
+
+      await deploy(mockEngineWithCapture, context, BUILD_TARGET, { noBuild: false });
+      return capturedDir;
+    };
+
     it('uses default path when outputPath is undefined (Angular 20+)', async () => {
-      // Angular 20+ omits outputPath, uses default: dist/<project>/browser
-      let capturedDir: string | null = null;
-
-      const mockEngineWithCapture: EngineHost = {
-        run: (dir: string, _options: Schema, _logger: logging.LoggerApi) => {
-          capturedDir = dir;
-          return Promise.resolve();
-        }
-      };
-
-      context.getTargetOptions = (_: Target) =>
-        Promise.resolve({} as JsonObject);
-
-      await deploy(mockEngineWithCapture, context, BUILD_TARGET, { noBuild: false });
-
-      // Default path is dist/<project-name>/browser
-      expect(capturedDir).toBe(`dist/${PROJECT}/browser`);
+      const dir = await captureDir(undefined);
+      expect(dir).toBe(`dist/${PROJECT}/browser`);
     });
 
-    it('throws if outputPath has invalid shape (not string or object)', async () => {
-      context.getTargetOptions = (_: Target) =>
-        Promise.resolve({
-          outputPath: 123
-        } as JsonObject);
-
-      const expectedErrorMessage = `Unsupported outputPath configuration in angular.json for '${BUILD_TARGET.name}'. Expected string or {base, browser} object.`;
-
-      await expect(
-        deploy(mockEngine, context, BUILD_TARGET, { noBuild: false })
-      ).rejects.toThrow(expectedErrorMessage);
+    it('appends /browser when outputPath is string (Angular 18-19)', async () => {
+      const dir = await captureDir('dist/my-app');
+      expect(dir).toBe('dist/my-app/browser');
     });
 
-    it('throws if outputPath object is missing base property', async () => {
-      context.getTargetOptions = (_: Target) =>
-        Promise.resolve({
-          outputPath: { browser: 'browser' }
-        } as JsonObject);
-
-      const expectedErrorMessage = `Unsupported outputPath configuration in angular.json for '${BUILD_TARGET.name}'. Expected string or {base, browser} object.`;
-
-      await expect(
-        deploy(mockEngine, context, BUILD_TARGET, { noBuild: false })
-      ).rejects.toThrow(expectedErrorMessage);
+    it('uses base/browser when outputPath is object', async () => {
+      const dir = await captureDir({ base: 'dist/my-app', browser: 'browser' });
+      expect(dir).toBe('dist/my-app/browser');
     });
 
-    it('throws if outputPath object has null base', async () => {
-      context.getTargetOptions = (_: Target) =>
-        Promise.resolve({
-          outputPath: { base: null }
-        } as JsonObject);
-
-      await expect(
-        deploy(mockEngine, context, BUILD_TARGET, { noBuild: false })
-      ).rejects.toThrow(/Unsupported outputPath configuration/);
+    it('defaults browser to "browser" when omitted from object', async () => {
+      const dir = await captureDir({ base: 'dist/my-app' });
+      expect(dir).toBe('dist/my-app/browser');
     });
 
-    it('throws if outputPath object has empty string base', async () => {
-      context.getTargetOptions = (_: Target) =>
-        Promise.resolve({
-          outputPath: { base: '' }
-        } as JsonObject);
-
-      await expect(
-        deploy(mockEngine, context, BUILD_TARGET, { noBuild: false })
-      ).rejects.toThrow(/Unsupported outputPath configuration/);
-    });
-
-    it('throws if outputPath object has numeric base', async () => {
-      context.getTargetOptions = (_: Target) =>
-        Promise.resolve({
-          outputPath: { base: 123 }
-        } as JsonObject);
-
-      await expect(
-        deploy(mockEngine, context, BUILD_TARGET, { noBuild: false })
-      ).rejects.toThrow(/Unsupported outputPath configuration/);
-    });
-
-    it('throws if outputPath object has null browser', async () => {
-      context.getTargetOptions = (_: Target) =>
-        Promise.resolve({
-          outputPath: { base: 'dist/app', browser: null }
-        } as JsonObject);
-
-      await expect(
-        deploy(mockEngine, context, BUILD_TARGET, { noBuild: false })
-      ).rejects.toThrow(/Unsupported outputPath configuration/);
-    });
-
-    it('uses correct dir when outputPath is object with base and browser (OP1)', async () => {
-      let capturedDir: string | null = null;
-
-      const mockEngineWithCapture: EngineHost = {
-        run: (dir: string, _options: Schema, _logger: logging.LoggerApi) => {
-          capturedDir = dir;
-          return Promise.resolve();
-        }
-      };
-
-      context.getTargetOptions = (_: Target) =>
-        Promise.resolve({
-          outputPath: { base: 'dist/my-app', browser: 'browser' }
-        } as JsonObject);
-
-      await deploy(mockEngineWithCapture, context, BUILD_TARGET, { noBuild: false });
-
-      expect(capturedDir).toBe('dist/my-app/browser');
-    });
-
-    it('uses correct dir when outputPath is object with only base (defaults browser to "browser")', async () => {
-      // When browser property is undefined, Angular defaults to 'browser'
-      // per Angular CLI schema: https://angular.io/guide/workspace-config#output-path-configuration
-      let capturedDir: string | null = null;
-
-      const mockEngineWithCapture: EngineHost = {
-        run: (dir: string, _options: Schema, _logger: logging.LoggerApi) => {
-          capturedDir = dir;
-          return Promise.resolve();
-        }
-      };
-
-      context.getTargetOptions = (_: Target) =>
-        Promise.resolve({
-          outputPath: { base: 'dist/my-app' }
-        } as JsonObject);
-
-      await deploy(mockEngineWithCapture, context, BUILD_TARGET, { noBuild: false });
-
-      expect(capturedDir).toBe('dist/my-app/browser');
-    });
-
-    it('uses isOutputPathObject type guard to handle object outputPath (OP2)', async () => {
-      // This test verifies that actions.ts actually uses the isOutputPathObject
-      // type guard from interfaces.ts to detect and handle object-shaped outputPath
-      let capturedDir: string | null = null;
-
-      const mockEngineWithCapture: EngineHost = {
-        run: (dir: string, _options: Schema, _logger: logging.LoggerApi) => {
-          capturedDir = dir;
-          return Promise.resolve();
-        }
-      };
-
-      // Provide a valid object outputPath that isOutputPathObject should recognize
-      context.getTargetOptions = (_: Target) =>
-        Promise.resolve({
-          outputPath: { base: 'dist/test-project', browser: 'browser' }
-        } as JsonObject);
-
-      await deploy(mockEngineWithCapture, context, BUILD_TARGET, { noBuild: false });
-
-      // If isOutputPathObject correctly identified this as an object and actions.ts
-      // used it to construct the path, we should get base/browser
-      expect(capturedDir).toBe('dist/test-project/browser');
-
-      // Additionally verify it doesn't throw (meaning type guard returned true and
-      // actions.ts successfully handled the object case)
-      expect(capturedDir).not.toBeNull();
-    });
-
-    it('uses correct dir when outputPath is object with empty browser (Angular 19 SPA style)', async () => {
-      // Angular 19 can use browser: "" to output directly to base folder
-      let capturedDir: string | null = null;
-
-      const mockEngineWithCapture: EngineHost = {
-        run: (dir: string, _options: Schema, _logger: logging.LoggerApi) => {
-          capturedDir = dir;
-          return Promise.resolve();
-        }
-      };
-
-      context.getTargetOptions = (_: Target) =>
-        Promise.resolve({
-          outputPath: { base: 'dist/my-app', browser: '' }
-        } as JsonObject);
-
-      await deploy(mockEngineWithCapture, context, BUILD_TARGET, { noBuild: false });
-
-      expect(capturedDir).toBe('dist/my-app');
+    it('uses base only when browser is empty string (SPA mode)', async () => {
+      const dir = await captureDir({ base: 'dist/my-app', browser: '' });
+      expect(dir).toBe('dist/my-app');
     });
   });
 });

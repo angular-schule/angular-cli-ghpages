@@ -11,10 +11,31 @@ export interface AngularOutputPathObject {
 export type AngularOutputPath = string | AngularOutputPathObject;
 
 /**
- * Type guard to check if outputPath is an object with base/browser properties
+ * Type guard to check if outputPath is a valid object with base/browser properties.
+ *
+ * Validates:
+ * - value is an object (not null, not array)
+ * - base property exists and is a non-empty string
+ * - browser property, if present, is a string (can be empty for Angular 19+ SPA mode)
  */
 export function isOutputPathObject(value: unknown): value is AngularOutputPathObject {
-  return !!value && typeof value === 'object' && 'base' in value;
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    return false;
+  }
+
+  const obj = value as Record<string, unknown>;
+
+  // base must be a non-empty string
+  if (typeof obj.base !== 'string' || obj.base === '') {
+    return false;
+  }
+
+  // browser, if present, must be a string (empty string is valid for SPA mode)
+  if ('browser' in obj && typeof obj.browser !== 'string') {
+    return false;
+  }
+
+  return true;
 }
 
 /**

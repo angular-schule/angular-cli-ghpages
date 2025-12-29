@@ -132,6 +132,50 @@ describe('Deploy Angular apps', () => {
       ).rejects.toThrow(expectedErrorMessage);
     });
 
+    it('throws if outputPath object has null base', async () => {
+      context.getTargetOptions = (_: Target) =>
+        Promise.resolve({
+          outputPath: { base: null }
+        } as JsonObject);
+
+      await expect(
+        deploy(mockEngine, context, BUILD_TARGET, { noBuild: false })
+      ).rejects.toThrow(/Unsupported outputPath configuration/);
+    });
+
+    it('throws if outputPath object has empty string base', async () => {
+      context.getTargetOptions = (_: Target) =>
+        Promise.resolve({
+          outputPath: { base: '' }
+        } as JsonObject);
+
+      await expect(
+        deploy(mockEngine, context, BUILD_TARGET, { noBuild: false })
+      ).rejects.toThrow(/Unsupported outputPath configuration/);
+    });
+
+    it('throws if outputPath object has numeric base', async () => {
+      context.getTargetOptions = (_: Target) =>
+        Promise.resolve({
+          outputPath: { base: 123 }
+        } as JsonObject);
+
+      await expect(
+        deploy(mockEngine, context, BUILD_TARGET, { noBuild: false })
+      ).rejects.toThrow(/Unsupported outputPath configuration/);
+    });
+
+    it('throws if outputPath object has null browser', async () => {
+      context.getTargetOptions = (_: Target) =>
+        Promise.resolve({
+          outputPath: { base: 'dist/app', browser: null }
+        } as JsonObject);
+
+      await expect(
+        deploy(mockEngine, context, BUILD_TARGET, { noBuild: false })
+      ).rejects.toThrow(/Unsupported outputPath configuration/);
+    });
+
     it('uses correct dir when outputPath is object with base and browser (OP1)', async () => {
       let capturedDir: string | null = null;
 

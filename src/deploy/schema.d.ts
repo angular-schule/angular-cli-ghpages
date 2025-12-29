@@ -18,11 +18,6 @@ export interface Schema {
    */
   buildTarget?: string;
   /**
-   * @deprecated
-   * DEPRECATED: Use buildTarget instead. Legacy alias kept for backwards compatibility only.
-   */
-  browserTarget?: string;
-  /**
    * Architect target for prerendering/SSG. Takes precedence over buildTarget when specified. Requires a prerender target configured in angular.json.
    */
   prerenderTarget?: string;

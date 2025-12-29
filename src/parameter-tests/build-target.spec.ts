@@ -9,7 +9,6 @@ import { Schema } from '../deploy/schema';
  *
  * Tests for Angular Builder-specific target parameters:
  * - buildTarget: Standard build target
- * - browserTarget: Legacy/alternative build target
  * - prerenderTarget: SSG/prerender build target
  * - noBuild: Skip build process
  *
@@ -109,65 +108,6 @@ describe('Build Target Resolution', () => {
     });
   });
 
-  describe('browserTarget parameter (legacy)', () => {
-    it('should use browserTarget when specified', async () => {
-      const browserTarget = `${PROJECT}:build:staging`;
-      const expectedBuildTarget: BuildTarget = { name: browserTarget };
-      const options: Schema = { browserTarget, noBuild: false };
-
-      await deploy(mockEngine, context, expectedBuildTarget, options);
-
-      expect(scheduleTargetSpy).toHaveBeenCalledTimes(1);
-      expect(scheduleTargetSpy).toHaveBeenCalledWith(
-        {
-          project: PROJECT,
-          target: 'build',
-          configuration: 'staging'
-        },
-        {}
-      );
-    });
-
-    it('should parse browserTarget with project:target:configuration format', async () => {
-      const browserTarget = 'legacy-app:build:development';
-      const expectedBuildTarget: BuildTarget = { name: browserTarget };
-      const options: Schema = { browserTarget, noBuild: false };
-
-      await deploy(mockEngine, context, expectedBuildTarget, options);
-
-      expect(scheduleTargetSpy).toHaveBeenCalledWith(
-        {
-          project: 'legacy-app',
-          target: 'build',
-          configuration: 'development'
-        },
-        {}
-      );
-    });
-  });
-
-  describe('buildTarget vs browserTarget precedence', () => {
-    it('should prefer browserTarget over buildTarget when both specified', async () => {
-      // Note: In builder.ts line 25, browserTarget comes BEFORE buildTarget in the OR chain
-      const browserTarget = `${PROJECT}:build:staging`;
-      const buildTarget = `${PROJECT}:build:production`;
-      const expectedBuildTarget: BuildTarget = { name: browserTarget };
-      const options: Schema = { browserTarget, buildTarget, noBuild: false };
-
-      await deploy(mockEngine, context, expectedBuildTarget, options);
-
-      // Should use browserTarget (comes first in OR chain)
-      expect(scheduleTargetSpy).toHaveBeenCalledWith(
-        {
-          project: PROJECT,
-          target: 'build',
-          configuration: 'staging'
-        },
-        {}
-      );
-    });
-  });
-
   describe('prerenderTarget parameter', () => {
     it('should use prerenderTarget for SSG builds', async () => {
       const prerenderTarget = `${PROJECT}:prerender:production`;
@@ -224,45 +164,6 @@ describe('Build Target Resolution', () => {
       );
     });
 
-    it('should prefer prerenderTarget over browserTarget when both specified', async () => {
-      const prerenderTarget = `${PROJECT}:prerender:production`;
-      const browserTarget = `${PROJECT}:build:staging`;
-      const expectedPrerenderTarget: BuildTarget = { name: prerenderTarget };
-      const options: Schema = { prerenderTarget, browserTarget, noBuild: false };
-
-      await deploy(mockEngine, context, expectedPrerenderTarget, options);
-
-      // Should use prerenderTarget (highest precedence)
-      expect(scheduleTargetSpy).toHaveBeenCalledWith(
-        {
-          project: PROJECT,
-          target: 'prerender',
-          configuration: 'production'
-        },
-        {}
-      );
-    });
-
-    it('should handle all three target types specified simultaneously', async () => {
-      // Precedence: prerenderTarget > browserTarget > buildTarget > default
-      const prerenderTarget = `${PROJECT}:prerender:production`;
-      const browserTarget = `${PROJECT}:build:staging`;
-      const buildTarget = `${PROJECT}:build:development`;
-      const expectedPrerenderTarget: BuildTarget = { name: prerenderTarget };
-      const options: Schema = { prerenderTarget, browserTarget, buildTarget, noBuild: false };
-
-      await deploy(mockEngine, context, expectedPrerenderTarget, options);
-
-      // Should use prerenderTarget (highest priority)
-      expect(scheduleTargetSpy).toHaveBeenCalledWith(
-        {
-          project: PROJECT,
-          target: 'prerender',
-          configuration: 'production'
-        },
-        {}
-      );
-    });
   });
 
   describe('noBuild parameter', () => {

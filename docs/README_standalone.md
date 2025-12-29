@@ -56,7 +56,6 @@ npx angular-cli-ghpages --dir=www
 The following parameters are **only available** when using `ng deploy` (Angular Builder integration) and are **not supported** by the standalone CLI:
 
 - `--build-target` / `buildTarget`
-- `--browser-target` / `browserTarget`
 - `--prerender-target` / `prerenderTarget`
 - `--no-build` / `noBuild`
 - `--base-href` / `baseHref` (only as a build option; use `ng build --base-href` instead)

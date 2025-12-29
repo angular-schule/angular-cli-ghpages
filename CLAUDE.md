@@ -127,21 +127,13 @@ actions.ts (deploy function)
 
 ### Build Target Resolution
 
-**Internal Implementation Precedence (what the code actually does):**
+**Precedence:**
 1. `prerenderTarget` - For SSG/prerendering builds (if specified, overrides all others)
-2. `browserTarget` - **DEPRECATED** legacy option (if specified, takes precedence over buildTarget for backward compatibility)
-3. `buildTarget` - Standard build target (if specified)
-4. Default - `${project}:build:production`
-
-**User-Facing Precedence (what we tell users in README.md):**
-1. `prerenderTarget` (if specified) — highest priority
-2. `buildTarget`
-3. Default: `${project}:build:production` if none specified
-
-**Note:** `browserTarget` is deliberately HIDDEN from user-facing documentation per deprecation policy, even though it still works internally for backward compatibility.
+2. `buildTarget` - Standard build target (if specified)
+3. Default - `${project}:build:production`
 
 **Implementation details:**
-- Static build target: `browserTarget || buildTarget || default` (see `src/deploy/builder.ts`)
+- Static build target: `buildTarget || default` (see `src/deploy/builder.ts`)
 - Final target: `prerenderTarget || staticBuildTarget` (see `src/deploy/builder.ts`)
 
 Output directory resolution:
@@ -191,20 +183,10 @@ The engine appends CI metadata to commit messages when running on:
 ## Deprecated Options (Maintainers Only)
 
 **Current deprecated options:**
-- `browserTarget` - Replaced by `buildTarget`, still works for compatibility
 - `noSilent` - Ignored with warning
 
-**Policy:** DO NOT promote deprecated options in user-facing docs (README.md). Hide `browserTarget` from precedence explanations and configuration examples.
-
-**Schema deprecation format:**
-```json
-"browserTarget": {
-  "type": "string",
-  "deprecated": true,
-  "x-deprecated": "Use buildTarget instead. Kept for backwards compatibility.",
-  "description": "DEPRECATED: Use buildTarget instead. Legacy alias kept for backwards compatibility only."
-}
-```
+**Removed options (v2.1+):**
+- `browserTarget` - Removed entirely, use `buildTarget` instead
 
 ## Testing
 

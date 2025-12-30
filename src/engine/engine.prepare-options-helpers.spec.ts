@@ -38,6 +38,8 @@ describe('prepareOptions helpers - intensive tests', () => {
     delete process.env.GITHUB_ACTIONS;
     delete process.env.GITHUB_REPOSITORY;
     delete process.env.GITHUB_SHA;
+    delete process.env.GITHUB_RUN_ID;
+    delete process.env.GITHUB_SERVER_URL;
     delete process.env.GH_TOKEN;
     delete process.env.PERSONAL_TOKEN;
     delete process.env.GITHUB_TOKEN;
@@ -358,6 +360,7 @@ describe('prepareOptions helpers - intensive tests', () => {
       process.env.GITHUB_ACTIONS = 'true';
       process.env.GITHUB_REPOSITORY = 'angular-schule/angular-cli-ghpages';
       process.env.GITHUB_SHA = '1234567890abcdef';
+      process.env.GITHUB_RUN_ID = '9876543210';
 
       const options: helpers.PreparedOptions = {
         message: baseMessage,
@@ -370,7 +373,8 @@ describe('prepareOptions helpers - intensive tests', () => {
 
       const expectedMessage =
         'Deploy to gh-pages\n\n' +
-        'Triggered by commit: https://github.com/angular-schule/angular-cli-ghpages/commit/1234567890abcdef';
+        'Triggered by commit: https://github.com/angular-schule/angular-cli-ghpages/commit/1234567890abcdef\n' +
+        'GitHub Actions build: https://github.com/angular-schule/angular-cli-ghpages/actions/runs/9876543210';
 
       expect(options.message).toBe(expectedMessage);
     });

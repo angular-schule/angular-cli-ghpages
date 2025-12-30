@@ -42,6 +42,8 @@ describe('Parameter Passthrough Tests', () => {
     delete process.env.GITHUB_ACTIONS;
     delete process.env.GITHUB_REPOSITORY;
     delete process.env.GITHUB_SHA;
+    delete process.env.GITHUB_RUN_ID;
+    delete process.env.GITHUB_SERVER_URL;
     delete process.env.GH_TOKEN;
     delete process.env.PERSONAL_TOKEN;
     delete process.env.GITHUB_TOKEN;
@@ -227,14 +229,17 @@ describe('Parameter Passthrough Tests', () => {
       const baseMessage = 'Deploy';
       const repository = 'owner/repo';
       const sha = 'ghi789';
+      const runId = '12345';
       const expectedMessage =
         'Deploy\n\n' +
-        'Triggered by commit: https://github.com/owner/repo/commit/ghi789';
+        'Triggered by commit: https://github.com/owner/repo/commit/ghi789\n' +
+        'GitHub Actions build: https://github.com/owner/repo/actions/runs/12345';
 
       const options = { message: baseMessage };
       process.env.GITHUB_ACTIONS = 'true';
       process.env.GITHUB_REPOSITORY = repository;
       process.env.GITHUB_SHA = sha;
+      process.env.GITHUB_RUN_ID = runId;
 
       const finalOptions = await engine.prepareOptions(options, logger);
 

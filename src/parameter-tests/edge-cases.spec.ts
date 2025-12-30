@@ -43,6 +43,8 @@ describe('Edge Case Tests', () => {
     delete process.env.GITHUB_ACTIONS;
     delete process.env.GITHUB_REPOSITORY;
     delete process.env.GITHUB_SHA;
+    delete process.env.GITHUB_RUN_ID;
+    delete process.env.GITHUB_SERVER_URL;
     delete process.env.GH_TOKEN;
     delete process.env.PERSONAL_TOKEN;
     delete process.env.GITHUB_TOKEN;
@@ -352,7 +354,8 @@ describe('Edge Case Tests', () => {
       const message = 'Deploy';
       const expectedMessage =
         'Deploy\n\n' +
-        'Triggered by commit: https://github.com//commit/';
+        'Triggered by commit: https://github.com//commit/\n' +
+        'GitHub Actions build: https://github.com//actions/runs/';
 
       const options = { message };
       process.env.GITHUB_ACTIONS = 'true';

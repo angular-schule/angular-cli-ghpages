@@ -218,6 +218,31 @@ If is set to `true`, it will only add, and never remove existing files.
 By default, existing files in the target branch are removed before adding the ones.
 [More information](https://www.npmjs.com/package/gh-pages#optionsadd).
 
+#### --no-notfound <a name="no-notfound"></a>
+
+- **optional**
+- Default: `notfound` is `true` (a `404.html` file is created)
+- Example:
+  - `npx angular-cli-ghpages` -- A `404.html` file is created (copy of `index.html`).
+  - `npx angular-cli-ghpages --no-notfound` -- No `404.html` file is created.
+
+By default, a `404.html` file is created as a copy of `index.html`.
+This is required for GitHub Pages to support SPA routing (though it returns HTTP 404 status).
+
+**Important for Cloudflare Pages:** Use `--no-notfound` when deploying to Cloudflare Pages.
+The presence of a `404.html` file disables Cloudflare's native SPA mode.
+
+#### --no-nojekyll <a name="no-nojekyll"></a>
+
+- **optional**
+- Default: `nojekyll` is `true` (a `.nojekyll` file is created)
+- Example:
+  - `npx angular-cli-ghpages` -- A `.nojekyll` file is created.
+  - `npx angular-cli-ghpages --no-nojekyll` -- No `.nojekyll` file is created.
+
+By default, a `.nojekyll` file is created to bypass Jekyll processing on GitHub Pages.
+This prevents GitHub from ignoring files that start with an underscore (`_`).
+
 ## FAQ
 
 Before posting any issue, [please read the FAQ first](https://github.com/angular-schule/angular-cli-ghpages/wiki/FAQ).

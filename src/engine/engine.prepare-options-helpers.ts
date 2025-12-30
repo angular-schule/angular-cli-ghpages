@@ -167,7 +167,14 @@ export function appendCIMetadata(options: PreparedOptions): void {
       'Triggered by commit: https://github.com/' +
       (process.env.GITHUB_REPOSITORY || '') +
       '/commit/' +
-      (process.env.GITHUB_SHA || '');
+      (process.env.GITHUB_SHA || '') +
+      '\n' +
+      'GitHub Actions build: ' +
+      (process.env.GITHUB_SERVER_URL || 'https://github.com') +
+      '/' +
+      (process.env.GITHUB_REPOSITORY || '') +
+      '/actions/runs/' +
+      (process.env.GITHUB_RUN_ID || '');
   }
 }
 

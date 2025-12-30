@@ -185,8 +185,8 @@ The engine appends CI metadata to commit messages when running on:
 **Current deprecated options:**
 - `noSilent` - Ignored with warning
 
-**Removed options (v2.1+):**
-- `browserTarget` - Removed entirely, use `buildTarget` instead
+**Rejected options (v2.1+):**
+- `browserTarget` - Actively rejected with clear error message ("Use buildTarget instead"). Not silently ignored - users get explicit feedback.
 
 ## Testing
 

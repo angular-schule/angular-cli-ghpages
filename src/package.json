@@ -4,6 +4,10 @@
   "description": "Deploy your Angular app to GitHub Pages or Cloudflare Pages directly from the Angular CLI (ng deploy)",
   "main": "index.js",
   "types": "index.d.ts",
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=9.0.0"
+  },
   "bin": {
     "angular-cli-ghpages": "angular-cli-ghpages",
     "ngh": "angular-cli-ghpages"

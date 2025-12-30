@@ -9,7 +9,10 @@
       "WebSearch",
       "Bash(gh pr view:*)",
       "Bash(gh pr diff:*)",
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "Bash(gh run watch:*)",
+      "Bash(node -e:*)",
+      "Bash(gh run list:*)"
     ],
     "deny": [],
     "ask": []

@@ -34,7 +34,7 @@ describe('Edge Case Tests', () => {
     delete process.env.TRAVIS_COMMIT_MESSAGE;
     delete process.env.TRAVIS_REPO_SLUG;
     delete process.env.TRAVIS_COMMIT;
-    delete process.env.TRAVIS_BUILD_ID;
+    delete process.env.TRAVIS_BUILD_WEB_URL;
     delete process.env.CIRCLECI;
     delete process.env.CIRCLE_PROJECT_USERNAME;
     delete process.env.CIRCLE_PROJECT_REPONAME;
@@ -319,11 +319,11 @@ describe('Edge Case Tests', () => {
       const expectedMessage =
         'Deploy --  \n\n' +
         'Triggered by commit: https://github.com//commit/\n' +
-        'Travis CI build: https://travis-ci.org//builds/';
+        'Travis CI build: ';
 
       const options = { message };
       process.env.TRAVIS = 'true';
-      // Missing other Travis env vars
+      // Missing other Travis env vars (including TRAVIS_BUILD_WEB_URL)
 
       const finalOptions = await engine.prepareOptions(options, logger);
 

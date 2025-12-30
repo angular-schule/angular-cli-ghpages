@@ -29,7 +29,7 @@ describe('prepareOptions helpers - intensive tests', () => {
     delete process.env.TRAVIS_COMMIT;
     delete process.env.TRAVIS_COMMIT_MESSAGE;
     delete process.env.TRAVIS_REPO_SLUG;
-    delete process.env.TRAVIS_BUILD_ID;
+    delete process.env.TRAVIS_BUILD_WEB_URL;
     delete process.env.CIRCLECI;
     delete process.env.CIRCLE_PROJECT_USERNAME;
     delete process.env.CIRCLE_PROJECT_REPONAME;
@@ -311,7 +311,7 @@ describe('prepareOptions helpers - intensive tests', () => {
       process.env.TRAVIS_COMMIT_MESSAGE = 'Fix bug in component';
       process.env.TRAVIS_REPO_SLUG = 'user/repo';
       process.env.TRAVIS_COMMIT = 'abc123def456';
-      process.env.TRAVIS_BUILD_ID = '987654321';
+      process.env.TRAVIS_BUILD_WEB_URL = 'https://app.travis-ci.com/user/repo/builds/987654321';
 
       const options: helpers.PreparedOptions = {
         message: baseMessage,
@@ -325,7 +325,7 @@ describe('prepareOptions helpers - intensive tests', () => {
       const expectedMessage =
         'Deploy to gh-pages -- Fix bug in component \n\n' +
         'Triggered by commit: https://github.com/user/repo/commit/abc123def456\n' +
-        'Travis CI build: https://travis-ci.org/user/repo/builds/987654321';
+        'Travis CI build: https://app.travis-ci.com/user/repo/builds/987654321';
 
       expect(options.message).toBe(expectedMessage);
     });
@@ -394,7 +394,7 @@ describe('prepareOptions helpers - intensive tests', () => {
       process.env.TRAVIS_COMMIT_MESSAGE = 'Update docs';
       process.env.TRAVIS_REPO_SLUG = 'org/repo';
       process.env.TRAVIS_COMMIT = 'abc123';
-      process.env.TRAVIS_BUILD_ID = '111';
+      process.env.TRAVIS_BUILD_WEB_URL = 'https://app.travis-ci.com/org/repo/builds/111';
 
       process.env.CIRCLECI = 'true';
       process.env.CIRCLE_PROJECT_USERNAME = 'org';

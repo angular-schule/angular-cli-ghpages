@@ -16,7 +16,7 @@ import { BuildTarget } from '../interfaces';
 // https://github.com/angular/angularfire/blob/master/src/schematics/deploy/builder.ts
 export default createBuilder(
   async (options: Schema, context: BuilderContext): Promise<BuilderOutput> => {
-    // browserTarget was removed in Angular 19, we require Angular 18+
+    // browserTarget is not supported - use buildTarget instead
     if ((options as Record<string, unknown>).browserTarget) {
       context.logger.error('❌ The "browserTarget" option is not supported.');
       context.logger.error('   Use "buildTarget" instead.');

@@ -91,9 +91,7 @@ If you need automatic build integration, use `ng deploy` instead of the standalo
 
 ## Extra
 
-For your convenience, the command will recognize the [environment variable](https://docs.travis-ci.com/user/environment-variables/#Defining-Variables-in-Repository-Settings) `GH_TOKEN` and will replace this pattern in the `--repo` string.
-
-In example, the following command runs [on our Travis-CI](https://travis-ci.org/angular-buch/book-monkey2):
+For your convenience, the command will recognize the environment variable `GH_TOKEN` and will replace this pattern in the `--repo` string.
 
 ```bash
 npx angular-cli-ghpages --repo=https://GH_TOKEN@github.com/<username>/<repositoryname>.git --name="Displayed Username" --email=mail@example.org

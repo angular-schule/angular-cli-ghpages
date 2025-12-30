@@ -143,10 +143,8 @@ export function appendCIMetadata(options: PreparedOptions): void {
       '/commit/' +
       (process.env.TRAVIS_COMMIT || '') +
       '\n' +
-      'Travis CI build: https://travis-ci.org/' +
-      (process.env.TRAVIS_REPO_SLUG || '') +
-      '/builds/' +
-      (process.env.TRAVIS_BUILD_ID || '');
+      'Travis CI build: ' +
+      (process.env.TRAVIS_BUILD_WEB_URL || '');
   }
 
   if (process.env.CIRCLECI) {

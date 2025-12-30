@@ -96,7 +96,7 @@ If this is not the folder that you want to serve, you should explicitly specify 
 ng deploy --dir=dist/test/browser
 ```
 
-This new build logic is a breaking change, therefore `angular-cli-ghpages` v2 only supports Angular 17 and higher.
+This new build logic is a breaking change, therefore `angular-cli-ghpages` v2 requires Angular 18 or higher.
 For previous versions of Angular, use `angular-cli-ghpages` v1.x.
 
 ## ⚠️ Prerequisites <a name="prerequisites"></a>
@@ -104,7 +104,7 @@ For previous versions of Angular, use `angular-cli-ghpages` v1.x.
 This command has the following prerequisites:
 
 - Git 1.9 or higher (execute `git --version` to check your version)
-- Angular project created via [Angular CLI](https://github.com/angular/angular-cli) v17 or greater
+- Angular project created via [Angular CLI](https://github.com/angular/angular-cli) v18 or greater
 - older Angular projects can still use a v1.x version or use the standalone program. See the documentation at [README_standalone](https://github.com/angular-schule/angular-cli-ghpages/blob/master/docs/README_standalone.md).
 
 ## 🚀 Quick Start (local development) <a name="quickstart-local"></a>

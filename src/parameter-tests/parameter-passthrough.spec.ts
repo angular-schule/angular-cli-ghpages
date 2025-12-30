@@ -33,7 +33,7 @@ describe('Parameter Passthrough Tests', () => {
     delete process.env.TRAVIS_COMMIT_MESSAGE;
     delete process.env.TRAVIS_REPO_SLUG;
     delete process.env.TRAVIS_COMMIT;
-    delete process.env.TRAVIS_BUILD_ID;
+    delete process.env.TRAVIS_BUILD_WEB_URL;
     delete process.env.CIRCLECI;
     delete process.env.CIRCLE_PROJECT_USERNAME;
     delete process.env.CIRCLE_PROJECT_REPONAME;
@@ -182,18 +182,18 @@ describe('Parameter Passthrough Tests', () => {
       const commitMsg = 'Test commit';
       const repoSlug = 'test/repo';
       const commitSha = 'abc123';
-      const buildId = '456';
+      const buildWebUrl = 'https://app.travis-ci.com/test/repo/builds/456';
       const expectedMessage =
         'Deploy -- Test commit \n\n' +
         'Triggered by commit: https://github.com/test/repo/commit/abc123\n' +
-        'Travis CI build: https://travis-ci.org/test/repo/builds/456';
+        'Travis CI build: https://app.travis-ci.com/test/repo/builds/456';
 
       const options = { message: baseMessage };
       process.env.TRAVIS = 'true';
       process.env.TRAVIS_COMMIT_MESSAGE = commitMsg;
       process.env.TRAVIS_REPO_SLUG = repoSlug;
       process.env.TRAVIS_COMMIT = commitSha;
-      process.env.TRAVIS_BUILD_ID = buildId;
+      process.env.TRAVIS_BUILD_WEB_URL = buildWebUrl;
 
       const finalOptions = await engine.prepareOptions(options, logger);
 

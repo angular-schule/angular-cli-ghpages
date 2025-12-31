@@ -35,8 +35,8 @@ Follow the instructions for [checking and updating the Angular CLI version](#ang
 This builder requires the method `getTargetOptions()` from the Angular DevKit which was introduced [here](https://github.com/angular/angular-cli/pull/13825/files).
 
 **Version compatibility:**
-- **v2.x:** Supports Angular 17 and higher (current version)
-- **v1.x:** Supported Angular 9-16 (now deprecated for new projects)
+- **v2.x:** Supports Angular 18 and higher (current version)
+- **v1.x:** Supported Angular 9-17 (now deprecated for new projects)
 
 Execute the next three steps to update your test project to the latest Angular version.
 
@@ -46,7 +46,7 @@ Execute the next three steps to update your test project to the latest Angular v
    npm install -g @angular/cli
    ```
 
-2. Run `ng version`, to make sure you have installed Angular v17 or greater.
+2. Run `ng version`, to make sure you have installed Angular v18 or greater.
 
 3. Update your existing project using the command:
 
@@ -192,7 +192,7 @@ cd angular-cli-ghpages/src
 npm run build
 npm run test
 npm run publish-to-npm
-npm dist-tag add angular-cli-ghpages@0.6.0-rc.0 next
+npm dist-tag add angular-cli-ghpages@X.X.X-rc.X next
 ```
 
 ## Programmatic Usage

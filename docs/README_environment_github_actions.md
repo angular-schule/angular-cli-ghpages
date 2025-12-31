@@ -4,7 +4,7 @@ As GitHub has introduced [GitHub Actions](https://github.com/features/actions), 
 
 ## Prerequisites
 
-1. You've signed up for the GitHub Actions beta and taken a look at the documentation for the new [GitHub Actions](https://github.com/features/actions) format and/or understand the purpose of GitHub Actions.
+1. You've taken a look at the documentation for [GitHub Actions](https://github.com/features/actions) and/or understand the purpose of GitHub Actions.
 2. You've written some form of YML code before and/or have minimal knowledge of the syntax
 3. You already have a working Angular app that can be deployed to GitHub Pages
 4. You have already added **angular-cli-ghpages** in your project. If not:
@@ -76,23 +76,23 @@ More info can be found here:
 
    - It can be helpful to not have your workflows run on every push to every branch in the repo.
 
-     - For example, you can have your workflow run on push events to master and release branches:
+     - For example, you can have your workflow run on push events to main and release branches:
 
        ```yml
        on:
        push:
          branches:
-           - master
+           - main
            - release/*
        ```
 
-     - or only run on pull_request events that target the master branch:
+     - or only run on pull_request events that target the main branch:
 
        ```yml
        on:
          pull_request:
            branches:
-             - master
+             - main
        ```
 
      - or, run every day of the week from Monday - Friday at 02:00:

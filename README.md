@@ -29,6 +29,7 @@
    - [--no-nojekyll](#no-nojekyll)
    - [--cname](#cname)
    - [--add](#add)
+   - [--dir](#dir)
    - [--dry-run](#dry-run)
 7. [📁 Configuration File](#configuration-file)
 8. [🌍 Environments](#environments)
@@ -247,7 +248,7 @@ See the option [--cname](#cname) for more information!
 
 If no `buildTarget` is set, the `production` build of the default project will be chosen.
 The `buildTarget` simply points to an existing build configuration for your project, as specified in the `configurations` section of `angular.json`.
-Most projects have a default configuration and a production configuration (commonly activated by using the `--prod` flag) but it is possible to specify as many build configurations as needed.
+Most projects have a default configuration and a production configuration (commonly activated by using the `--configuration production` option) but it is possible to specify as many build configurations as needed.
 
 This is equivalent to calling the command `ng build --configuration=XXX`.
 This command has no effect if the option `--no-build` is active.
@@ -280,7 +281,7 @@ Specifies the Angular architect target to use for prerendering instead of buildT
 #### --no-build <a name="no-build"></a>
 
 - **optional**
-- Default: `false` (string)
+- Default: `false` (boolean)
 - Example:
   - `ng deploy` – Angular project is build in production mode before the deployment
   - `ng deploy --no-build` – Angular project is NOT build
@@ -327,7 +328,7 @@ Some additional text is always added to the message, if the command runs on Trav
 The name of the branch you'll be pushing to.
 The default uses GitHub's `gh-pages` branch,
 but this can be configured to push to any branch on any remote.
-You have to change this to `master` if you are pushing to a GitHub organization page (instead of a GitHub user page).
+You may need to change this to `main` (or `master` for older repositories) if you are pushing to a GitHub organization page (instead of a GitHub user page).
 
 #### --name & --email <a name="name"></a>
 
@@ -477,7 +478,7 @@ Now you can just run `ng deploy` without all the options in the command line! �
 
 ## 🌍 Environments <a name="environments"></a>
 
-We have seen `angular-cli-ghpages` running on various environments, like Travis CI, CircleCi or GitHub Actions.
+We have seen `angular-cli-ghpages` running on various environments, like Travis CI, CircleCI or GitHub Actions.
 Please share your knowledge by writing an article about how to set up the deployment.
 
 1. [GitHub Actions](https://angular.schule/blog/2020-01-everything-github)
@@ -497,7 +498,7 @@ Code released under the [MIT license](LICENSE).
 
 <img src="https://assets.angular.schule/logo-angular-schule.png" height="60">
 
-### &copy; 2017-2024 https://angular.schule
+### &copy; 2017-2026 https://angular.schule
 
 This project is made on top of [tschaub/gh-pages](https://github.com/tschaub/gh-pages).  
 Thank you very much for this great foundation!

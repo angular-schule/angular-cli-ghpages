@@ -1,0 +1,57 @@
+name: Check NPM Authentication
+
+on:
+  workflow_dispatch:
+    inputs:
+      dry_run_publish:
+        description: 'Also run npm publish --dry-run to test full publish flow'
+        required: false
+        default: false
+        type: boolean
+
+jobs:
+  check-npm-auth:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: Check NPM authentication
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          echo "🔐 Checking NPM authentication..."
+          echo "---"
+
+          if npm whoami; then
+            echo "---"
+            echo "✅ NPM authentication successful!"
+            echo "You are logged in and ready to publish."
+          else
+            echo "---"
+            echo "❌ NPM authentication failed!"
+            echo "The NPM_TOKEN secret may be invalid or revoked."
+            echo "Please generate a new token at https://www.npmjs.com/settings/tokens"
+            exit 1
+          fi
+
+      - name: Test publish (dry-run)
+        if: ${{ inputs.dry_run_publish }}
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        working-directory: src
+        run: |
+          echo "📦 Building package..."
+          npm ci
+          npm run build
+
+          echo "🧪 Testing publish (dry-run)..."
+          cd dist
+          npm publish --dry-run
+
+          echo "✅ Dry-run publish successful!"

@@ -114,7 +114,7 @@ More info can be found here:
 
 Learn everything you need to know in the following extended article.
 
-[![Banner](https://angular-schule.github.io/website-articles/blog/2020-01-everything-github/everything-github.png)](https://angular.schule/blog/2020-01-everything-github)
+[![Banner](https://angular-schule.github.io/website-articles/2020-01-everything-github/everything-github.png)](https://angular.schule/blog/2020-01-everything-github)
 
 **Everything GitHub: Continuous Integration, Deployment and Hosting for your Angular App**
 

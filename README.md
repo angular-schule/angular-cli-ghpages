@@ -200,7 +200,7 @@ ng deploy --repo=https://github.com/<username>/<repositoryname>.git --name="Your
 
 > **ℹ️ Note for GitHub Actions**
 >
-> The `GITHUB_TOKEN` (installation access token) will only trigger a release of a new website if the action runs in a private repository. In a public repo, a commit is generated, but the site does not change. See this [GitHub Community post](https://github.community/t5/GitHub-Actions/GitHub-action-not-triggering-gh-pages-upon-push/m-p/26869) for more info. If your repo is public, you must still use the `GH_TOKEN` (personal access token).
+> The `GITHUB_TOKEN` (installation access token) will only trigger a release of a new website if the action runs in a private repository. In a public repo, a commit is generated, but the site does not change. If your repo is public, you must still use the `GH_TOKEN` (personal access token).
 
 ## 📦 Deployment Options <a name="options"></a>
 

@@ -1,17 +1,17 @@
-name: Check NPM Authentication
+name: Check NPM Publishing (Trusted Publishers)
 
 on:
   workflow_dispatch:
-    inputs:
-      dry_run_publish:
-        description: 'Also run npm publish --dry-run to test full publish flow'
-        required: false
-        default: false
-        type: boolean
+
+# Required for OIDC token exchange with npm
+permissions:
+  contents: read
+  id-token: write
 
 jobs:
-  check-npm-auth:
+  test-publish:
     runs-on: ubuntu-latest
+    environment: npm-publish
 
     steps:
       - uses: actions/checkout@v4
@@ -21,37 +21,40 @@ jobs:
           node-version: 22
           registry-url: 'https://registry.npmjs.org'
 
-      - name: Check NPM authentication
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-        run: |
-          echo "🔐 Checking NPM authentication..."
-          echo "---"
-
-          if npm whoami; then
-            echo "---"
-            echo "✅ NPM authentication successful!"
-            echo "You are logged in and ready to publish."
-          else
-            echo "---"
-            echo "❌ NPM authentication failed!"
-            echo "The NPM_TOKEN secret may be invalid or revoked."
-            echo "Please generate a new token at https://www.npmjs.com/settings/tokens"
-            exit 1
-          fi
-
-      - name: Test publish (dry-run)
-        if: ${{ inputs.dry_run_publish }}
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+      - name: Build package
         working-directory: src
         run: |
           echo "📦 Building package..."
           npm ci
           npm run build
 
-          echo "🧪 Testing publish (dry-run)..."
-          cd dist
-          npm publish --dry-run
+      - name: Test publish with provenance (dry-run)
+        working-directory: src/dist
+        run: |
+          echo "🔐 Testing Trusted Publishers + Provenance (dry-run)..."
+          echo "---"
+          echo "This will:"
+          echo "  1. Request OIDC token from GitHub"
+          echo "  2. Exchange it with npm for temporary credentials"
+          echo "  3. Generate provenance attestation"
+          echo "  4. Simulate publish (without actually publishing)"
+          echo "---"
 
-          echo "✅ Dry-run publish successful!"
+          if npm publish --provenance --dry-run; then
+            echo "---"
+            echo "✅ Trusted Publishers setup is working!"
+            echo "✅ Provenance generation successful!"
+            echo "✅ Ready to publish for real."
+          else
+            echo "---"
+            echo "❌ Publish dry-run failed!"
+            echo ""
+            echo "Possible causes:"
+            echo "  1. Trusted Publisher not configured on npmjs.com"
+            echo "     → Go to: https://www.npmjs.com/package/angular-cli-ghpages/access"
+            echo "     → Add Trusted Publisher: angular-schule/angular-cli-ghpages"
+            echo "  2. Workflow filename mismatch"
+            echo "     → Ensure npmjs.com has: check-npm-auth.yml"
+            echo "  3. Repository/owner mismatch"
+            exit 1
+          fi

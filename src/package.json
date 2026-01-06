@@ -16,9 +16,7 @@
     "prebuild": "rimraf dist && json2ts deploy/schema.json > deploy/schema.d.ts",
     "build": "tsc -p tsconfig.build.json",
     "postbuild": "copyfiles builders.json collection.json ng-add-schema.json package.json angular-cli-ghpages deploy/schema.json dist && copyfiles ../README.md dist/README.md && copyfiles commander-fork/index.js dist",
-    "test": "jest",
-    "prepublishOnly": "echo \"*** MAKE SURE TO TYPE 'npm run publish-to-npm' AND NOT 'npm publish'! ***\"",
-    "publish-to-npm": "npm run build && cd dist && npm publish"
+    "test": "jest"
   },
   "schematics": "./collection.json",
   "builders": "./builders.json",

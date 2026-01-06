@@ -1,0 +1,57 @@
+name: Publish to npm
+
+on:
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        type: boolean
+        default: true
+        description: 'Dry-run (test without publishing)'
+
+# Required for OIDC token exchange with npm (Trusted Publishers)
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    environment: npm-publish
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: Build package
+        working-directory: src
+        run: |
+          npm ci
+          npm run build
+          npm test
+
+      - name: Publish to npm (dry-run)
+        if: ${{ inputs.dry_run }}
+        working-directory: src/dist
+        run: |
+          echo "🧪 DRY-RUN MODE"
+          echo "==============="
+          echo ""
+          npm publish --provenance --dry-run
+          echo ""
+          echo "✅ Dry-run successful! Package is ready to publish."
+          echo "   To publish for real, run this workflow again with dry_run unchecked."
+
+      - name: Publish to npm
+        if: ${{ !inputs.dry_run }}
+        working-directory: src/dist
+        run: |
+          echo "🚀 PUBLISHING TO NPM"
+          echo "===================="
+          echo ""
+          npm publish --provenance
+          echo ""
+          echo "✅ Published successfully with provenance!"

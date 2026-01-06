@@ -97,7 +97,7 @@ If this is not the folder that you want to serve, you should explicitly specify 
 ng deploy --dir=dist/test/browser
 ```
 
-This new build logic is a breaking change, therefore `angular-cli-ghpages` v2 requires Angular 18 or higher.
+This new build logic is a breaking change, therefore `angular-cli-ghpages` v2+ requires Angular 18 or higher.
 For previous versions of Angular, use `angular-cli-ghpages` v1.x.
 
 ## ⚠️ Prerequisites <a name="prerequisites"></a>

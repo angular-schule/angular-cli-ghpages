@@ -504,4 +504,4 @@ This project is made on top of [tschaub/gh-pages](https://github.com/tschaub/gh-
 Thank you very much for this great foundation!
 
 [npm-url]: https://www.npmjs.com/package/angular-cli-ghpages
-[npm-image]: https://badge.fury.io/js/angular-cli-ghpages.svg
+[npm-image]: https://img.shields.io/npm/v/angular-cli-ghpages.svg

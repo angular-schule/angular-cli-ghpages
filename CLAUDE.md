@@ -74,14 +74,16 @@ For debugging the standalone engine directly, use the "Launch Standalone Program
 
 ### Publishing
 
-```bash
-cd src
-npm run build
-npm run test
-npm run publish-to-npm
-```
+Publishing uses [npm Trusted Publishers](https://docs.npmjs.com/trusted-publishers) with OIDC – no tokens stored in CI!
 
-For pre-release versions:
+1. Go to **Actions** → **Publish to npm**
+2. Click **Run workflow** → select branch
+3. Leave "Dry-run" checked to test, or uncheck for real publish
+4. Wait for approval (5 min timer + required reviewer)
+
+Publishes with provenance attestation for supply chain security.
+
+For pre-release versions, after publishing:
 ```bash
 npm dist-tag add angular-cli-ghpages@X.X.X-rc.X next
 ```

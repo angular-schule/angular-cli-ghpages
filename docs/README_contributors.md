@@ -187,11 +187,17 @@ Use VSCode and debug the task `Launch Standalone Program`.
 
 ## Publish to NPM
 
-```
-cd angular-cli-ghpages/src
-npm run build
-npm run test
-npm run publish-to-npm
+Publishing uses [npm Trusted Publishers](https://docs.npmjs.com/trusted-publishers) with OIDC – no long-lived tokens needed! 🔐
+
+1. Go to **Actions** → **Publish to npm**
+2. Click **Run workflow** → select branch (usually `main`)
+3. Leave "Dry-run" checked to test, or uncheck for real publish
+4. Wait for approval (5 min timer + required reviewer)
+
+The workflow builds, tests, and publishes with [provenance attestation](https://docs.npmjs.com/generating-provenance-statements).
+
+For pre-release versions, after publishing:
+```bash
 npm dist-tag add angular-cli-ghpages@X.X.X-rc.X next
 ```
 

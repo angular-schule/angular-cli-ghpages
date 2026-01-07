@@ -89,7 +89,7 @@ If you already have an existing Angular project on GitHub, skip steps 1 and 2.
 
    Alternatively, you can install it directly via `ng add angular-cli-ghpages`. See the [installation section](#installation) for details.
 
-4. Deploy your project to GitHub Pages with all default settings. Your project will be automatically built in production mode.
+4. After the installation, the same `ng deploy` command will build and deploy your project. Your project will be automatically built in production mode.
 
    ```sh
    ng deploy --base-href=/<repositoryname>/

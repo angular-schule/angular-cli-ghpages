@@ -476,24 +476,6 @@ Now you can just run `ng deploy` without all the options in the command line! �
 > You can always use the [--dry-run](#dry-run) option to verify if your configuration is right.
 > The project will build but not deploy.
 
-## 🌍 Environments <a name="environments"></a>
-
-We have seen `angular-cli-ghpages` running on various environments, like Travis CI, CircleCI or GitHub Actions.
-Please share your knowledge by writing an article about how to set up the deployment.
-
-1. [GitHub Actions](https://angular.schule/blog/2020-01-everything-github)
-2. Travis CI
-3. CircleCI
-
-## ⁉️ FAQ <a name="faq"></a>
-
-Before posting any issue, [please read the FAQ first](https://github.com/angular-schule/angular-cli-ghpages/wiki/FAQ).
-See the contributors documentation at [README_contributors](https://github.com/angular-schule/angular-cli-ghpages/blob/master/docs/README_contributors.md) if you want to debug and test this project.
-
-## License <a name="license"></a>
-
-Code released under the [MIT license](LICENSE).
-
 <hr>
 
 <img src="https://assets.angular.schule/logo-angular-schule.png" height="60">

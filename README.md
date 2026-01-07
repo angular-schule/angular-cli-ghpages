@@ -49,14 +49,14 @@ This command has the following prerequisites:
 
 - Git 1.9 or higher (execute `git --version` to check your version)
 - Angular project created via [Angular CLI](https://github.com/angular/angular-cli) v18 or greater
-- older Angular projects can still use a v1.x version or use the standalone program. See the documentation at [README_standalone](https://github.com/angular-schule/angular-cli-ghpages/blob/master/docs/README_standalone.md).
+- Older Angular projects can still use a v1.x version or use the standalone program. See the documentation at [README_standalone](https://github.com/angular-schule/angular-cli-ghpages/blob/master/docs/README_standalone.md).
 
 ## 🚀 Quick Start <a name="quickstart"></a>
 
 `angular-cli-ghpages` compiles your app, then pushes the build output to a dedicated branch (default: `gh-pages`) – all with a single command: `ng deploy`. This branch serves as the source for your web host and works out of the box with GitHub Pages and Cloudflare Pages.
 
 This quick start assumes that you are starting from scratch.
-If you already have an existing Angular project on GitHub, skip step 1 and 2.
+If you already have an existing Angular project on GitHub, skip steps 1 and 2.
 
 1. Install the latest version of the Angular CLI globally
    and create a new Angular project.
@@ -164,7 +164,7 @@ Same as `ng build --base-href=/XXX/`
 
 ##### A) You don't want to use a custom domain
 
-If you don't want to use an own domain, then your later URL of your hosted Angular project should look like this:
+If you don't want to use your own domain, then your later URL of your hosted Angular project should look like this:
 `https://your-username.github.io/the-repositoryname`.
 In this case you have to adjust the `--base-href` accordingly:
 
@@ -228,8 +228,8 @@ Specifies the Angular architect target to use for prerendering instead of buildT
 - **optional**
 - Default: `false` (boolean)
 - Example:
-  - `ng deploy` – Angular project is build in production mode before the deployment
-  - `ng deploy --no-build` – Angular project is NOT build
+  - `ng deploy` – Angular project is built in production mode before the deployment
+  - `ng deploy --no-build` – Angular project is NOT built
 
 Skip the build process during deployment.
 This can be used when you are sure that you haven't changed anything and want to deploy with the latest artifact.
@@ -250,7 +250,7 @@ you can provide the repository URL in the `repo` option.
 
 > **ℹ️ Hint**
 >
-> Set an environment variable with the name `GH_TOKEN` / `PERSONAL_TOKEN` or `GITHUB_TOKEN` and it will be automatically added to the URL, if it uses the HTTPS shema (it must start with `https://github.com`).
+> Set an environment variable with the name `GH_TOKEN` / `PERSONAL_TOKEN` or `GITHUB_TOKEN` and it will be automatically added to the URL, if it uses the HTTPS schema (it must start with `https://github.com`).
 > Tokens are generally not supported for Git over SSH (starts with `git@github.com`).
 
 Learn more about ["personal access tokens" here](https://help.github.com/articles/creating-an-access-token-for-command-line-use/) (`GH_TOKEN`) and about the ["installation access token" here](https://help.github.com/en/actions/automating-your-workflow-with-github-actions/authenticating-with-the-github_token) (`GITHUB_TOKEN`). `PERSONAL_TOKEN` is an alias for `GH_TOKEN`.
@@ -346,8 +346,8 @@ A CNAME file will be created enabling you to use a custom domain.
 - Example:
   - `ng deploy --add=true`
 
-If is set to `true`, it will only add, and never remove existing files.
-By default, existing files in the target branch are removed before adding the ones.
+If it is set to `true`, it will only add, and never remove existing files.
+By default, existing files in the target branch are removed before adding new ones.
 [More information](https://www.npmjs.com/package/gh-pages#optionsadd).
 
 #### --dir <a name="dir"></a>
@@ -372,7 +372,7 @@ This can be very useful because it outputs what would happen without doing anyth
 
 ## 📁 Configuration File <a name="configuration-file"></a>
 
-To avoid all these command-line cmd options, you can write down your configuration in the `angular.json` file in the `options` attribute of your deploy project's architect. Just change the kebab-case to lower camel case. Commonly used options in lower camel case (see `src/deploy/schema.json` for the complete list including deprecated options):
+To avoid repeating command-line options, you can configure them in your `angular.json` file under the `options` key of your deploy configuration. Use camelCase instead of kebab-case. Available options:
 
 <!-- deprecated options (noSilent) hidden per deprecation policy -->
 - baseHref
@@ -427,9 +427,9 @@ Now you can just run `ng deploy` without all the options in the command line! �
 
 ### &copy; 2017-2026 https://angular.schule
 
-`angular-cli-ghpages` wurde für Sie entwickelt von der **Angular.Schule**!
+🇬🇧 `angular-cli-ghpages` is brought to you by the **Angular.Schule** team – two Google Developer Experts (GDE) from Germany. We get you and your team up to speed with Angular through remote trainings in English! Visit [angular.schule](https://angular.schule) to learn more.
 
-Wir machen Sie und Ihr Team fit für das Webframework Angular – in [offenen Gruppen](https://angular.schule/schulungen/online) oder [individuellen Inhouse-Schulungen](https://angular.schule/schulungen/online-teams). Von den Buchautoren und Google Developer Experts (GDE) Johannes Hoppe und Ferdinand Malcher.
+🇩🇪 `angular-cli-ghpages` wurde für Sie entwickelt von der **Angular.Schule**! Wir machen Sie und Ihr Team fit für das Webframework Angular – in [offenen Gruppen](https://angular.schule/schulungen/online) oder [individuellen Inhouse-Schulungen](https://angular.schule/schulungen/online-teams). Von den Buchautoren und Google Developer Experts (GDE) Johannes Hoppe und Ferdinand Malcher.
 
 [npm-url]: https://www.npmjs.com/package/angular-cli-ghpages
 [npm-image]: https://img.shields.io/npm/v/angular-cli-ghpages.svg

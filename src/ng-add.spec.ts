@@ -282,6 +282,25 @@ describe('ng-add', () => {
       );
     });
   });
+
+  describe('console output', () => {
+    beforeEach(() => {
+      jest.clearAllMocks();
+    });
+
+    it('should display next steps after successful installation', async () => {
+      const tree = Tree.empty();
+      tree.create('angular.json', JSON.stringify(generateAngularJson()));
+
+      await ngAdd({ project: PROJECT_NAME })(tree, mockContext);
+
+      expect(mockLogger.info).toHaveBeenCalledWith('🚀 angular-cli-ghpages is ready!');
+      expect(mockLogger.info).toHaveBeenCalledWith('Next steps:');
+      expect(mockLogger.info).toHaveBeenCalledWith('  1. Read the docs: https://github.com/angular-schule/angular-cli-ghpages');
+      expect(mockLogger.info).toHaveBeenCalledWith('  2. Deploy via: ng deploy');
+      expect(mockLogger.info).toHaveBeenCalledWith('  3. Have a nice day!');
+    });
+  });
 });
 
 function prettifyJSON(json: string) {

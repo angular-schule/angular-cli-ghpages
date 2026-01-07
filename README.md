@@ -420,7 +420,7 @@ becomes
 }
 ```
 
-Now you can just run `ng deploy` without all the options in the command line! 😄
+Now you can just run `ng deploy` without all the options in the command line!
 
 > **ℹ️ Hint**
 >

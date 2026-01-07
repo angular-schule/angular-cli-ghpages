@@ -1,5 +1,18 @@
-import { virtualFs, workspaces } from '@angular-devkit/core';
+import { workspaces } from '@angular-devkit/core';
 import { SchematicsException, Tree } from '@angular-devkit/schematics';
+import * as fs from 'fs/promises';
+
+/**
+ * Check if a path exists (replacement for fs-extra.pathExists)
+ */
+export async function pathExists(filePath: string): Promise<boolean> {
+  try {
+    await fs.access(filePath);
+    return true;
+  } catch {
+    return false;
+  }
+}
 
 export function createHost(tree: Tree): workspaces.WorkspaceHost {
   return {
@@ -8,7 +21,7 @@ export function createHost(tree: Tree): workspaces.WorkspaceHost {
       if (!data) {
         throw new SchematicsException('File not found.');
       }
-      return virtualFs.fileBufferToString(data);
+      return data.toString('utf-8');
     },
     async writeFile(path: string, data: string): Promise<void> {
       return tree.overwrite(path, data);

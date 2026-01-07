@@ -174,8 +174,9 @@ describe('engine', () => {
         publish: jest.fn()
       }));
 
-      const fse = require('fs-extra');
-      jest.spyOn(fse, 'pathExists').mockResolvedValue(false);
+      // Mock pathExists from utils to return false
+      const utils = require('../utils');
+      jest.spyOn(utils, 'pathExists').mockResolvedValue(false);
 
       const nonExistentDir = '/path/to/nonexistent/dir';
       const expectedErrorMessage = 'Dist folder does not exist. Check the dir --dir parameter or build the project first!';
@@ -184,7 +185,7 @@ describe('engine', () => {
         engine.run(nonExistentDir, { dotfiles: true, notfound: true, nojekyll: true }, logger)
       ).rejects.toThrow(expectedErrorMessage);
 
-      expect(fse.pathExists).toHaveBeenCalledWith(nonExistentDir);
+      expect(utils.pathExists).toHaveBeenCalledWith(nonExistentDir);
     });
   });
 
@@ -256,16 +257,14 @@ describe('engine', () => {
     // We now use await ghPages.publish() directly instead of callback-based approach
     const logger = new logging.NullLogger();
 
-    let fsePathExistsSpy: jest.SpyInstance;
-    let fseWriteFileSpy: jest.SpyInstance;
+    let pathExistsSpy: jest.SpyInstance;
     let ghpagesCleanSpy: jest.SpyInstance;
     let ghpagesPublishSpy: jest.SpyInstance;
 
     beforeEach(() => {
-      // Setup persistent mocks for fs-extra
-      const fse = require('fs-extra');
-      fsePathExistsSpy = jest.spyOn(fse, 'pathExists').mockResolvedValue(true);
-      fseWriteFileSpy = jest.spyOn(fse, 'writeFile').mockResolvedValue(undefined);
+      // Setup persistent mocks for utils.pathExists
+      const utils = require('../utils');
+      pathExistsSpy = jest.spyOn(utils, 'pathExists').mockResolvedValue(true);
 
       // Setup persistent mocks for gh-pages
       const ghpages = require('gh-pages');
@@ -275,8 +274,7 @@ describe('engine', () => {
 
     afterEach(() => {
       // Clean up spies
-      fsePathExistsSpy.mockRestore();
-      fseWriteFileSpy.mockRestore();
+      pathExistsSpy.mockRestore();
       ghpagesCleanSpy.mockRestore();
       ghpagesPublishSpy.mockRestore();
     });

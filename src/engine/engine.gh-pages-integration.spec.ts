@@ -14,11 +14,10 @@ import { logging } from '@angular-devkit/core';
 import * as engine from './engine';
 import { cleanupMonkeypatch } from './engine.prepare-options-helpers';
 
-// Mock fs-extra at module level to avoid conflicts with other test files
-jest.mock('fs-extra', () => ({
-  pathExists: jest.fn().mockResolvedValue(true),
-  writeFile: jest.fn().mockResolvedValue(undefined),
-  copy: jest.fn().mockResolvedValue(undefined)
+// Mock utils.pathExists at module level
+jest.mock('../utils', () => ({
+  ...jest.requireActual('../utils'),
+  pathExists: jest.fn().mockResolvedValue(true)
 }));
 
 // Mock Git class from gh-pages to avoid spawning actual git processes

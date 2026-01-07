@@ -637,8 +637,9 @@ describe('prepareOptions helpers - intensive tests', () => {
     it('should throw helpful error when not in a git repository', async () => {
       // Change to a non-git directory
       const originalCwd = process.cwd();
+      const fs = require('fs/promises');
       const tempDir = path.join(require('os').tmpdir(), 'not-a-git-repo-test-' + Date.now());
-      await require('fs-extra').ensureDir(tempDir);
+      await fs.mkdir(tempDir, { recursive: true });
 
       try {
         process.chdir(tempDir);
@@ -651,7 +652,7 @@ describe('prepareOptions helpers - intensive tests', () => {
           .toThrow('Failed to get remote.origin.url (task must either be run in a git repository with a configured origin remote or must be configured with the "repo" option).');
       } finally {
         process.chdir(originalCwd);
-        await require('fs-extra').remove(tempDir);
+        await fs.rm(tempDir, { recursive: true, force: true });
       }
     });
   });

@@ -6,6 +6,19 @@ const PROJECT_NAME = 'THEPROJECT';
 const PROJECT_ROOT = 'PROJECTROOT';
 const OTHER_PROJECT_NAME = 'OTHERPROJECT';
 
+// Mock context with logger - only the methods we actually use
+const mockLogger = {
+  info: jest.fn(),
+  warn: jest.fn(),
+  error: jest.fn(),
+  debug: jest.fn(),
+  fatal: jest.fn(),
+  log: jest.fn(),
+  createChild: jest.fn()
+};
+
+const mockContext = { logger: mockLogger } as unknown as SchematicContext;
+
 describe('ng-add', () => {
   describe('generating files', () => {
     let tree: Tree;
@@ -18,7 +31,7 @@ describe('ng-add', () => {
     it('generates new files if starting from scratch', async () => {
       const result = await ngAdd({
         project: PROJECT_NAME
-      })(tree, {} as SchematicContext);
+      })(tree, mockContext);
 
       const actual = result.read('angular.json')!.toString();
       expect(prettifyJSON(actual)).toMatchSnapshot();
@@ -27,11 +40,11 @@ describe('ng-add', () => {
     it('overrides existing files', async () => {
       const tempTree = await ngAdd({
         project: PROJECT_NAME
-      })(tree, {} as SchematicContext);
+      })(tree, mockContext);
 
       const result = await ngAdd({
         project: OTHER_PROJECT_NAME
-      })(tempTree, {} as SchematicContext);
+      })(tempTree, mockContext);
 
       const actual = result.read('angular.json')!.toString();
 
@@ -49,7 +62,7 @@ describe('ng-add', () => {
 
       const resultTree = await ngAdd({ project: '' })(
         tree,
-        {} as SchematicContext
+        mockContext
       );
 
       const resultConfig = readJSONFromTree(resultTree, 'angular.json');
@@ -65,7 +78,7 @@ describe('ng-add', () => {
       tree.create('angular.json', JSON.stringify(angularJSON));
 
       await expect(
-        ngAdd({ project: '' })(tree, {} as SchematicContext)
+        ngAdd({ project: '' })(tree, mockContext)
       ).rejects.toThrowError(
         'There is more than one project in your workspace. Please select it manually by using the --project argument.'
       );
@@ -73,7 +86,7 @@ describe('ng-add', () => {
 
     it('should throw if angular.json not found', async () => {
       await expect(
-        ngAdd({ project: PROJECT_NAME })(Tree.empty(), {} as SchematicContext)
+        ngAdd({ project: PROJECT_NAME })(Tree.empty(), mockContext)
       ).rejects.toThrowError('Unable to determine format for workspace path.');
     });
 
@@ -82,7 +95,7 @@ describe('ng-add', () => {
       tree.create('angular.json', 'hi');
 
       await expect(
-        ngAdd({ project: PROJECT_NAME })(tree, {} as SchematicContext)
+        ngAdd({ project: PROJECT_NAME })(tree, mockContext)
       ).rejects.toThrowError('Invalid workspace file - expected JSON object.');
     });
 
@@ -91,7 +104,7 @@ describe('ng-add', () => {
       tree.create('angular.json', JSON.stringify({ version: 1, projects: {} }));
 
       await expect(
-        ngAdd({ project: PROJECT_NAME })(tree, {} as SchematicContext)
+        ngAdd({ project: PROJECT_NAME })(tree, mockContext)
       ).rejects.toThrowError(
         'The specified Angular project is not defined in this workspace'
       );
@@ -110,7 +123,7 @@ describe('ng-add', () => {
       );
 
       await expect(
-        ngAdd({ project: PROJECT_NAME })(tree, {} as SchematicContext)
+        ngAdd({ project: PROJECT_NAME })(tree, mockContext)
       ).rejects.toThrowError(
         'Deploy requires an Angular project type of "application" in angular.json'
       );
@@ -135,7 +148,7 @@ describe('ng-add', () => {
       await expect(
         ngAdd({
           project: PROJECT_NAME
-        })(tree, {} as SchematicContext)
+        })(tree, mockContext)
       ).rejects.toThrowError(
         /Cannot find build target for the Angular project/
       );
@@ -168,7 +181,7 @@ describe('ng-add', () => {
 
       const result = await ngAdd({ project: PROJECT_NAME })(
         tree,
-        {} as SchematicContext
+        mockContext
       );
 
       const resultConfig = readJSONFromTree(result, 'angular.json');
@@ -200,7 +213,7 @@ describe('ng-add', () => {
 
       const result = await ngAdd({ project: PROJECT_NAME })(
         tree,
-        {} as SchematicContext
+        mockContext
       );
 
       const resultConfig = readJSONFromTree(result, 'angular.json');
@@ -232,7 +245,7 @@ describe('ng-add', () => {
 
       const result = await ngAdd({ project: PROJECT_NAME })(
         tree,
-        {} as SchematicContext
+        mockContext
       );
 
       const resultConfig = readJSONFromTree(result, 'angular.json');
@@ -263,7 +276,7 @@ describe('ng-add', () => {
       );
 
       await expect(
-        ngAdd({ project: PROJECT_NAME })(tree, {} as SchematicContext)
+        ngAdd({ project: PROJECT_NAME })(tree, mockContext)
       ).rejects.toThrowError(
         /Invalid outputPath configuration.*Expected undefined.*a string.*an object with a "base" property/
       );

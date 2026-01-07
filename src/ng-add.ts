@@ -12,7 +12,7 @@ interface NgAddOptions {
 
 export const ngAdd = (options: NgAddOptions) => async (
   tree: Tree,
-  _context: SchematicContext
+  context: SchematicContext
 ) => {
   const host = createHost(tree);
   const { workspace } = await workspaces.readWorkspace('/', host);
@@ -74,5 +74,15 @@ export const ngAdd = (options: NgAddOptions) => async (
   });
 
   workspaces.writeWorkspace(workspace, host);
+
+  // Show next steps
+  context.logger.info('');
+  context.logger.info('🚀 angular-cli-ghpages is ready!');
+  context.logger.info('');
+  context.logger.info('Next steps:');
+  context.logger.info('  1. Read the docs: https://github.com/angular-schule/angular-cli-ghpages');
+  context.logger.info('  2. Deploy via: ng deploy');
+  context.logger.info('  3. Have a nice day!');
+
   return tree;
 };

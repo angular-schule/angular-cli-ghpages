@@ -81,23 +81,18 @@ If you already have an existing Angular project on GitHub, skip steps 1 and 2.
    - Please enter the URL `https://github.com/<username>/<repositoryname>.git` into your browser – you should see your existing repository on GitHub.
    - Please double-check that you have the necessary rights to make changes to the given project!
 
-3. Add `angular-cli-ghpages` to your project. For details, see the [installation section](#installation).
+3. Add `angular-cli-ghpages` to your project. When you run `ng deploy` for the first time, the Angular CLI will prompt you to choose a deployment target – select **angular-cli-ghpages** from the list:
 
    ```sh
-   ng add angular-cli-ghpages
+   ng deploy
    ```
 
-4. Deploy your project to GitHub pages with all default settings.
-   Your project will be automatically built in production mode.
+   Alternatively, you can install it directly via `ng add angular-cli-ghpages`. See the [installation section](#installation) for details.
+
+4. Deploy your project to GitHub Pages with all default settings. Your project will be automatically built in production mode.
 
    ```sh
    ng deploy --base-href=/<repositoryname>/
-   ```
-
-   Which is the same as:
-
-   ```sh
-   ng deploy your-angular-project --base-href=/<repositoryname>/
    ```
 
    Please be aware of the `--base-href` option. It is necessary when your project will be deployed to a non-root folder. See more details below.

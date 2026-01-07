@@ -500,8 +500,9 @@ Code released under the [MIT license](LICENSE).
 
 ### &copy; 2017-2026 https://angular.schule
 
-This project is made on top of [tschaub/gh-pages](https://github.com/tschaub/gh-pages).  
-Thank you very much for this great foundation!
+`angular-cli-ghpages` wurde für Sie entwickelt von der **Angular.Schule**!
+
+Wir machen Sie und Ihr Team fit für das Webframework Angular – in [offenen Gruppen](https://angular.schule/schulungen/online) oder [individuellen Inhouse-Schulungen](https://angular.schule/schulungen/online-teams). Von den Buchautoren und Google Developer Experts (GDE) Johannes Hoppe und Ferdinand Malcher.
 
 [npm-url]: https://www.npmjs.com/package/angular-cli-ghpages
 [npm-image]: https://img.shields.io/npm/v/angular-cli-ghpages.svg

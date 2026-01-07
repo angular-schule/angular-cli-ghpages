@@ -32,7 +32,7 @@
    - [--dir](#dir)
    - [--dry-run](#dry-run)
 7. [📁 Configuration File](#configuration-file)
-8. [ℹ️ About](#about)
+8. [🅰️ About](#about)
 
 <hr>
 
@@ -427,7 +427,7 @@ Now you can just run `ng deploy` without all the options in the command line! �
 > You can always use the [--dry-run](#dry-run) option to verify if your configuration is right.
 > The project will build but not deploy.
 
-## ℹ️ About <a name="about"></a>
+## 🅰️ About <a name="about"></a>
 
 ![Angular.Schule](https://assets.angular.schule/header-only-logo.png)
 

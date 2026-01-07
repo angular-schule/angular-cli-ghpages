@@ -170,7 +170,7 @@ Same as `ng build --base-href=/XXX/`
 
 ##### A) You don't want to use a custom domain
 
-If you don't want to use your own domain, then your later URL of your hosted Angular project should look like this:
+If you don't want to use your own domain, the URL of your hosted Angular project will look like this:
 `https://your-username.github.io/the-repositoryname`.
 In this case you have to adjust the `--base-href` accordingly:
 
@@ -268,7 +268,7 @@ Learn more about ["personal access tokens" here](https://help.github.com/article
 - Example: `ng deploy --message="What could possibly go wrong?"`
 
 The commit message **must be wrapped in quotes** if there are any spaces in the text.  
-Some additional text is always added to the message, if the command runs on Travis CI, Circle CI or GitHub Actions.
+Some additional text is always added to the message, if the command runs on Travis CI, CircleCI or GitHub Actions.
 
 #### --branch <a name="branch"></a>
 
@@ -429,13 +429,15 @@ Now you can just run `ng deploy` without all the options in the command line! �
 
 ## ℹ️ About <a name="about"></a>
 
-<img src="https://assets.angular.schule/logo-angular-schule.png" height="60">
-
-### &copy; 2017-2026 https://angular.schule
+![Angular.Schule](https://assets.angular.schule/header-only-logo.png)
 
 🇬🇧 `angular-cli-ghpages` is brought to you by the **Angular.Schule** team – two Google Developer Experts (GDE) from Germany. We get you and your team up to speed with Angular through remote trainings in English! Visit [angular.schule](https://angular.schule) to learn more.
 
 🇩🇪 `angular-cli-ghpages` wurde für Sie entwickelt von der **Angular.Schule**! Wir machen Sie und Ihr Team fit für das Webframework Angular – in [offenen Gruppen](https://angular.schule/schulungen/online) oder [individuellen Inhouse-Schulungen](https://angular.schule/schulungen/online-teams). Von den Buchautoren und Google Developer Experts (GDE) Johannes Hoppe und Ferdinand Malcher.
+
+<img src="https://assets.angular.schule/logo-angular-schule.png" height="60">
+
+© 2017-2026
 
 [npm-url]: https://www.npmjs.com/package/angular-cli-ghpages
 [npm-image]: https://img.shields.io/npm/v/angular-cli-ghpages.svg

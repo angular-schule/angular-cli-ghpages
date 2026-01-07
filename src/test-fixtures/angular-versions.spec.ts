@@ -15,6 +15,19 @@ import fs from 'fs';
 import path from 'path';
 import { ngAdd } from '../ng-add';
 
+// Mock context with logger - only the methods we actually use
+const mockLogger = {
+  info: jest.fn(),
+  warn: jest.fn(),
+  error: jest.fn(),
+  debug: jest.fn(),
+  fatal: jest.fn(),
+  log: jest.fn(),
+  createChild: jest.fn()
+};
+
+const mockContext = { logger: mockLogger } as unknown as SchematicContext;
+
 // Load fixture files - actual angular.json from each Angular CLI version
 const fixturesDir = path.join(__dirname);
 const angular18Config = JSON.parse(fs.readFileSync(path.join(fixturesDir, 'angular-18.json'), 'utf-8'));
@@ -33,7 +46,7 @@ describe('Angular Version Compatibility', () => {
       const tree = Tree.empty();
       tree.create('angular.json', JSON.stringify(angular18Config));
 
-      const result = await ngAdd({ project: 'ng18' })(tree, {} as SchematicContext);
+      const result = await ngAdd({ project: 'ng18' })(tree, mockContext);
       const resultConfig = JSON.parse(result.read('angular.json')!.toString());
 
       expect(resultConfig.projects.ng18.architect.deploy.builder).toBe('angular-cli-ghpages:deploy');
@@ -50,7 +63,7 @@ describe('Angular Version Compatibility', () => {
       const tree = Tree.empty();
       tree.create('angular.json', JSON.stringify(angular19Config));
 
-      const result = await ngAdd({ project: 'ng19' })(tree, {} as SchematicContext);
+      const result = await ngAdd({ project: 'ng19' })(tree, mockContext);
       const resultConfig = JSON.parse(result.read('angular.json')!.toString());
 
       expect(resultConfig.projects.ng19.architect.deploy.builder).toBe('angular-cli-ghpages:deploy');
@@ -67,7 +80,7 @@ describe('Angular Version Compatibility', () => {
       const tree = Tree.empty();
       tree.create('angular.json', JSON.stringify(angular20Config));
 
-      const result = await ngAdd({ project: 'ng20' })(tree, {} as SchematicContext);
+      const result = await ngAdd({ project: 'ng20' })(tree, mockContext);
       const resultConfig = JSON.parse(result.read('angular.json')!.toString());
 
       expect(resultConfig.projects.ng20.architect.deploy.builder).toBe('angular-cli-ghpages:deploy');
@@ -84,7 +97,7 @@ describe('Angular Version Compatibility', () => {
       const tree = Tree.empty();
       tree.create('angular.json', JSON.stringify(angular21Config));
 
-      const result = await ngAdd({ project: 'ng21' })(tree, {} as SchematicContext);
+      const result = await ngAdd({ project: 'ng21' })(tree, mockContext);
       const resultConfig = JSON.parse(result.read('angular.json')!.toString());
 
       expect(resultConfig.projects.ng21.architect.deploy.builder).toBe('angular-cli-ghpages:deploy');

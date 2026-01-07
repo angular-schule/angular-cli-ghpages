@@ -6,11 +6,10 @@ var path = require('path'),
   engine = require('./engine/engine'),
   defaults = require('./engine/defaults').defaults,
   pjson = require('./package.json'),
-  commander = require('commander');
+  commander = require('./commander-fork');
 
-// defaults-file was ignored for --no-dotfiles, so it is not used here
-// TODO: review https://github.com/tj/commander.js/issues/928 and check again if it now works
-// (this is not a big problem, because true is currently the desired value and this is also the value in the defaults file)
+// Boolean defaults for --no-X options are handled via defaults.ts
+// Commander v3 auto-sets dotfiles/notfound/nojekyll to true, which matches our defaults
 commander
   .version(pjson.version)
   .description(pjson.description)
@@ -51,7 +50,7 @@ commander
   )
   .option(
     '-S, --no-silent',
-    'Deprecated! This paremeter is no longer needed. It will be ignored.'
+    'Deprecated! This parameter is no longer needed. It will be ignored.'
   )
   .option(
     '-T, --no-dotfiles',

@@ -2,7 +2,7 @@ import { BuilderContext, targetFromTargetString } from '@angular-devkit/architec
 import { logging } from '@angular-devkit/core';
 import path from 'path';
 
-import { BuildTarget } from '../interfaces';
+import { BuildTarget, AngularOutputPath, isOutputPathObject } from '../interfaces';
 import { Schema } from './schema';
 
 export default async function deploy(
@@ -60,29 +60,37 @@ export default async function deploy(
     );
 
     // Output path configuration
-    // The outputPath option can be either
+    // The outputPath option can be either:
+    // - undefined (Angular 20+): uses default dist/<project-name>/browser
     // - a String which will be used as the base value + default value 'browser'
     // - or an Object for more fine-tune configuration.
     // see https://angular.io/guide/workspace-config#output-path-configuration
     // see https://github.com/angular/angular-cli/pull/26675
 
-    if (!buildOptions.outputPath) {
-      throw new Error(
-        `Cannot read the outputPath option of the Angular project '${buildTarget.name}' in angular.json.`
-      );
-    }
+    const outputPath = buildOptions.outputPath as AngularOutputPath | undefined;
 
-    if (typeof buildOptions.outputPath === 'string') {
-      dir = path.join(buildOptions.outputPath, 'browser');
+    if (outputPath === undefined) {
+      // Angular 20+ default: dist/<project-name>/browser
+      // Extract project name from buildTarget.name (format: "project:target:configuration")
+      const projectName = buildTarget.name.split(':')[0];
+      dir = path.join('dist', projectName, 'browser');
+    } else if (typeof outputPath === 'string') {
+      dir = path.join(outputPath, 'browser');
+    } else if (isOutputPathObject(outputPath)) {
+      // browser defaults to 'browser' per Angular CLI schema
+      // Explicit empty string '' means no subfolder (browser files directly in base)
+      dir = path.join(outputPath.base, outputPath.browser ?? 'browser');
     } else {
-      const obj = buildOptions.outputPath as any;
-      dir = path.join(obj.base, obj.browser)
+      throw new Error(
+        `Unsupported outputPath configuration in angular.json for '${buildTarget.name}'. ` +
+        `Expected string or {base, browser} object.`
+      );
     }
   }
 
   await engine.run(
     dir,
     options,
-    (context.logger as unknown) as logging.LoggerApi
+    context.logger
   );
 }

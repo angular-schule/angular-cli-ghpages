@@ -7,6 +7,13 @@ on:
         type: boolean
         default: true
         description: 'Dry-run (test without publishing)'
+      tag:
+        type: choice
+        default: 'latest'
+        options:
+          - latest
+          - next
+        description: 'npm tag (use "next" for pre-release/RC versions)'
 
 # Required for OIDC token exchange with npm (Trusted Publishers)
 permissions:
@@ -33,14 +40,28 @@ jobs:
           npm run build
           npm test
 
+      - name: Show version info
+        working-directory: src/dist
+        run: |
+          VERSION=$(node -p "require('./package.json').version")
+          echo "📦 Package: angular-cli-ghpages"
+          echo "📌 Version: $VERSION"
+          echo "🏷️  Tag: ${{ inputs.tag }}"
+          echo ""
+          if [ "${{ inputs.dry_run }}" = "true" ]; then
+            echo "🧪 Mode: DRY-RUN (no actual publish)"
+          else
+            echo "🚀 Mode: PUBLISH FOR REAL"
+          fi
+
       - name: Publish to npm (dry-run)
         if: ${{ inputs.dry_run }}
         working-directory: src/dist
         run: |
-          echo "🧪 DRY-RUN MODE"
-          echo "==============="
           echo ""
-          npm publish --provenance --dry-run
+          echo "==============="
+          npm publish --provenance --tag ${{ inputs.tag }} --dry-run
+          echo "==============="
           echo ""
           echo "✅ Dry-run successful! Package is ready to publish."
           echo "   To publish for real, run this workflow again with dry_run unchecked."
@@ -49,9 +70,10 @@ jobs:
         if: ${{ !inputs.dry_run }}
         working-directory: src/dist
         run: |
-          echo "🚀 PUBLISHING TO NPM"
-          echo "===================="
           echo ""
-          npm publish --provenance
+          echo "==============="
+          npm publish --provenance --tag ${{ inputs.tag }}
+          echo "==============="
           echo ""
           echo "✅ Published successfully with provenance!"
+          echo "   https://www.npmjs.com/package/angular-cli-ghpages"

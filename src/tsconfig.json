@@ -5,7 +5,7 @@
     "emitDecoratorMetadata": true,
     "module": "commonjs",
     "target": "es2015",
-    "noImplicitAny": false,
+    "noImplicitAny": true,
     "outDir": "dist",
     "rootDir": ".",
     "sourceMap": true,
@@ -29,6 +29,5 @@
     "strictMetadataEmit": true,
     "enableSummariesForJit": false
   },
-  "exclude": ["node_modules", "dist"],
-  "typeRoots": ["node_modules/@types"]
+  "exclude": ["node_modules", "dist"]
 }

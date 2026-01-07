@@ -1,0 +1,20 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm test)",
+      "Bash(npm run build)",
+      "Bash(git log:*)",
+      "Bash(npm test:*)",
+      "Bash(gh issue view:*)",
+      "WebSearch",
+      "Bash(gh pr view:*)",
+      "Bash(gh pr diff:*)",
+      "Bash(git add:*)",
+      "Bash(gh run watch:*)",
+      "Bash(node -e:*)",
+      "Bash(gh run list:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

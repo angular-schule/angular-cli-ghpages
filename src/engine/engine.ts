@@ -3,23 +3,31 @@ import * as fse from 'fs-extra';
 import * as path from 'path';
 
 import {Schema} from '../deploy/schema';
-import {GHPages} from '../interfaces';
+import {GHPages, PublishOptions} from '../interfaces';
 import {defaults} from './defaults';
-
-import Git from 'gh-pages/lib/git';
+import {
+  PreparedOptions,
+  setupMonkeypatch,
+  mapNegatedBooleans,
+  handleUserCredentials,
+  warnDeprecatedParameters,
+  appendCIMetadata,
+  injectTokenIntoRepoUrl
+} from './engine.prepare-options-helpers';
 
 export async function run(
   dir: string,
-  options: Schema & {
-    dotfiles: boolean,
-    notfound: boolean,
-    nojekyll: boolean
-  },
+  options: PreparedOptions,
   logger: logging.LoggerApi
 ) {
   options = await prepareOptions(options, logger);
 
-  // this has to occur _after_ the monkeypatch of util.debuglog:
+  // CRITICAL: Must require gh-pages AFTER monkeypatching util.debuglog
+  // gh-pages calls util.debuglog('gh-pages') during module initialization to set up its logger.
+  // If we require gh-pages before monkeypatching, it caches the original util.debuglog,
+  // and our monkeypatch won't capture the logging output.
+  // See prepareOptions() for the monkeypatch implementation.
+  // Note: Dynamic import required for monkeypatch timing (static import would cache before patch)
   const ghpages = require('gh-pages');
 
   // always clean the cache directory.
@@ -32,8 +40,7 @@ export async function run(
 
   await checkIfDistFolderExists(dir);
   await createNotFoundFile(dir, options, logger);
-  await createCnameFile(dir, options, logger);
-  await createNojekyllFile(dir, options, logger);
+  // Note: CNAME and .nojekyll files are now created by gh-pages v6+ via options
   await publishViaGhPages(ghpages, dir, options, logger);
 
   if (!options.dryRun) {
@@ -43,150 +50,60 @@ export async function run(
   }
 }
 
+/**
+ * Prepare and validate deployment options
+ *
+ * This orchestrator function:
+ * 1. Merges defaults with user options
+ * 2. Sets up monkeypatch for gh-pages logging
+ * 3. Maps negated boolean options (noDotfiles → dotfiles)
+ * 4. Handles user credentials
+ * 5. Warns about deprecated parameters
+ * 6. Appends CI environment metadata
+ * 7. Discovers and injects remote URL with authentication tokens
+ * 8. Logs dry-run message if applicable
+ */
 export async function prepareOptions(
   origOptions: Schema,
   logger: logging.LoggerApi
-): Promise<Schema & {
-  dotfiles: boolean,
-  notfound: boolean,
-  nojekyll: boolean
-}> {
-  const options: Schema & {
-    dotfiles: boolean,
-    notfound: boolean,
-    nojekyll: boolean
-  } = {
+): Promise<PreparedOptions> {
+  // 1. Merge defaults with user options
+  const options: PreparedOptions = {
     ...defaults,
     ...origOptions
   };
 
-  // this is the place where the old `noSilent` was enabled
-  // (which is now always enabled because gh-pages is NOT silent)
-  // monkeypatch util.debuglog to get all the extra information
-  // see https://stackoverflow.com/a/39129886
-  const util = require('util');
-  let debuglog = util.debuglog;
-  util.debuglog = set => {
-    if (set === 'gh-pages') {
-      return function () {
-        let message = util.format.apply(util, arguments);
-        logger.info(message);
-      };
-    }
-    return debuglog(set);
-  };
+  // 2. Setup monkeypatch for gh-pages logging (MUST be before requiring gh-pages)
+  setupMonkeypatch(logger);
 
-  // !! Important: Angular-CLI is NOT renaming the vars here !!
-  // so noDotfiles, noNotfound, and noNojekyll come in with no change
-  // we map this to dotfiles, notfound, nojekyll to have a consistent pattern
-  // between Commander and Angular-CLI
-  if (origOptions.noDotfiles) {
-    options.dotfiles = !origOptions.noDotfiles;
-  }
-  if (origOptions.noNotfound) {
-    options.notfound = !origOptions.noNotfound;
-  }
-  if (origOptions.noNojekyll) {
-    options.nojekyll = !origOptions.noNojekyll;
-  }
+  // 3. Map negated boolean options
+  mapNegatedBooleans(options, origOptions);
 
+  // 4. Handle user credentials
+  handleUserCredentials(options, origOptions, logger);
+
+  // 5. Warn about deprecated parameters
+  warnDeprecatedParameters(origOptions, logger);
+
+  // 6. Append CI environment metadata
+  appendCIMetadata(options);
+
+  // 7. Discover and inject remote URL with authentication tokens
+  await injectTokenIntoRepoUrl(options);
+
+  // 8. Log dry-run message if applicable
   if (options.dryRun) {
     logger.info('Dry-run: No changes are applied at all.');
-  }
-
-  if (options.name && options.email) {
-    options['user'] = {
-      name: options.name,
-      email: options.email
-    };
-  }
-
-  if (process.env.TRAVIS) {
-    options.message +=
-      ' -- ' +
-      process.env.TRAVIS_COMMIT_MESSAGE +
-      ' \n\n' +
-      'Triggered by commit: https://github.com/' +
-      process.env.TRAVIS_REPO_SLUG +
-      '/commit/' +
-      process.env.TRAVIS_COMMIT +
-      '\n' +
-      'Travis CI build: https://travis-ci.org/' +
-      process.env.TRAVIS_REPO_SLUG +
-      '/builds/' +
-      process.env.TRAVIS_BUILD_ID;
-  }
-
-  if (process.env.CIRCLECI) {
-    options.message +=
-      '\n\n' +
-      'Triggered by commit: https://github.com/' +
-      process.env.CIRCLE_PROJECT_USERNAME +
-      '/' +
-      process.env.CIRCLE_PROJECT_REPONAME +
-      '/commit/' +
-      process.env.CIRCLE_SHA1 +
-      '\n' +
-      'CircleCI build: ' +
-      process.env.CIRCLE_BUILD_URL;
-  }
-
-  if (process.env.GITHUB_ACTIONS) {
-    options.message +=
-      '\n\n' +
-      'Triggered by commit: https://github.com/' +
-      process.env.GITHUB_REPOSITORY +
-      '/commit/' +
-      process.env.GITHUB_SHA;
-  }
-
-  // NEW in 0.6.2: always discover remote URL (if not set)
-  // this allows us to inject tokens from environment even if `--repo` is not set manually
-  if (!options.repo) {
-    options.repo = await getRemoteUrl(options);
-  }
-
-  // for backwards compatibility only,
-  // in the past --repo=https://GH_TOKEN@github.com/<username>/<repositoryname>.git was advised
-  //
-  // this repalcement was also used to inject other tokens into the URL,
-  // so it should only be removed with the next major version
-  if (
-    process.env.GH_TOKEN &&
-    options.repo &&
-    options.repo.includes('GH_TOKEN')
-  ) {
-    options.repo = options.repo.replace('GH_TOKEN', process.env.GH_TOKEN);
-  }
-  // preffered way: token is replaced from plain URL
-  else if (options.repo && !options.repo.includes('x-access-token:')) {
-    if (process.env.GH_TOKEN) {
-      options.repo = options.repo.replace(
-        'https://github.com/',
-        `https://x-access-token:${process.env.GH_TOKEN}@github.com/`
-      );
-    }
-
-    if (process.env.PERSONAL_TOKEN) {
-      options.repo = options.repo.replace(
-        'https://github.com/',
-        `https://x-access-token:${process.env.PERSONAL_TOKEN}@github.com/`
-      );
-    }
-
-    if (process.env.GITHUB_TOKEN) {
-      options.repo = options.repo.replace(
-        'https://github.com/',
-        `https://x-access-token:${process.env.GITHUB_TOKEN}@github.com/`
-      );
-    }
   }
 
   return options;
 }
 
 async function checkIfDistFolderExists(dir: string) {
-  if (await !fse.pathExists(dir)) {
+  // CRITICAL FIX: Operator precedence bug
+  // WRONG: await !fse.pathExists(dir) - applies ! to Promise (always false)
+  // RIGHT: !(await fse.pathExists(dir)) - awaits first, then negates boolean
+  if (!(await fse.pathExists(dir))) {
     throw new Error(
       'Dist folder does not exist. Check the dir --dir parameter or build the project first!'
     );
@@ -220,77 +137,27 @@ async function createNotFoundFile(
     await fse.copy(indexHtml, notFoundFile);
     logger.info('404.html file created');
   } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
     logger.info('index.html could not be copied to 404.html. Proceeding without it.');
-    logger.debug('Diagnostic info: ' + err.message);
+    logger.debug('Diagnostic info: ' + message);
     return;
   }
 }
 
-async function createCnameFile(
-  dir: string,
-  options: {
-    cname?: string,
-    dryRun?: boolean
-  },
-  logger: logging.LoggerApi
-) {
-  if (!options.cname) {
-    return;
-  }
-
-  const cnameFile = path.join(dir, 'CNAME');
-  if (options.dryRun) {
-    logger.info(
-      'Dry-run / SKIPPED: creating of CNAME file with content: ' + options.cname
-    );
-    return;
-  }
-
-  try {
-    await fse.writeFile(cnameFile, options.cname);
-    logger.info('CNAME file created');
-  } catch (err) {
-    throw new Error('CNAME file could not be created. ' + err.message);
-  }
-}
-
-async function createNojekyllFile(
-  dir: string,
-  options: {
-    nojekyll: boolean,
-    dryRun?: boolean
-  },
-  logger: logging.LoggerApi
-) {
-  if (!options.nojekyll) {
-    return;
-  }
-
-  const nojekyllFile = path.join(dir, '.nojekyll');
-  if (options.dryRun) {
-    logger.info('Dry-run / SKIPPED: creating a .nojekyll file');
-    return;
-  }
-
-  try {
-    await fse.writeFile(nojekyllFile, '');
-    logger.info('.nojekyll file created');
-  } catch (err) {
-    throw new Error('.nojekyll file could not be created. ' + err.message);
-  }
-}
+// CNAME and .nojekyll files are now handled by gh-pages v6+ via the cname/nojekyll options
+// Previously we created these files ourselves before publishing, but gh-pages PR #533 added native support
 
 async function publishViaGhPages(
   ghPages: GHPages,
   dir: string,
-  options: Schema & {
-    dotfiles: boolean,
-    notfound: boolean,
-    nojekyll: boolean
-  },
+  options: PreparedOptions,
   logger: logging.LoggerApi
 ) {
   if (options.dryRun) {
+    // Note: options.repo may contain auth tokens. This is acceptable because:
+    // 1. CI environments (GitHub Actions, etc.) automatically mask secrets in logs
+    // 2. Dry-run is typically used for debugging, where seeing the full URL helps
+    // 3. Local dry-runs don't persist logs
     logger.info(
       `Dry-run / SKIPPED: publishing folder '${dir}' with the following options: ` +
       JSON.stringify(
@@ -300,8 +167,8 @@ async function publishViaGhPages(
           remote: options.remote,
           message: options.message,
           branch: options.branch,
-          name: options.name ? `the name '${options.username} will be used for the commit` : 'local or global git user name will be used for the commit',
-          email: options.email ? `the email '${options.cname} will be used for the commit` : 'local or global git user email will be used for the commit',
+          name: options.name ? `the name '${options.name}' will be used for the commit` : 'local or global git user name will be used for the commit',
+          email: options.email ? `the email '${options.email}' will be used for the commit` : 'local or global git user email will be used for the commit',
           dotfiles: options.dotfiles ? `files starting with dot ('.') will be included` : `files starting with dot ('.') will be ignored`,
           notfound: options.notfound ? 'a 404.html file will be created' : 'a 404.html file will NOT be created',
           nojekyll: options.nojekyll ? 'a .nojekyll file will be created' : 'a .nojekyll file will NOT be created',
@@ -317,20 +184,22 @@ async function publishViaGhPages(
 
   logger.info('🚀 Uploading via git, please wait...');
 
-  // do NOT (!!) await ghPages.publish,
-  // the promise is implemented in such a way that it always succeeds – even on errors!
-  return new Promise((resolve, reject) => {
-    ghPages.publish(dir, options, error => {
-      if (error) {
-        return reject(error);
-      }
+  // Only pass options that gh-pages understands
+  // gh-pages v6+ supports cname and nojekyll options natively (PR #533)
+  const ghPagesOptions: PublishOptions = {
+    repo: options.repo,
+    branch: options.branch,
+    message: options.message,
+    remote: options.remote,
+    git: options.git as string | undefined,
+    add: options.add,
+    dotfiles: options.dotfiles,
+    user: options.user,
+    cname: options.cname,
+    nojekyll: options.nojekyll
+  };
 
-      resolve(undefined);
-    });
-  });
-}
-
-async function getRemoteUrl(options) {
-  const git = new Git(process.cwd(), options.git);
-  return await git.getRemoteUrl(options.remote);
+  // gh-pages v5+ fixed the Promise bug where errors didn't reject properly
+  // We can now safely await the promise directly
+  await ghPages.publish(dir, ghPagesOptions);
 }

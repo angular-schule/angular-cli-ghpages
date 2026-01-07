@@ -1,8 +1,13 @@
 {
   "name": "angular-cli-ghpages",
-  "version": "2.0.3",
+  "version": "3.0.0",
   "description": "Deploy your Angular app to GitHub Pages or Cloudflare Pages directly from the Angular CLI (ng deploy)",
   "main": "index.js",
+  "types": "index.d.ts",
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=9.0.0"
+  },
   "bin": {
     "angular-cli-ghpages": "angular-cli-ghpages",
     "ngh": "angular-cli-ghpages"
@@ -10,10 +15,8 @@
   "scripts": {
     "prebuild": "rimraf dist && json2ts deploy/schema.json > deploy/schema.d.ts",
     "build": "tsc -p tsconfig.build.json",
-    "postbuild": "copyfiles builders.json collection.json ng-add-schema.json package.json angular-cli-ghpages deploy/schema.json dist && copyfiles ../README.md dist/README.md",
-    "test": "jest",
-    "prepublishOnly": "echo \"*** MAKE SURE TO TYPE 'npm run publish-to-npm' AND NOT 'npm publish'! ***\"",
-    "publish-to-npm": "npm run build && cd dist && npm publish"
+    "postbuild": "copyfiles builders.json collection.json ng-add-schema.json package.json angular-cli-ghpages deploy/schema.json dist && copyfiles ../README.md dist/README.md && copyfiles commander-fork/index.js dist",
+    "test": "jest"
   },
   "schematics": "./collection.json",
   "builders": "./builders.json",
@@ -42,7 +45,7 @@
     "angular-cli-github-pages"
   ],
   "author": {
-    "name": "Johannes Hoppe",
+    "name": "Angular.Schule (by Johannes Hoppe)",
     "email": "johannes.hoppe@haushoppe-its.de"
   },
   "contributors": [
@@ -69,11 +72,13 @@
     "typescript": "~5.2.2"
   },
   "dependencies": {
-    "@angular-devkit/architect": "~0.1800.0",
-    "@angular-devkit/core": "^18.0.0",
-    "@angular-devkit/schematics": "^18.0.0",
-    "commander": "^3.0.0-0",
+    "@angular-devkit/architect": ">=0.1800.0 <0.2200.0",
+    "@angular-devkit/core": ">=18.0.0 <22.0.0",
+    "@angular-devkit/schematics": ">=18.0.0 <22.0.0",
     "fs-extra": "^11.2.0",
-    "gh-pages": "^3.1.0"
+    "gh-pages": "6.3.0"
+  },
+  "peerDependencies": {
+    "@angular/cli": ">=18.0.0 <22.0.0"
   }
 }

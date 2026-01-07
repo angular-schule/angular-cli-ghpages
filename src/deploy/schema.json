@@ -11,13 +11,9 @@
       "type": "string",
       "description": "A named build target, as specified in the `configurations` section of angular.json. Each named target is accompanied by a configuration of option defaults for that target. This is equivalent to calling the command `ng build --configuration=XXX`."
     },
-    "browserTarget": {
-      "type": "string",
-      "description": "A named build target, as specified in the `configurations` section of angular.json. Each named target is accompanied by a configuration of option defaults for that target. This is equivalent to calling the command `ng build --configuration=XXX`."
-    },
     "prerenderTarget": {
       "type": "string",
-      "description": "A named build target, as specified in the `configurations` section of angular.json. Each named target is accompanied by a configuration of option defaults for that target. This is equivalent to calling the command `ng build --configuration=XXX`."
+      "description": "Architect target for prerendering/SSG. Takes precedence over buildTarget when specified. Requires a prerender target configured in angular.json."
     },
     "noBuild": {
       "type": "boolean",
@@ -58,17 +54,17 @@
     },
     "noDotfiles": {
       "type": "boolean",
-      "description": "Includes dotfiles by default. Execute with --no-dotfiles to ignore files starting with `.`.",
+      "description": "Exclude dotfiles (files starting with `.`) from deployment.",
       "default": false
     },
     "noNotfound": {
       "type": "boolean",
-      "description": "By default a 404.html file is created, because this is the only known workaround to avoid 404 error messages on GitHub Pages. For Cloudflare Pages we highly recommend to disable the 404.html file by setting this switch to true!",
+      "description": "By default a 404.html file is created for SPA routing on GitHub Pages. For Cloudflare Pages, you must use --no-notfound to enable native SPA routing.",
       "default": false
     },
     "noNojekyll": {
       "type": "boolean",
-      "description": "By default a .nojekyll file is created, because we assume you don't want to compile the build again with Jekyll.",
+      "description": "Skip creating the .nojekyll file.",
       "default": false
     },
     "cname": {

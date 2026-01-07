@@ -2,38 +2,125 @@ name: Build and test
 
 on:
   push:
-    branches: [main]
+    branches: [main, big-update]
 
 jobs:
-  build-and-deploy:
+  build-and-test:
     runs-on: ubuntu-latest
 
     steps:
       - uses: actions/checkout@v4
+
       - uses: actions/setup-node@v4
         with:
           node-version: 22
+          cache: npm
+          cache-dependency-path: src/package-lock.json
 
-      - name: Prepare
+      - name: Build and test
+        working-directory: src
         run: |
-          cd src
-          npm install
+          npm ci
           npm run build
           npm run test
-          cd dist
-          npm link
-          cd ..
-          cd ..
-          npm install -g @angular/cli
-          ng new your-angular-project --defaults
-          cd your-angular-project
-          npm link angular-cli-ghpages
-          ng add angular-cli-ghpages
 
-      - name: Deploy
-        if: github.ref == 'refs/heads/main'
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: src/dist
+          retention-days: 1
+
+  # Test ng add and ng deploy across multiple Angular versions (sequentially)
+  # This catches breaking changes in angular.json structure
+  # Each test creates its own git repo and deploys locally to verify the full flow
+  #
+  # Why checkout + npm ci? The ng-add.js requires @angular-devkit/core which must
+  # be resolvable from the dist folder. Node.js resolves modules by traversing up
+  # from the file's location, so we need src/node_modules available.
+  test-angular-versions:
+    needs: build-and-test
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: src/package-lock.json
+
+      - name: Install dependencies for module resolution
+        working-directory: src
+        run: npm ci
+
+      - name: Configure git
         run: |
-          cd your-angular-project
-          ng deploy --name="The Buildbot" --email="buildbot@angular2buch.de" --cname=angular-cli-ghpages.angular.schule
+          git config --global user.name "CI Bot"
+          git config --global user.email "ci@test.local"
+
+      - name: Download build artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: src/dist
+
+      - name: Link angular-cli-ghpages
+        working-directory: src/dist
+        run: npm link
+
+      # Test projects are created OUTSIDE the repo to get their own git repos
+      # (Angular CLI creates a git repo by default with --defaults)
+      # Each test creates a bare repo as a fake remote to deploy to
+      - name: Test Angular 18
+        run: |
+          cd /tmp
+          git init --bare remote-18.git
+          npx @angular/cli@18 new test-app-18 --defaults
+          cd test-app-18
+          git remote add origin /tmp/remote-18.git
+          npm link angular-cli-ghpages
+          npx ng add angular-cli-ghpages
+          npx ng deploy
+          cd /tmp/remote-18.git && git branch | grep gh-pages
+          echo "Angular 18: build + deploy successful"
+
+      - name: Test Angular 19
+        run: |
+          cd /tmp
+          git init --bare remote-19.git
+          npx @angular/cli@19 new test-app-19 --defaults
+          cd test-app-19
+          git remote add origin /tmp/remote-19.git
+          npm link angular-cli-ghpages
+          npx ng add angular-cli-ghpages
+          npx ng deploy
+          cd /tmp/remote-19.git && git branch | grep gh-pages
+          echo "Angular 19: build + deploy successful"
+
+      - name: Test Angular 20
+        run: |
+          cd /tmp
+          git init --bare remote-20.git
+          npx @angular/cli@20 new test-app-20 --defaults
+          cd test-app-20
+          git remote add origin /tmp/remote-20.git
+          npm link angular-cli-ghpages
+          npx ng add angular-cli-ghpages
+          npx ng deploy
+          cd /tmp/remote-20.git && git branch | grep gh-pages
+          echo "Angular 20: build + deploy successful"
+
+      - name: Test Angular 21
+        run: |
+          cd /tmp
+          git init --bare remote-21.git
+          npx @angular/cli@21 new test-app-21 --defaults
+          cd test-app-21
+          git remote add origin /tmp/remote-21.git
+          npm link angular-cli-ghpages
+          npx ng add angular-cli-ghpages
+          npx ng deploy
+          cd /tmp/remote-21.git && git branch | grep gh-pages
+          echo "Angular 21: build + deploy successful"

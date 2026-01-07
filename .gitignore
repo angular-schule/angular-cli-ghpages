@@ -5,7 +5,6 @@ node_modules
 .bash_history
 *.swp
 *.swo
-*.d.ts
 .idea
 
 *.classpath

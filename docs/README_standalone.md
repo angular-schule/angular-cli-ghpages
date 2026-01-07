@@ -51,11 +51,47 @@ ionic build --prod -- --base-href=https://USERNAME.github.io/REPOSITORY_NAME/`
 npx angular-cli-ghpages --dir=www
 ```
 
+## Build Target Parameters (Angular Builder Only)
+
+The following parameters are **only available** when using `ng deploy` (Angular Builder integration) and are **not supported** by the standalone CLI:
+
+- `--build-target` / `buildTarget`
+- `--prerender-target` / `prerenderTarget`
+- `--no-build` / `noBuild`
+- `--base-href` / `baseHref` (only as a build option; use `ng build --base-href` instead)
+
+These parameters control Angular CLI's build process integration and automatic build triggering.
+
+**When using the standalone CLI** (`npx angular-cli-ghpages`):
+- You must **build your project separately** before deployment
+- Use `--dir` to specify the pre-built output directory
+- The standalone CLI will **not** trigger any build process
+
+**Example standalone workflow:**
+
+```bash
+# 1. Build your project first
+ng build --configuration=production --base-href=/my-app/
+
+# 2. Then deploy the built output
+npx angular-cli-ghpages --dir=dist/my-app/browser
+```
+
+**For SSG/Prerendering with standalone CLI:**
+
+```bash
+# 1. Prerender your project first
+ng run my-app:prerender:production
+
+# 2. Then deploy the prerendered output
+npx angular-cli-ghpages --dir=dist/my-app/browser
+```
+
+If you need automatic build integration, use `ng deploy` instead of the standalone CLI. See the [main README](../README.md) for Angular Builder usage.
+
 ## Extra
 
-For your convenience, the command will recognize the [environment variable](https://docs.travis-ci.com/user/environment-variables/#Defining-Variables-in-Repository-Settings) `GH_TOKEN` and will replace this pattern in the `--repo` string.
-
-In example, the following command runs [on our Travis-CI](https://travis-ci.org/angular-buch/book-monkey2):
+For your convenience, the command will recognize the environment variable `GH_TOKEN` and will replace this pattern in the `--repo` string.
 
 ```bash
 npx angular-cli-ghpages --repo=https://GH_TOKEN@github.com/<username>/<repositoryname>.git --name="Displayed Username" --email=mail@example.org
@@ -169,7 +205,7 @@ Run through without making any changes. This can be very usefull, because it out
 - Example:
   - `npx angular-cli-ghpages --cname=example.com`
 
-A CNAME file will be created enabling you to use a custom domain. [More information on Github Pages using a custom domain](https://help.github.com/articles/using-a-custom-domain-with-github-pages/).
+A CNAME file will be created enabling you to use a custom domain. [More information on GitHub Pages using a custom domain](https://help.github.com/articles/using-a-custom-domain-with-github-pages/).
 
 #### --add <a name="add"></a>
 
@@ -181,6 +217,31 @@ A CNAME file will be created enabling you to use a custom domain. [More informat
 If is set to `true`, it will only add, and never remove existing files.
 By default, existing files in the target branch are removed before adding the ones.
 [More information](https://www.npmjs.com/package/gh-pages#optionsadd).
+
+#### --no-notfound <a name="no-notfound"></a>
+
+- **optional**
+- Default: `notfound` is `true` (a `404.html` file is created)
+- Example:
+  - `npx angular-cli-ghpages` -- A `404.html` file is created (copy of `index.html`).
+  - `npx angular-cli-ghpages --no-notfound` -- No `404.html` file is created.
+
+By default, a `404.html` file is created as a copy of `index.html`.
+This is required for GitHub Pages to support SPA routing (though it returns HTTP 404 status).
+
+**Important for Cloudflare Pages:** Use `--no-notfound` when deploying to Cloudflare Pages.
+The presence of a `404.html` file disables Cloudflare's native SPA mode.
+
+#### --no-nojekyll <a name="no-nojekyll"></a>
+
+- **optional**
+- Default: `nojekyll` is `true` (a `.nojekyll` file is created)
+- Example:
+  - `npx angular-cli-ghpages` -- A `.nojekyll` file is created.
+  - `npx angular-cli-ghpages --no-nojekyll` -- No `.nojekyll` file is created.
+
+By default, a `.nojekyll` file is created to bypass Jekyll processing on GitHub Pages.
+This prevents GitHub from ignoring files that start with an underscore (`_`).
 
 ## FAQ
 

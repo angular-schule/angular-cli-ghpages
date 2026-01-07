@@ -1,10 +1,10 @@
 # angular-cli-ghpages: README for setting up deployment with GitHub Actions
 
-As Github has introduced [Github Actions](https://github.com/features/actions), I would prefer to run all my CI tasks in it only, rather than going to some other CI providers. This guide is aimed to help out developers, who want to deploy their Angular app in Github Page using [angular-cli-pages](https://github.com/angular-schule/angular-cli-ghpages).
+As GitHub has introduced [GitHub Actions](https://github.com/features/actions), I would prefer to run all my CI tasks in it only, rather than going to some other CI providers. This guide is aimed to help out developers, who want to deploy their Angular app in GitHub Pages using [angular-cli-pages](https://github.com/angular-schule/angular-cli-ghpages).
 
 ## Prerequisites
 
-1. You've signed up for the GitHub Actions beta and taken a look at the documentation for the new [GitHub Actions](https://github.com/features/actions) format and/or understand the purpose of GitHub Actions.
+1. You've taken a look at the documentation for [GitHub Actions](https://github.com/features/actions) and/or understand the purpose of GitHub Actions.
 2. You've written some form of YML code before and/or have minimal knowledge of the syntax
 3. You already have a working Angular app that can be deployed to GitHub Pages
 4. You have already added **angular-cli-ghpages** in your project. If not:
@@ -25,9 +25,9 @@ You can use the `GITHUB_TOKEN` to authenticate in a workflow run.
 More info can be found here:  
 [help.github.com](https://help.github.com/en/actions/configuring-and-managing-workflows/authenticating-with-the-github_token#using-the-github_token-in-a-workflow)
 
-### Setup Github Action Flow
+### Setup GitHub Action Flow
 
-1. Open up your Github repo.
+1. Open up your GitHub repo.
 
 2. Go to **Settings** . Then on the side bar, go to **Actions** then **General**.
 
@@ -76,23 +76,23 @@ More info can be found here:
 
    - It can be helpful to not have your workflows run on every push to every branch in the repo.
 
-     - For example, you can have your workflow run on push events to master and release branches:
+     - For example, you can have your workflow run on push events to main and release branches:
 
        ```yml
        on:
        push:
          branches:
-           - master
+           - main
            - release/*
        ```
 
-     - or only run on pull_request events that target the master branch:
+     - or only run on pull_request events that target the main branch:
 
        ```yml
        on:
          pull_request:
            branches:
-             - master
+             - main
        ```
 
      - or, run every day of the week from Monday - Friday at 02:00:
@@ -114,7 +114,7 @@ More info can be found here:
 
 Learn everything you need to know in the following extended article.
 
-[![Banner](https://angular-schule.github.io/website-articles/blog/2020-01-everything-github/everything-github.png)](https://angular.schule/blog/2020-01-everything-github)
+[![Banner](https://angular-schule.github.io/website-articles/2020-01-everything-github/everything-github.png)](https://angular.schule/blog/2020-01-everything-github)
 
 **Everything GitHub: Continuous Integration, Deployment and Hosting for your Angular App**
 

@@ -21,6 +21,8 @@ npm run build
 npm test
 ```
 
+**Test Prerequisites**: Tests must run from a git clone with `origin` remote configured. See `src/test-prerequisites.spec.ts` for validation details.
+
 ## Local development
 
 If you want to try the latest package locally without installing it from NPM, use the following instructions.
@@ -31,16 +33,21 @@ Follow the instructions for [checking and updating the Angular CLI version](#ang
 ### 1. Optional: Latest Angular version
 
 This builder requires the method `getTargetOptions()` from the Angular DevKit which was introduced [here](https://github.com/angular/angular-cli/pull/13825/files).
-All Angular projects with Angular 9 and greater are supposed to be compatible. (Actually it works with some versions of 8.x too, but you want to be up to date anyway, don't you?)
-Execute the next three steps, if your test project is still older.
+
+**Version compatibility:**
+- **v3.x:** Supports Angular 18 and higher (current version)
+- **v2.x:** Supported Angular 18 (previous major version)
+- **v1.x:** Supported Angular 9-17 (deprecated)
+
+Execute the next three steps to update your test project to the latest Angular version.
 
 1. Install the latest version of the Angular CLI.
 
    ```sh
-   npm install -g @angular/cli
+   npm install --location=global @angular/cli
    ```
 
-2. Run `ng version`, to make sure you have installed Angular v17 or greater.
+2. Run `ng version` to make sure you have installed Angular v18 or greater.
 
 3. Update your existing project using the command:
 
@@ -151,6 +158,10 @@ cd angular-cli-ghpages/src
 npm test
 ```
 
+**Environment Requirements:**
+
+Some tests (remote URL discovery and `getRemoteUrl` integration tests) expect to run inside a real git clone of this repository with an `origin` remote configured. Running tests from a zip file or bare copy without `.git` is not supported and will cause test failures.
+
 ### 5. Debugging
 
 To debug angular-cli-ghpages you need to:
@@ -177,13 +188,98 @@ Use VSCode and debug the task `Launch Standalone Program`.
 
 ## Publish to NPM
 
+Publishing uses [npm Trusted Publishers](https://docs.npmjs.com/trusted-publishers) with OIDC – no long-lived tokens needed! 🔐
+
+1. Go to **Actions** → **Publish to npm**
+2. Click **Run workflow** → select branch (usually `main`)
+3. Leave "Dry-run" checked to test, or uncheck for real publish
+4. Wait for approval (5 min timer + required reviewer)
+
+The workflow builds, tests, and publishes with [provenance attestation](https://docs.npmjs.com/generating-provenance-statements).
+
+For pre-release versions, after publishing:
+```bash
+npm dist-tag add angular-cli-ghpages@X.X.X-rc.X next
 ```
-cd angular-cli-ghpages/src
-npm run build
-npm run test
-npm run publish-to-npm
-npm dist-tag add angular-cli-ghpages@0.6.0-rc.0 next
+
+## Programmatic Usage
+
+For advanced use cases, `angular-cli-ghpages` can be used programmatically in Node.js scripts:
+
+```typescript
+import { deployToGHPages, defaults, Schema } from 'angular-cli-ghpages';
+
+// Deploy with custom options
+const options: Schema = {
+  ...defaults,
+  dir: 'dist/my-app/browser',
+  repo: 'https://github.com/user/repo.git',
+  message: 'Custom deploy message',
+  branch: 'gh-pages',
+  name: 'Deploy Bot',
+  email: 'bot@example.com'
+};
+
+// Simple logger implementation
+const logger = {
+  info: (msg: string) => console.log(msg),
+  warn: (msg: string) => console.warn(msg),
+  error: (msg: string) => console.error(msg),
+  debug: (msg: string) => console.debug(msg),
+  fatal: (msg: string) => console.error(msg)
+};
+
+try {
+  await deployToGHPages('dist/my-app/browser', options, logger);
+  console.log('Deployment successful!');
+} catch (error) {
+  console.error('Deployment failed:', error);
+}
 ```
+
+### Available Types
+
+The package exports these TypeScript types for programmatic usage:
+
+- `Schema` - Complete options interface
+- `PreparedOptions` - Internal options after processing
+- `DeployUser` - User credentials type
+- `GHPages` - gh-pages library wrapper interface
+- `defaults` - Default configuration object
+
+### Advanced: Angular Builder Integration
+
+For custom Angular builders:
+
+```typescript
+import { angularDeploy } from 'angular-cli-ghpages';
+
+// Inside your custom builder
+const result = await angularDeploy(context, builderConfig, 'your-project-name');
+```
+
+**Note:** The CLI (`ng deploy`) remains the primary and recommended way to use this tool. Programmatic usage is considered advanced/experimental and may change between versions.
+
+## Dependency on gh-pages Internal API
+
+### Remote URL Discovery
+
+The `getRemoteUrl` function in `src/engine/engine.prepare-options-helpers.ts` calls into `gh-pages/lib/git`, which is an **internal API** not documented in gh-pages' public interface. This dependency carries upgrade risk.
+
+**What we depend on:**
+- `new Git(process.cwd(), options.git).getRemoteUrl(options.remote)` from `gh-pages/lib/git`
+- The exact error message format when remote doesn't exist or not in a git repository
+
+**Upgrade process for gh-pages v6+:**
+
+1. Check test failures in `src/engine/engine.prepare-options-helpers.spec.ts` first, specifically the `getRemoteUrl` test block
+2. If those tests fail, it likely indicates a breaking change in gh-pages' internal Git API
+3. Options:
+   - If `gh-pages/lib/git` still exists with same interface: update our error message assertions
+   - If the internal API changed significantly: implement our own git remote discovery using `child_process.execSync('git config --get remote.{remote}.url')`
+   - If gh-pages added a public API for this: switch to the public API
+
+**Current baseline:** Tests are pinned to gh-pages v6.3.0 behavior and error messages.
 
 ## Keeping track of all the forks
 

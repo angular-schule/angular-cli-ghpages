@@ -41,9 +41,29 @@ export const ngAdd = (options: NgAddOptions) => async (
     );
   }
 
-  if (!project.targets.get('build')?.options?.outputPath) {
+  // Validate build target exists (required for deployment)
+  const buildTarget = project.targets.get('build');
+  if (!buildTarget) {
     throw new SchematicsException(
-      `Cannot read the output path (architect.build.options.outputPath) of the Angular project "${options.project}" in angular.json`
+      `Cannot find build target for the Angular project "${options.project}" in angular.json.`
+    );
+  }
+
+  // outputPath validation:
+  // - Angular 20+: outputPath is omitted (uses default dist/<project-name>)
+  // - Angular 17-19: object format { base: "dist/app", browser: "", ... }
+  // - Earlier versions: string format "dist/app"
+  // See: https://github.com/angular/angular-cli/pull/26675
+  const outputPath = buildTarget.options?.outputPath;
+  const hasValidOutputPath =
+    outputPath === undefined || // Angular 20+ uses sensible defaults
+    typeof outputPath === 'string' ||
+    (typeof outputPath === 'object' && outputPath !== null && 'base' in outputPath);
+
+  if (!hasValidOutputPath) {
+    throw new SchematicsException(
+      `Invalid outputPath configuration for the Angular project "${options.project}" in angular.json. ` +
+      `Expected undefined (default), a string, or an object with a "base" property.`
     );
   }
 

@@ -44,7 +44,7 @@ describe('ng-add', () => {
     it('should select the first project if there is only one', async () => {
       const tree = Tree.empty();
       const angularJSON = generateAngularJson();
-      delete (angularJSON as any).projects[PROJECT_NAME]; // delete one project so that one is left
+      delete angularJSON.projects[PROJECT_NAME]; // delete one project so that one is left
       tree.create('angular.json', JSON.stringify(angularJSON));
 
       const resultTree = await ngAdd({ project: '' })(
@@ -53,9 +53,8 @@ describe('ng-add', () => {
       );
 
       const resultConfig = readJSONFromTree(resultTree, 'angular.json');
-      expect(
-        resultConfig.projects[OTHER_PROJECT_NAME].architect.deploy
-      ).toBeTruthy();
+      const deployTarget = resultConfig.projects[OTHER_PROJECT_NAME].architect.deploy;
+      expect(deployTarget.builder).toBe('angular-cli-ghpages:deploy');
     });
   });
 
@@ -117,14 +116,18 @@ describe('ng-add', () => {
       );
     });
 
-    it('should throw if app does not have architect configured', async () => {
+    it('should throw if app does not have build target configured', async () => {
       const tree = Tree.empty();
       tree.create(
         'angular.json',
         JSON.stringify({
           version: 1,
           projects: {
-            [PROJECT_NAME]: { projectType: 'application', root: PROJECT_NAME }
+            [PROJECT_NAME]: {
+              projectType: 'application',
+              root: PROJECT_NAME,
+              architect: {}
+            }
           }
         })
       );
@@ -134,7 +137,135 @@ describe('ng-add', () => {
           project: PROJECT_NAME
         })(tree, {} as SchematicContext)
       ).rejects.toThrowError(
-        'Cannot read the output path (architect.build.options.outputPath) of the Angular project "THEPROJECT" in angular.json'
+        /Cannot find build target for the Angular project/
+      );
+    });
+  });
+
+  describe('Angular 17+ outputPath formats', () => {
+    it('should accept Angular 20+ projects without outputPath (uses default)', async () => {
+      const tree = Tree.empty();
+      tree.create(
+        'angular.json',
+        JSON.stringify({
+          version: 1,
+          projects: {
+            [PROJECT_NAME]: {
+              projectType: 'application',
+              root: PROJECT_ROOT,
+              architect: {
+                build: {
+                  builder: '@angular/build:application',
+                  options: {
+                    // Angular 20+ omits outputPath - uses sensible default
+                  }
+                }
+              }
+            }
+          }
+        })
+      );
+
+      const result = await ngAdd({ project: PROJECT_NAME })(
+        tree,
+        {} as SchematicContext
+      );
+
+      const resultConfig = readJSONFromTree(result, 'angular.json');
+      const deployTarget = resultConfig.projects[PROJECT_NAME].architect.deploy;
+      expect(deployTarget.builder).toBe('angular-cli-ghpages:deploy');
+    });
+
+    it('should accept outputPath as object with base property', async () => {
+      const tree = Tree.empty();
+      tree.create(
+        'angular.json',
+        JSON.stringify({
+          version: 1,
+          projects: {
+            [PROJECT_NAME]: {
+              projectType: 'application',
+              root: PROJECT_ROOT,
+              architect: {
+                build: {
+                  options: {
+                    outputPath: { base: 'dist/my-app', browser: '' }
+                  }
+                }
+              }
+            }
+          }
+        })
+      );
+
+      const result = await ngAdd({ project: PROJECT_NAME })(
+        tree,
+        {} as SchematicContext
+      );
+
+      const resultConfig = readJSONFromTree(result, 'angular.json');
+      const deployTarget = resultConfig.projects[PROJECT_NAME].architect.deploy;
+      expect(deployTarget.builder).toBe('angular-cli-ghpages:deploy');
+    });
+
+    it('should accept outputPath object with base and browser properties', async () => {
+      const tree = Tree.empty();
+      tree.create(
+        'angular.json',
+        JSON.stringify({
+          version: 1,
+          projects: {
+            [PROJECT_NAME]: {
+              projectType: 'application',
+              root: PROJECT_ROOT,
+              architect: {
+                build: {
+                  options: {
+                    outputPath: { base: 'dist/app', browser: 'browser', server: 'server' }
+                  }
+                }
+              }
+            }
+          }
+        })
+      );
+
+      const result = await ngAdd({ project: PROJECT_NAME })(
+        tree,
+        {} as SchematicContext
+      );
+
+      const resultConfig = readJSONFromTree(result, 'angular.json');
+      const deployTarget = resultConfig.projects[PROJECT_NAME].architect.deploy;
+      expect(deployTarget.builder).toBe('angular-cli-ghpages:deploy');
+    });
+
+    it('should reject invalid outputPath object without base property', async () => {
+      const tree = Tree.empty();
+      tree.create(
+        'angular.json',
+        JSON.stringify({
+          version: 1,
+          projects: {
+            [PROJECT_NAME]: {
+              projectType: 'application',
+              root: PROJECT_ROOT,
+              architect: {
+                build: {
+                  options: {
+                    outputPath: { browser: 'browser' } // missing base - invalid
+                  }
+                }
+              }
+            }
+          }
+        })
+      );
+
+      await expect(
+        ngAdd({ project: PROJECT_NAME })(tree, {} as SchematicContext)
+      ).rejects.toThrowError(
+        /Invalid outputPath configuration.*Expected undefined.*a string.*an object with a "base" property/
       );
     });
   });
@@ -148,7 +279,26 @@ function readJSONFromTree(tree: Tree, file: string) {
   return JSON.parse(tree.read(file)!.toString());
 }
 
-function generateAngularJson() {
+interface AngularJsonProject {
+  projectType: string;
+  root: string;
+  architect: {
+    build: {
+      options: {
+        outputPath: string;
+      };
+    };
+  };
+}
+
+interface AngularJson {
+  version: number;
+  projects: {
+    [key: string]: AngularJsonProject;
+  };
+}
+
+function generateAngularJson(): AngularJson {
   return {
     version: 1,
     projects: {

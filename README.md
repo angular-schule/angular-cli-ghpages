@@ -40,8 +40,6 @@
 
 A detailed changelog is available in the [releases](https://github.com/angular-schule/angular-cli-ghpages/releases) section.
 
-**⚠️ BREAKING CHANGE (v3)**
-
 `angular-cli-ghpages` v3 supports Angular 18 to 21.
 For previous versions of Angular, use v1 or v2.
 
@@ -54,6 +52,8 @@ This command has the following prerequisites:
 - older Angular projects can still use a v1.x version or use the standalone program. See the documentation at [README_standalone](https://github.com/angular-schule/angular-cli-ghpages/blob/master/docs/README_standalone.md).
 
 ## 🚀 Quick Start (local development) <a name="quickstart-local"></a>
+
+`angular-cli-ghpages` compiles your app, then pushes the build output to a dedicated branch (default: `gh-pages`) – all with a single command: `ng deploy`. This branch serves as the source for your web host and works out of the box with GitHub Pages and Cloudflare Pages.
 
 This quick start assumes that you are starting from scratch.
 If you already have an existing Angular project on GitHub, skip step 1 and 2.

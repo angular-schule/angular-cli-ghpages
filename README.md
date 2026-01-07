@@ -81,10 +81,21 @@ If you already have an existing Angular project on GitHub, skip steps 1 and 2.
    - Please enter the URL `https://github.com/<username>/<repositoryname>.git` into your browser – you should see your existing repository on GitHub.
    - Please double-check that you have the necessary rights to make changes to the given project!
 
-3. Add `angular-cli-ghpages` to your project. When you run `ng deploy` for the first time, the Angular CLI will prompt you to choose a deployment target – select **angular-cli-ghpages** from the list:
+3. Add `angular-cli-ghpages` to your project. When you run `ng deploy` for the first time, the Angular CLI will prompt you to choose a deployment target – select **GitHub Pages**:
 
    ```sh
    ng deploy
+   ```
+
+   ```
+   Would you like to add a package with "deploy" capabilities now?
+     No
+     Amazon S3
+     Firebase
+     Netlify
+   ❯ GitHub Pages
+
+   ↑↓ navigate • ⏎ select
    ```
 
    Alternatively, you can install it directly via `ng add angular-cli-ghpages`. See the [installation section](#installation) for details.

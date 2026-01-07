@@ -12,7 +12,7 @@
 
 1. [📖 Changelog](#changelog)
 2. [⚠️ Prerequisites](#prerequisites)
-3. [🚀 Quick Start (local development)](#quickstart-local)
+3. [🚀 Quick Start](#quickstart)
 4. [⚙️ Installation](#installation)
 5. [🚀 Continuous Delivery](#continuous-delivery)
 6. [📦 Deployment Options](#options)
@@ -51,7 +51,7 @@ This command has the following prerequisites:
 - Angular project created via [Angular CLI](https://github.com/angular/angular-cli) v18 or greater
 - older Angular projects can still use a v1.x version or use the standalone program. See the documentation at [README_standalone](https://github.com/angular-schule/angular-cli-ghpages/blob/master/docs/README_standalone.md).
 
-## 🚀 Quick Start (local development) <a name="quickstart-local"></a>
+## 🚀 Quick Start <a name="quickstart"></a>
 
 `angular-cli-ghpages` compiles your app, then pushes the build output to a dedicated branch (default: `gh-pages`) – all with a single command: `ng deploy`. This branch serves as the source for your web host and works out of the box with GitHub Pages and Cloudflare Pages.
 

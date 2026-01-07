@@ -40,64 +40,10 @@
 
 A detailed changelog is available in the [releases](https://github.com/angular-schule/angular-cli-ghpages/releases) section.
 
-**⚠️ BREAKING CHANGE (v2)**
+**⚠️ BREAKING CHANGE (v3)**
 
-The internal build of Angular has changed with Angular 17.
-Unfortunately, there are now a lot of different _build targets_ and builders.
-We will try to guess the correct build target, based on the usual conventions to name them.
-The conventions are shown below, try to specify the build target more and more explicitly until the project compiles.
-
-In the following example, your app is called `test` and you want to deploy the `production` build.
-
-```bash
-ng deploy
-```
-
-If this doesn't work, try this:
-
-```bash
-ng deploy --build-target=test
-```
-
-If this doesn't work, try this:
-
-```bash
-ng deploy --build-target=test:build:production
-```
-
-You can also and modify your `angular.json` to archive the same:
-
-```json
-{
-  "deploy": {
-    "builder": "angular-cli-ghpages:deploy",
-    "options": {
-      "buildTarget": "test:build:production"
-    }
-  }
-}
-```
-
-You can also use `prerenderTarget` instead of `buildTarget` for prerendered/SSG applications.
-
-**Target Resolution Precedence:**
-
-Build target options are resolved in this priority order:
-1. `prerenderTarget` (if specified) — highest priority
-2. `buildTarget`
-3. Default: `${project}:build:production` if none specified
-
-There is no support for `universalBuildTarget` or `serverTarget` because GitHub Pages only supports static assets and no Server-Side Rendering!
-
-We will then try to deploy the `dist/test/browser` folder to GitHub Pages.
-If this is not the folder that you want to serve, you should explicitly specify the directory with the `--dir` option:
-
-```bash
-ng deploy --dir=dist/test/browser
-```
-
-This new build logic is a breaking change, therefore `angular-cli-ghpages` v2+ requires Angular 18 or higher.
-For previous versions of Angular, use `angular-cli-ghpages` v1.x.
+`angular-cli-ghpages` v3 supports Angular 18 to 21.
+For previous versions of Angular, use v1 or v2.
 
 ## ⚠️ Prerequisites <a name="prerequisites"></a>
 

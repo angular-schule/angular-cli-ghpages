@@ -62,8 +62,8 @@ If you already have an existing Angular project on GitHub, skip step 1 and 2.
    and create a new Angular project.
 
    ```sh
-   npm install -g @angular/cli
-   ng new your-angular-project --defaults
+   npm install --location=global @angular/cli
+   ng new your-angular-project
    cd your-angular-project
    ```
 

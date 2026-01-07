@@ -44,10 +44,10 @@ Execute the next three steps to update your test project to the latest Angular v
 1. Install the latest version of the Angular CLI.
 
    ```sh
-   npm install -g @angular/cli
+   npm install --location=global @angular/cli
    ```
 
-2. Run `ng version`, to make sure you have installed Angular v18 or greater.
+2. Run `ng version` to make sure you have installed Angular v18 or greater.
 
 3. Update your existing project using the command:
 

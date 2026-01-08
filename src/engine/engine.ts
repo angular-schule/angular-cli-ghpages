@@ -1,8 +1,9 @@
 import {logging} from '@angular-devkit/core';
-import * as fse from 'fs-extra';
+import * as fs from 'fs/promises';
 import * as path from 'path';
 
 import {Schema} from '../deploy/schema';
+import {pathExists} from '../utils';
 import {GHPages, PublishOptions} from '../interfaces';
 import {defaults} from './defaults';
 import {
@@ -100,10 +101,7 @@ export async function prepareOptions(
 }
 
 async function checkIfDistFolderExists(dir: string) {
-  // CRITICAL FIX: Operator precedence bug
-  // WRONG: await !fse.pathExists(dir) - applies ! to Promise (always false)
-  // RIGHT: !(await fse.pathExists(dir)) - awaits first, then negates boolean
-  if (!(await fse.pathExists(dir))) {
+  if (!await pathExists(dir)) {
     throw new Error(
       'Dist folder does not exist. Check the dir --dir parameter or build the project first!'
     );
@@ -134,7 +132,7 @@ async function createNotFoundFile(
   const notFoundFile = path.join(dir, '404.html');
 
   try {
-    await fse.copy(indexHtml, notFoundFile);
+    await fs.copyFile(indexHtml, notFoundFile);
     logger.info('404.html file created');
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);

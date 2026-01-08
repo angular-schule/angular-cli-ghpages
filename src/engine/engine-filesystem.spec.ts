@@ -11,12 +11,13 @@
  */
 
 import { logging } from '@angular-devkit/core';
-import * as fse from 'fs-extra';
+import * as fs from 'fs/promises';
 import * as os from 'os';
 import * as path from 'path';
 
 import * as engine from './engine';
 import { cleanupMonkeypatch } from './engine.prepare-options-helpers';
+import { pathExists } from '../utils';
 
 describe('engine - real filesystem tests', () => {
   const logger = new logging.Logger('test');
@@ -31,7 +32,7 @@ describe('engine - real filesystem tests', () => {
     const tmpBase = os.tmpdir();
     const uniqueDir = `angular-cli-ghpages-test-${Date.now()}-${Math.random().toString(36).substring(7)}`;
     testDir = path.join(tmpBase, uniqueDir);
-    await fse.ensureDir(testDir);
+    await fs.mkdir(testDir, { recursive: true });
 
     // Spy on logger to capture warnings
     loggerInfoSpy = jest.spyOn(logger, 'info');
@@ -39,8 +40,8 @@ describe('engine - real filesystem tests', () => {
 
   afterEach(async () => {
     // Clean up temp directory after each test
-    if (await fse.pathExists(testDir)) {
-      await fse.remove(testDir);
+    if (await pathExists(testDir)) {
+      await fs.rm(testDir, { recursive: true });
     }
     loggerInfoSpy.mockRestore();
   });
@@ -55,7 +56,7 @@ describe('engine - real filesystem tests', () => {
       // First create an index.html file
       const indexPath = path.join(testDir, 'index.html');
       const indexContent = '<!DOCTYPE html><html><head><title>Test</title></head><body><h1>Test App</h1></body></html>';
-      await fse.writeFile(indexPath, indexContent);
+      await fs.writeFile(indexPath, indexContent);
 
       const ghpages = require('gh-pages');
       jest.spyOn(ghpages, 'clean').mockImplementation(() => {});
@@ -70,16 +71,16 @@ describe('engine - real filesystem tests', () => {
       await engine.run(testDir, options, logger);
 
       const notFoundPath = path.join(testDir, '404.html');
-      const exists = await fse.pathExists(notFoundPath);
+      const exists = await pathExists(notFoundPath);
       expect(exists).toBe(true);
 
-      const notFoundContent = await fse.readFile(notFoundPath, 'utf-8');
+      const notFoundContent = await fs.readFile(notFoundPath, 'utf-8');
       expect(notFoundContent).toBe(indexContent);
     });
 
     it('should NOT create 404.html when notfound is false', async () => {
       const indexPath = path.join(testDir, 'index.html');
-      await fse.writeFile(indexPath, '<html><body>Test</body></html>');
+      await fs.writeFile(indexPath, '<html><body>Test</body></html>');
 
       const ghpages = require('gh-pages');
       jest.spyOn(ghpages, 'clean').mockImplementation(() => {});
@@ -94,7 +95,7 @@ describe('engine - real filesystem tests', () => {
       await engine.run(testDir, options, logger);
 
       const notFoundPath = path.join(testDir, '404.html');
-      const exists = await fse.pathExists(notFoundPath);
+      const exists = await pathExists(notFoundPath);
       expect(exists).toBe(false);
     });
 
@@ -122,13 +123,13 @@ describe('engine - real filesystem tests', () => {
       );
 
       const notFoundPath = path.join(testDir, '404.html');
-      const exists = await fse.pathExists(notFoundPath);
+      const exists = await pathExists(notFoundPath);
       expect(exists).toBe(false);
     });
 
     it('should NOT create 404.html when dry-run is true', async () => {
       const indexPath = path.join(testDir, 'index.html');
-      await fse.writeFile(indexPath, '<html><body>Test</body></html>');
+      await fs.writeFile(indexPath, '<html><body>Test</body></html>');
 
       const ghpages = require('gh-pages');
       jest.spyOn(ghpages, 'clean').mockImplementation(() => {});
@@ -143,7 +144,7 @@ describe('engine - real filesystem tests', () => {
       await engine.run(testDir, options, logger);
 
       const notFoundPath = path.join(testDir, '404.html');
-      const exists = await fse.pathExists(notFoundPath);
+      const exists = await pathExists(notFoundPath);
       expect(exists).toBe(false);
     });
   });
@@ -165,7 +166,7 @@ describe('engine - real filesystem tests', () => {
   describe('gh-pages v6 delegation - cname and nojekyll', () => {
     it('should pass cname option to gh-pages when provided', async () => {
       const indexPath = path.join(testDir, 'index.html');
-      await fse.writeFile(indexPath, '<html>test</html>');
+      await fs.writeFile(indexPath, '<html>test</html>');
 
       const ghpages = require('gh-pages');
       jest.spyOn(ghpages, 'clean').mockImplementation(() => {});
@@ -194,7 +195,7 @@ describe('engine - real filesystem tests', () => {
 
     it('should pass nojekyll option to gh-pages when enabled', async () => {
       const indexPath = path.join(testDir, 'index.html');
-      await fse.writeFile(indexPath, '<html>test</html>');
+      await fs.writeFile(indexPath, '<html>test</html>');
 
       const ghpages = require('gh-pages');
       jest.spyOn(ghpages, 'clean').mockImplementation(() => {});
@@ -221,7 +222,7 @@ describe('engine - real filesystem tests', () => {
 
     it('should pass both cname and nojekyll options when both enabled', async () => {
       const indexPath = path.join(testDir, 'index.html');
-      await fse.writeFile(indexPath, '<html>test</html>');
+      await fs.writeFile(indexPath, '<html>test</html>');
 
       const ghpages = require('gh-pages');
       jest.spyOn(ghpages, 'clean').mockImplementation(() => {});
@@ -250,12 +251,12 @@ describe('engine - real filesystem tests', () => {
 
       // Verify 404.html is still created by us (not delegated to gh-pages)
       const notFoundPath = path.join(testDir, '404.html');
-      expect(await fse.pathExists(notFoundPath)).toBe(true);
+      expect(await pathExists(notFoundPath)).toBe(true);
     });
 
     it('should NOT pass cname when not provided (undefined)', async () => {
       const indexPath = path.join(testDir, 'index.html');
-      await fse.writeFile(indexPath, '<html>test</html>');
+      await fs.writeFile(indexPath, '<html>test</html>');
 
       const ghpages = require('gh-pages');
       jest.spyOn(ghpages, 'clean').mockImplementation(() => {});
@@ -283,7 +284,7 @@ describe('engine - real filesystem tests', () => {
 
     it('should pass nojekyll: false when disabled', async () => {
       const indexPath = path.join(testDir, 'index.html');
-      await fse.writeFile(indexPath, '<html>test</html>');
+      await fs.writeFile(indexPath, '<html>test</html>');
 
       const ghpages = require('gh-pages');
       jest.spyOn(ghpages, 'clean').mockImplementation(() => {});

@@ -12,8 +12,10 @@
 
 import { ChildProcess } from 'child_process';
 
+import { pathExists } from '../utils';
+
 const path = require('path');
-const fs = require('fs-extra');
+const fs = require('fs/promises');
 const os = require('os');
 const { EventEmitter } = require('events');
 
@@ -141,7 +143,7 @@ describe('gh-pages v6.3.0 - behavioral snapshot', () => {
     // Create a real temp directory with test files
     tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'gh-pages-test-'));
     basePath = path.join(tempDir, 'dist');
-    await fs.ensureDir(basePath);
+    await fs.mkdir(basePath, { recursive: true });
 
     // Create test files (including dotfiles for testing dotfiles option)
     await fs.writeFile(path.join(basePath, 'index.html'), '<html>test</html>');
@@ -152,7 +154,8 @@ describe('gh-pages v6.3.0 - behavioral snapshot', () => {
 
   afterAll(async () => {
     // Clean up temp directory
-    await fs.remove(tempDir);
+    // force: true matches fse.remove() behavior (no error if path doesn't exist)
+    await fs.rm(tempDir, { recursive: true, force: true });
   });
 
   beforeEach(() => {
@@ -1010,55 +1013,7 @@ describe('gh-pages v6.3.0 - behavioral snapshot', () => {
    */
 
   /**
-   * gh-pages.clean() behavior
-   *
-   * What does clean() do?
-   * - Removes repo-specific cache subdirectories inside the gh-pages cache folder
-   * - Cache location: find-cache-dir determines base location (usually node_modules/.cache/gh-pages)
-   * - Structure: {cache-dir}/{filenamified-repo-url}/
-   * - Source: gh-pages lib/index.js
-   *
-   * Why this matters:
-   * - Fixes "Remote url mismatch" errors
-   * - Clears stale git state
-   * - angular-cli-ghpages calls this before every deployment
-   *
-   * Note: clean() removes repo-specific subdirectories, not the entire cache parent directory
+   * gh-pages.clean() behavior is tested in engine.gh-pages-clean.spec.ts
+   * That test uses real filesystem operations without mocks.
    */
-  describe('gh-pages.clean() behavior', () => {
-    it('should execute clean() without throwing errors', () => {
-      // clean() synchronously removes repo-specific cache directories
-      // This test verifies it doesn't throw - actual deletion is repo-specific
-      expect(() => ghPages.clean()).not.toThrow();
-    });
-
-    it('should remove repo-specific cache directory', async () => {
-      const findCacheDir = require('find-cache-dir');
-      const filenamify = require('filenamify');
-
-      const cacheBaseDir = findCacheDir({ name: 'gh-pages' });
-      if (!cacheBaseDir) {
-        // Skip if no cache dir available (e.g., in some CI environments)
-        return;
-      }
-
-      // Create a fake repo-specific cache directory
-      const fakeRepoUrl = 'https://github.com/test/clean-test-repo.git';
-      const repoCacheDir = path.join(cacheBaseDir, filenamify(fakeRepoUrl, { replacement: '!' }));
-
-      await fs.ensureDir(repoCacheDir);
-      await fs.writeFile(path.join(repoCacheDir, 'marker.txt'), 'should be deleted');
-      expect(await fs.pathExists(repoCacheDir)).toBe(true);
-
-      // Execute clean
-      ghPages.clean();
-
-      // Give filesystem time to process deletion
-      await new Promise(resolve => setTimeout(resolve, 100));
-
-      // Repo-specific directory should be removed
-      const existsAfter = await fs.pathExists(repoCacheDir);
-      expect(existsAfter).toBe(false);
-    });
-  });
 });

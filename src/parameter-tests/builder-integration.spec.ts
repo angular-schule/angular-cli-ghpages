@@ -20,7 +20,7 @@ import { cleanupMonkeypatch } from '../engine/engine.prepare-options-helpers';
  *
  * WHAT'S REAL vs MOCKED:
  * ✅ REAL: deploy/actions.ts, engine/engine.ts, prepareOptions()
- * ❌ MOCKED: gh-pages.publish() (to capture final options), fs-extra, gh-pages/lib/git
+ * ❌ MOCKED: gh-pages.publish() (to capture final options), utils.pathExists, gh-pages/lib/git
  * This IS a true integration test - we test the full internal code path with external dependencies mocked.
  */
 
@@ -43,43 +43,10 @@ jest.mock('gh-pages', () => ({
   })
 }));
 
-// Mock fs module
-jest.mock('fs', () => ({
-  existsSync: jest.fn(() => true),
-  writeFileSync: jest.fn(),
-  readFileSync: jest.fn(() => ''),
-  mkdirSync: jest.fn(),
-  readdirSync: jest.fn(() => []),
-  statSync: jest.fn(() => ({ isDirectory: () => false })),
-  promises: {
-    readFile: jest.fn(() => Promise.resolve('')),
-    writeFile: jest.fn(() => Promise.resolve()),
-  },
-  native: {} // For fs-extra
-}));
-
-// Mock fs-extra module (it extends fs)
-jest.mock('fs-extra', () => ({
-  existsSync: jest.fn(() => true),
-  writeFileSync: jest.fn(),
-  writeFile: jest.fn(() => Promise.resolve()),
-  readFileSync: jest.fn(() => ''),
-  readFile: jest.fn(() => Promise.resolve('')),
-  mkdirSync: jest.fn(),
-  readdirSync: jest.fn(() => []),
-  statSync: jest.fn(() => ({ isDirectory: () => false })),
-  promises: {
-    readFile: jest.fn(() => Promise.resolve('')),
-    writeFile: jest.fn(() => Promise.resolve()),
-  },
-  native: {},
-  ensureDirSync: jest.fn(),
-  emptyDirSync: jest.fn(),
-  copy: jest.fn(() => Promise.resolve()),
-  copySync: jest.fn(),
-  removeSync: jest.fn(),
-  pathExists: jest.fn(() => Promise.resolve(true)),
-  pathExistsSync: jest.fn(() => true),
+// Mock utils.pathExists
+jest.mock('../utils', () => ({
+  ...jest.requireActual('../utils'),
+  pathExists: jest.fn(() => Promise.resolve(true))
 }));
 
 // Import after mocking

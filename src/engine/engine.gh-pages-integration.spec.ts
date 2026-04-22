@@ -54,9 +54,14 @@ describe('engine - gh-pages integration', () => {
       ghpagesPublishSpy = jest.spyOn(ghpages, 'publish');
     }
 
-    // Set default mock implementations - gh-pages v5+ uses Promise-based API
+    // engine uses the callback form of gh-pages.publish() — see #205
     ghpagesCleanSpy.mockImplementation(() => {});
-    ghpagesPublishSpy.mockResolvedValue(undefined);
+    ghpagesPublishSpy.mockImplementation((_dir: string, _opts: unknown, callback?: (error: Error | null) => void) => {
+      if (callback) {
+        callback(null);
+      }
+      return Promise.resolve(undefined);
+    });
 
     // Create fresh copy of environment for each test
     // This preserves PATH, HOME, etc. needed by git
@@ -124,10 +129,11 @@ describe('engine - gh-pages integration', () => {
       await engine.run(testDir, options, logger);
 
       expect(ghpagesPublishSpy).toHaveBeenCalledTimes(1);
-      // gh-pages v5+ uses Promise-based API (no callback)
+      // engine uses the callback form of gh-pages.publish() — see #205
       expect(ghpagesPublishSpy).toHaveBeenCalledWith(
         testDir,
-        expect.any(Object)
+        expect.any(Object),
+        expect.any(Function)
       );
     });
 
@@ -515,23 +521,28 @@ describe('engine - gh-pages integration', () => {
   });
 
   describe('Promise handling integration', () => {
-    // gh-pages v5+ uses Promise-based API (we no longer use callback-based approach)
+    // engine uses the callback form of gh-pages.publish() — see #205
 
-    it('should invoke gh-pages.publish() without callback (Promise-based)', async () => {
+    it('should invoke gh-pages.publish() with a callback', async () => {
       const testDir = '/test/dist';
       const options = { dotfiles: true, notfound: true, nojekyll: true };
 
       await engine.run(testDir, options, logger);
 
-      // gh-pages v5+ Promise API: publish(dir, options) - no callback
       expect(ghpagesPublishSpy).toHaveBeenCalledWith(
         expect.any(String),
-        expect.any(Object)
+        expect.any(Object),
+        expect.any(Function)
       );
     });
 
-    it('should resolve when gh-pages.publish() resolves', async () => {
-      ghpagesPublishSpy.mockResolvedValue(undefined);
+    it('should resolve when gh-pages.publish() invokes the callback with no error', async () => {
+      ghpagesPublishSpy.mockImplementation((_dir: string, _opts: unknown, callback?: (error: Error | null) => void) => {
+        if (callback) {
+          callback(null);
+        }
+        return Promise.resolve(undefined);
+      });
 
       const testDir = '/test/dist';
       const options = { dotfiles: true, notfound: true, nojekyll: true };
@@ -541,9 +552,14 @@ describe('engine - gh-pages integration', () => {
       ).resolves.toBeUndefined();
     });
 
-    it('should reject when gh-pages.publish() rejects', async () => {
+    it('should reject when gh-pages.publish() invokes the callback with an error', async () => {
       const publishError = new Error('Git push failed');
-      ghpagesPublishSpy.mockRejectedValue(publishError);
+      ghpagesPublishSpy.mockImplementation((_dir: string, _opts: unknown, callback?: (error: Error | null) => void) => {
+        if (callback) {
+          callback(publishError);
+        }
+        return Promise.resolve(undefined);
+      });
 
       const testDir = '/test/dist';
       const options = { dotfiles: true, notfound: true, nojekyll: true };
@@ -551,6 +567,59 @@ describe('engine - gh-pages integration', () => {
       await expect(
         engine.run(testDir, options, logger)
       ).rejects.toThrow('Git push failed');
+    });
+  });
+
+  describe('silent-swallow regression (issue #205)', () => {
+    // gh-pages@6 absorbs errors into its returned Promise via an internal
+    // .then(_, onRejected) handler that doesn't rethrow. The callback, however,
+    // still fires with the error. Engine must use the callback form so git
+    // failures (e.g. auth errors during clone) surface as rejections.
+
+    it('should reject when gh-pages resolves its promise but delivers an error via callback', async () => {
+      const authError = new Error(
+        "fatal: Authentication failed for 'https://github.com/owner/repo.git'"
+      );
+
+      ghpagesPublishSpy.mockImplementation((_dir: string, _opts: unknown, callback?: (error: Error | null) => void) => {
+        if (callback) {
+          callback(authError);
+        }
+        return Promise.resolve(undefined);
+      });
+
+      const testDir = '/test/dist';
+      const options = { dotfiles: true, notfound: true, nojekyll: true };
+
+      await expect(
+        engine.run(testDir, options, logger)
+      ).rejects.toThrow(/Authentication failed/);
+    });
+
+    it('should NOT log the success banner when publish fails via callback', async () => {
+      const authError = new Error('fatal: Authentication failed');
+
+      ghpagesPublishSpy.mockImplementation((_dir: string, _opts: unknown, callback?: (error: Error | null) => void) => {
+        if (callback) {
+          callback(authError);
+        }
+        return Promise.resolve(undefined);
+      });
+
+      const testLogger = new logging.Logger('test');
+      const infoSpy = jest.spyOn(testLogger, 'info');
+
+      const testDir = '/test/dist';
+      const options = { dotfiles: true, notfound: true, nojekyll: true };
+
+      await expect(
+        engine.run(testDir, options, testLogger)
+      ).rejects.toThrow();
+
+      const bannerCall = infoSpy.mock.calls.find(
+        ([msg]) => typeof msg === 'string' && msg.includes('Successfully published')
+      );
+      expect(bannerCall).toBeUndefined();
     });
   });
 });

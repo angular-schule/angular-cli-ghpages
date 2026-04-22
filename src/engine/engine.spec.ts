@@ -279,11 +279,19 @@ describe('engine', () => {
       ghpagesPublishSpy.mockRestore();
     });
 
+    // engine uses the callback form of gh-pages.publish() — see #205
+    const mockPublishCallback = (error: Error | null) =>
+      (_dir: unknown, _opts: unknown, callback?: (err: Error | null) => void) => {
+        if (callback) {
+          callback(error);
+        }
+        return Promise.resolve(undefined);
+      };
+
     it('should reject when gh-pages.publish rejects with error', async () => {
       const publishError = new Error('Git push failed: permission denied');
 
-      // gh-pages v5+ properly rejects with errors
-      ghpagesPublishSpy.mockRejectedValue(publishError);
+      ghpagesPublishSpy.mockImplementation(mockPublishCallback(publishError));
 
       const testDir = '/test/dist';
       const options = { dotfiles: true, notfound: true, nojekyll: true };
@@ -296,7 +304,7 @@ describe('engine', () => {
     it('should preserve error message through rejection', async () => {
       const detailedError = new Error('Remote url mismatch. Expected https://github.com/user/repo.git but got https://github.com/other/repo.git');
 
-      ghpagesPublishSpy.mockRejectedValue(detailedError);
+      ghpagesPublishSpy.mockImplementation(mockPublishCallback(detailedError));
 
       const testDir = '/test/dist';
       const options = { dotfiles: true, notfound: true, nojekyll: true };
@@ -309,7 +317,7 @@ describe('engine', () => {
     it('should reject with authentication error from gh-pages', async () => {
       const authError = new Error('Authentication failed: Invalid credentials');
 
-      ghpagesPublishSpy.mockRejectedValue(authError);
+      ghpagesPublishSpy.mockImplementation(mockPublishCallback(authError));
 
       const testDir = '/test/dist';
       const options = { dotfiles: true, notfound: true, nojekyll: true };
@@ -320,8 +328,7 @@ describe('engine', () => {
     });
 
     it('should resolve successfully when gh-pages.publish resolves', async () => {
-      // gh-pages v5+ resolves the Promise on success
-      ghpagesPublishSpy.mockResolvedValue(undefined);
+      ghpagesPublishSpy.mockImplementation(mockPublishCallback(null));
 
       const testDir = '/test/dist';
       const options = { dotfiles: true, notfound: true, nojekyll: true };

@@ -60,7 +60,12 @@ describe('engine - real filesystem tests', () => {
 
       const ghpages = require('gh-pages');
       jest.spyOn(ghpages, 'clean').mockImplementation(() => {});
-      jest.spyOn(ghpages, 'publish').mockResolvedValue(undefined);
+      jest.spyOn(ghpages, 'publish').mockImplementation((_dir: unknown, _opts: unknown, callback?: (error: Error | null) => void) => {
+        if (callback) {
+          callback(null);
+        }
+        return Promise.resolve(undefined);
+      });
 
       const options = {
         notfound: true,
@@ -84,7 +89,12 @@ describe('engine - real filesystem tests', () => {
 
       const ghpages = require('gh-pages');
       jest.spyOn(ghpages, 'clean').mockImplementation(() => {});
-      jest.spyOn(ghpages, 'publish').mockResolvedValue(undefined);
+      jest.spyOn(ghpages, 'publish').mockImplementation((_dir: unknown, _opts: unknown, callback?: (error: Error | null) => void) => {
+        if (callback) {
+          callback(null);
+        }
+        return Promise.resolve(undefined);
+      });
 
       const options = {
         notfound: false,
@@ -104,7 +114,12 @@ describe('engine - real filesystem tests', () => {
 
       const ghpages = require('gh-pages');
       jest.spyOn(ghpages, 'clean').mockImplementation(() => {});
-      jest.spyOn(ghpages, 'publish').mockResolvedValue(undefined);
+      jest.spyOn(ghpages, 'publish').mockImplementation((_dir: unknown, _opts: unknown, callback?: (error: Error | null) => void) => {
+        if (callback) {
+          callback(null);
+        }
+        return Promise.resolve(undefined);
+      });
 
       const options = {
         notfound: true,
@@ -173,8 +188,11 @@ describe('engine - real filesystem tests', () => {
 
       let capturedOptions: { cname?: string; nojekyll?: boolean } = {};
       const publishSpy = jest.spyOn(ghpages, 'publish').mockImplementation(
-        (dir: string, options: { cname?: string; nojekyll?: boolean }) => {
+        (_dir: string, options: { cname?: string; nojekyll?: boolean }, callback?: (error: Error | null) => void) => {
           capturedOptions = options;
+          if (callback) {
+            callback(null);
+          }
           return Promise.resolve();
         }
       );
@@ -202,8 +220,11 @@ describe('engine - real filesystem tests', () => {
 
       let capturedOptions: { cname?: string; nojekyll?: boolean } = {};
       const publishSpy = jest.spyOn(ghpages, 'publish').mockImplementation(
-        (dir: string, options: { cname?: string; nojekyll?: boolean }) => {
+        (_dir: string, options: { cname?: string; nojekyll?: boolean }, callback?: (error: Error | null) => void) => {
           capturedOptions = options;
+          if (callback) {
+            callback(null);
+          }
           return Promise.resolve();
         }
       );
@@ -229,8 +250,11 @@ describe('engine - real filesystem tests', () => {
 
       let capturedOptions: { cname?: string; nojekyll?: boolean } = {};
       const publishSpy = jest.spyOn(ghpages, 'publish').mockImplementation(
-        (dir: string, options: { cname?: string; nojekyll?: boolean }) => {
+        (_dir: string, options: { cname?: string; nojekyll?: boolean }, callback?: (error: Error | null) => void) => {
           capturedOptions = options;
+          if (callback) {
+            callback(null);
+          }
           return Promise.resolve();
         }
       );
@@ -263,8 +287,11 @@ describe('engine - real filesystem tests', () => {
 
       let capturedOptions: { cname?: string; nojekyll?: boolean } = {};
       const publishSpy = jest.spyOn(ghpages, 'publish').mockImplementation(
-        (dir: string, options: { cname?: string; nojekyll?: boolean }) => {
+        (_dir: string, options: { cname?: string; nojekyll?: boolean }, callback?: (error: Error | null) => void) => {
           capturedOptions = options;
+          if (callback) {
+            callback(null);
+          }
           return Promise.resolve();
         }
       );
@@ -291,8 +318,11 @@ describe('engine - real filesystem tests', () => {
 
       let capturedOptions: { cname?: string; nojekyll?: boolean } = {};
       const publishSpy = jest.spyOn(ghpages, 'publish').mockImplementation(
-        (dir: string, options: { cname?: string; nojekyll?: boolean }) => {
+        (_dir: string, options: { cname?: string; nojekyll?: boolean }, callback?: (error: Error | null) => void) => {
           capturedOptions = options;
+          if (callback) {
+            callback(null);
+          }
           return Promise.resolve();
         }
       );

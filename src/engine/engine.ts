@@ -14,7 +14,8 @@ import {
   warnDeprecatedParameters,
   appendCIMetadata,
   injectTokenIntoRepoUrl,
-  createCleanupBeforeAddHook
+  createCleanupBeforeAddHook,
+  ensureGhPagesCacheDir
 } from './engine.prepare-options-helpers';
 
 export async function run(
@@ -23,6 +24,12 @@ export async function run(
   logger: logging.LoggerApi
 ) {
   options = await prepareOptions(options, logger);
+
+  // Provide a cache-dir fallback when there's no package.json in cwd
+  // (e.g. `npx angular-cli-ghpages` in a static-content repo). Without this,
+  // gh-pages' internal find-cache-dir returns undefined and path.join throws.
+  // See issue #203. Must run before the first find-cache-dir call.
+  ensureGhPagesCacheDir();
 
   // CRITICAL: Must require gh-pages AFTER monkeypatching util.debuglog
   // gh-pages calls util.debuglog('gh-pages') during module initialization to set up its logger.

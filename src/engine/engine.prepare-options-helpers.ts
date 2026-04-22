@@ -7,6 +7,7 @@
 
 import { logging } from '@angular-devkit/core';
 import * as fs from 'fs/promises';
+import * as os from 'os';
 import * as path from 'path';
 import * as util from 'util';
 
@@ -73,6 +74,68 @@ export function cleanupMonkeypatch(): void {
     utilMutable.debuglog = originalDebuglog;
     originalDebuglog = null;
   }
+}
+
+/**
+ * Ensure gh-pages' internal `find-cache-dir` call resolves to a real path.
+ *
+ * gh-pages@6.3.0 calls `findCacheDir({ name: 'gh-pages' })` for both `clean()`
+ * and `publish()`. `find-cache-dir` walks up from cwd looking for a
+ * `package.json`; if none is found (e.g. `npx angular-cli-ghpages` run in a
+ * repo that is just a `dist/` folder), it returns `undefined`, and gh-pages
+ * then blows up with `TypeError: The "path" argument must be of type string
+ * ... Received undefined` inside `path.join(undefined, ...)`.
+ *
+ * Workaround: `find-cache-dir` honors the `CACHE_DIR` env var — if set (and
+ * not a boolean-ish value), it returns `path.join(CACHE_DIR, name)` without
+ * any package.json lookup. We set it to an os.tmpdir() fallback, but only
+ * when (a) the user hasn't already set it themselves, and (b) no package.json
+ * is reachable from cwd. See issue #203.
+ *
+ * We don't use find-cache-dir to probe because it captures `process.env` by
+ * reference at module load and is then cached in `require.cache`; that makes
+ * it brittle under test reassignment of `process.env`.
+ *
+ * MUST run before gh-pages' `clean()` / `publish()` invoke find-cache-dir.
+ */
+export function ensureGhPagesCacheDir(cwd: string = process.cwd()): void {
+  // Respect a user-set CACHE_DIR. find-cache-dir itself treats boolean-ish
+  // values as "not set" (it opts out of its early return), so mirror that.
+  const existing = process.env.CACHE_DIR;
+  if (existing && !['true', 'false', '1', '0'].includes(existing)) {
+    return;
+  }
+
+  if (hasReachablePackageJson(cwd)) {
+    return;
+  }
+
+  // Stable, per-user fallback location. gh-pages itself creates
+  // `<CACHE_DIR>/gh-pages/<filenamify(repo)>` underneath this.
+  process.env.CACHE_DIR = path.join(os.tmpdir(), 'angular-cli-ghpages-cache');
+}
+
+/**
+ * Walk up from `startDir` looking for a `package.json`. Mirrors what
+ * pkg-dir/find-cache-dir do internally, but avoids their module-level
+ * `process.env` caching (see `ensureGhPagesCacheDir`).
+ */
+function hasReachablePackageJson(startDir: string): boolean {
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  const fsSync = require('fs');
+  let dir = path.resolve(startDir);
+  // Safety cap against pathological infinite loops; real trees are <50 deep.
+  for (let i = 0; i < 50; i++) {
+    if (fsSync.existsSync(path.join(dir, 'package.json'))) {
+      return true;
+    }
+    const parent = path.dirname(dir);
+    if (parent === dir) {
+      return false;
+    }
+    dir = parent;
+  }
+  return false;
 }
 
 /**

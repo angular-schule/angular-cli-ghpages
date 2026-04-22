@@ -5,6 +5,8 @@
  * by testing each helper function independently.
  */
 
+import * as fs from 'fs/promises';
+import * as os from 'os';
 import * as path from 'path';
 import { logging } from '@angular-devkit/core';
 
@@ -635,7 +637,7 @@ describe('prepareOptions helpers - intensive tests', () => {
     });
 
     it('should throw helpful error when not in a git repository', async () => {
-      // Change to a non-git directory
+      // Change to a non-git directory (also incidentally exercises ensureGhPagesCacheDir via engine.run elsewhere)
       const originalCwd = process.cwd();
       const fs = require('fs/promises');
       const tempDir = path.join(require('os').tmpdir(), 'not-a-git-repo-test-' + Date.now());
@@ -653,6 +655,68 @@ describe('prepareOptions helpers - intensive tests', () => {
       } finally {
         process.chdir(originalCwd);
         await fs.rm(tempDir, { recursive: true, force: true });
+      }
+    });
+  });
+
+  describe('ensureGhPagesCacheDir - find-cache-dir fallback (issue #203)', () => {
+    // Each test must explicitly manage CACHE_DIR because the outer beforeEach
+    // clones `originalEnv` but does NOT delete CACHE_DIR.
+    beforeEach(() => {
+      delete process.env.CACHE_DIR;
+    });
+
+    it('sets CACHE_DIR to an os.tmpdir() fallback when cwd has no package.json', async () => {
+      const tmp = await fs.mkdtemp(path.join(os.tmpdir(), 'ghp-203-unit-'));
+      try {
+        helpers.ensureGhPagesCacheDir(tmp);
+        expect(process.env.CACHE_DIR).toBeDefined();
+        // Must be inside os.tmpdir() and non-empty
+        expect(process.env.CACHE_DIR!.startsWith(os.tmpdir())).toBe(true);
+      } finally {
+        await fs.rm(tmp, { recursive: true, force: true });
+      }
+    });
+
+    it('does NOT set CACHE_DIR when cwd has a reachable package.json', () => {
+      // This repo root (parent of __dirname) has a package.json, so find-cache-dir succeeds.
+      const repoDir = path.resolve(__dirname, '..');
+      helpers.ensureGhPagesCacheDir(repoDir);
+      expect(process.env.CACHE_DIR).toBeUndefined();
+    });
+
+    it('respects a user-set CACHE_DIR (does not overwrite)', async () => {
+      const tmp = await fs.mkdtemp(path.join(os.tmpdir(), 'ghp-203-respect-'));
+      try {
+        const userChosen = '/user/chosen/cache';
+        process.env.CACHE_DIR = userChosen;
+        helpers.ensureGhPagesCacheDir(tmp);
+        expect(process.env.CACHE_DIR).toBe(userChosen);
+      } finally {
+        await fs.rm(tmp, { recursive: true, force: true });
+      }
+    });
+
+    it('DOES apply fallback when CACHE_DIR is a boolean-ish value (matches find-cache-dir semantics)', async () => {
+      const tmp = await fs.mkdtemp(path.join(os.tmpdir(), 'ghp-203-boolish-'));
+      try {
+        process.env.CACHE_DIR = 'true'; // find-cache-dir treats this as "unset"
+        helpers.ensureGhPagesCacheDir(tmp);
+        expect(process.env.CACHE_DIR).not.toBe('true');
+        expect(process.env.CACHE_DIR!.startsWith(os.tmpdir())).toBe(true);
+      } finally {
+        await fs.rm(tmp, { recursive: true, force: true });
+      }
+    });
+
+    it('fallback path is inside os.tmpdir() and includes our namespace', async () => {
+      const tmp = await fs.mkdtemp(path.join(os.tmpdir(), 'ghp-203-ns-'));
+      try {
+        helpers.ensureGhPagesCacheDir(tmp);
+        expect(process.env.CACHE_DIR).toBeDefined();
+        expect(process.env.CACHE_DIR!).toBe(path.join(os.tmpdir(), 'angular-cli-ghpages-cache'));
+      } finally {
+        await fs.rm(tmp, { recursive: true, force: true });
       }
     });
   });

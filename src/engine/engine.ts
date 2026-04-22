@@ -197,7 +197,17 @@ async function publishViaGhPages(
     nojekyll: options.nojekyll
   };
 
-  // gh-pages v5+ fixed the Promise bug where errors didn't reject properly
-  // We can now safely await the promise directly
-  await ghPages.publish(dir, ghPagesOptions);
+  // gh-pages@6 silently absorbs errors via its internal .then(_, onRejected)
+  // handler (and returns undefined from some early-exit paths, upstream #465).
+  // The callback always fires with the error, so we bridge that to a rejection.
+  // See issue #205.
+  await new Promise<void>((resolve, reject) => {
+    ghPages.publish(dir, ghPagesOptions, (error: Error | null) => {
+      if (error) {
+        reject(error);
+        return;
+      }
+      resolve();
+    });
+  });
 }

@@ -34,11 +34,14 @@ jest.mock('gh-pages/lib/git', () => {
   }));
 });
 
-// Mock gh-pages module - gh-pages v5+ uses Promise-based API
+// Mock gh-pages module — engine uses the callback form (#205)
 jest.mock('gh-pages', () => ({
   clean: jest.fn(),
-  publish: jest.fn((dir: string, options: PublishOptions) => {
+  publish: jest.fn((_dir: string, options: PublishOptions, callback?: (error: Error | null) => void) => {
     capturedPublishOptions = options;
+    if (callback) {
+      callback(null);
+    }
     return Promise.resolve();
   })
 }));

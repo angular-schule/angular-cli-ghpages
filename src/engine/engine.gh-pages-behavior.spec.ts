@@ -1016,4 +1016,54 @@ describe('gh-pages v6.3.0 - behavioral snapshot', () => {
    * gh-pages.clean() behavior is tested in engine.gh-pages-clean.spec.ts
    * That test uses real filesystem operations without mocks.
    */
+
+  /**
+   * End-to-end canary for issue #205: drives the REAL gh-pages library
+   * through engine.run() with a mocked child_process.spawn that simulates
+   * an HTTPS auth failure during `git clone`. If upstream gh-pages ever
+   * fixes the `.then(_, onRejected)` absorption pattern, this test will
+   * still pass; if they change callback semantics, it will fail loudly.
+   */
+  describe('auth-failure silent-swallow regression (issue #205)', () => {
+    const engine = require('./engine');
+    const { cleanupMonkeypatch } = require('./engine.prepare-options-helpers');
+    const { logging } = require('@angular-devkit/core');
+
+    beforeEach(() => {
+      cleanupMonkeypatch();
+    });
+
+    it('engine.run() should reject when git clone fails with fatal: Authentication failed', async () => {
+      mockSpawn.mockImplementationOnce((cmd: string, args: string[] | undefined) => {
+        const capturedArgs = args || [];
+        spawnCalls.push({ cmd, args: capturedArgs, options: undefined });
+        const child = createMockChildProcess();
+        setImmediate(() => {
+          child.stderr!.emit(
+            'data',
+            Buffer.from(
+              "fatal: Authentication failed for 'https://github.com/owner/repo.git'"
+            )
+          );
+          child.emit!('close', 128);
+        });
+        return child;
+      });
+
+      const options = {
+        repo: 'https://x-access-token:bad-token@github.com/owner/repo.git',
+        branch: 'gh-pages',
+        dotfiles: true,
+        notfound: true,
+        nojekyll: true
+      };
+
+      await expect(
+        engine.run(basePath, options, new logging.NullLogger())
+      ).rejects.toThrow();
+
+      expect(spawnCalls[0]?.cmd).toBe('git');
+      expect(spawnCalls[0]?.args[0]).toBe('clone');
+    });
+  });
 });

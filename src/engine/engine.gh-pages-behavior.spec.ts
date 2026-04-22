@@ -53,7 +53,7 @@ function createMockChildProcess(): Partial<ChildProcess> {
  * This is intentional - we want to know about any new git operations.
  */
 const EXPECTED_GIT_COMMANDS = [
-  'clone', 'clean', 'fetch', 'checkout', 'ls-remote', 'reset',
+  'clone', 'clean', 'fetch', 'checkout', 'ls-remote', 'ls-files', 'reset',
   'rm', 'add', 'config', 'diff-index', 'commit', 'tag', 'push', 'update-ref'
 ];
 
@@ -1064,6 +1064,89 @@ describe('gh-pages v6.3.0 - behavioral snapshot', () => {
 
       expect(spawnCalls[0]?.cmd).toBe('git');
       expect(spawnCalls[0]?.args[0]).toBe('clone');
+    });
+  });
+
+  /**
+   * End-to-end regression for issue #204: gh-pages@6.3.0's "Removing files" step
+   * skips dotfiles and submodule gitlinks. Our beforeAdd hook should catch them
+   * via `git ls-files` and `git rm` the leftovers while leaving dist files alone.
+   */
+  describe('submodule / dotfile cleanup regression (issue #204)', () => {
+    const engine = require('./engine');
+    const { cleanupMonkeypatch } = require('./engine.prepare-options-helpers');
+    const { logging } = require('@angular-devkit/core');
+
+    beforeEach(() => {
+      cleanupMonkeypatch();
+    });
+
+    it('engine.run() should git rm leftover gh-pages branch files not present in dist', async () => {
+      const repo = 'https://github.com/owner/leftover-test.git';
+      currentTestContext.repo = repo;
+
+      const leftoverFiles = [
+        '.github/workflows/deploy.yml',
+        '.gitignore',
+        '.gitmodules',
+        'build' // submodule gitlink
+      ];
+
+      // Reconfigure the default mockSpawn so `git ls-files` returns our leftover set.
+      // Other git commands keep the outer describe's default behavior.
+      mockSpawn.mockImplementation((cmd: string, args: string[] | undefined, opts: unknown) => {
+        const capturedArgs = args || [];
+        spawnCalls.push({ cmd, args: capturedArgs, options: opts });
+
+        if (cmd === 'git' && capturedArgs[0] && !EXPECTED_GIT_COMMANDS.includes(capturedArgs[0])) {
+          throw new Error(`Unexpected git command: ${capturedArgs[0]}. Add to whitelist if intentional.`);
+        }
+
+        const child = createMockChildProcess();
+        setImmediate(() => {
+          let output = '';
+          if (cmd === 'git' && capturedArgs[0] === 'ls-files') {
+            output = leftoverFiles.join('\0') + '\0';
+          } else if (cmd === 'git' && capturedArgs[0] === 'config' &&
+                     capturedArgs[1] === '--get' && capturedArgs[2]?.startsWith('remote.')) {
+            output = repo;
+          } else if (cmd === 'git' && capturedArgs[0] === 'ls-remote') {
+            output = 'refs/heads/gh-pages';
+          } else if (cmd === 'git' && capturedArgs[0] === 'diff-index') {
+            child.emit!('close', 1);
+            return;
+          }
+          child.stdout!.emit('data', Buffer.from(output));
+          child.emit!('close', 0);
+        });
+        return child;
+      });
+
+      const options = {
+        repo,
+        branch: 'gh-pages',
+        dotfiles: true,
+        notfound: false,
+        nojekyll: false
+      };
+
+      await engine.run(basePath, options, new logging.NullLogger());
+
+      // Our hook should have issued `git ls-files -z`.
+      const lsFilesCall = spawnCalls.find(c => c.cmd === 'git' && c.args[0] === 'ls-files');
+      expect(lsFilesCall).toBeDefined();
+      expect(lsFilesCall!.args).toContain('-z');
+
+      // And a subsequent `git rm` that targets exactly the leftovers.
+      const rmCalls = spawnCalls.filter(c => c.cmd === 'git' && c.args[0] === 'rm');
+      const cleanupCall = rmCalls.find(c => leftoverFiles.every(f => c.args.includes(f)));
+      expect(cleanupCall).toBeDefined();
+
+      // Dist files (from the outer beforeAll: index.html, main.js, styles.css, .htaccess)
+      // must NOT be in the cleanup call — those are files we just copied.
+      for (const distFile of ['index.html', 'main.js', 'styles.css', '.htaccess']) {
+        expect(cleanupCall!.args).not.toContain(distFile);
+      }
     });
   });
 });

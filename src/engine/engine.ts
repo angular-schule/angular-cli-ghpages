@@ -13,7 +13,8 @@ import {
   handleUserCredentials,
   warnDeprecatedParameters,
   appendCIMetadata,
-  injectTokenIntoRepoUrl
+  injectTokenIntoRepoUrl,
+  createCleanupBeforeAddHook
 } from './engine.prepare-options-helpers';
 
 export async function run(
@@ -194,7 +195,11 @@ async function publishViaGhPages(
     dotfiles: options.dotfiles,
     user: options.user,
     cname: options.cname,
-    nojekyll: options.nojekyll
+    nojekyll: options.nojekyll,
+    // Workaround for gh-pages#612 (unreleased in v6.3.0): clean up leftover
+    // gh-pages branch files (dotfiles, submodule gitlinks) that the broken
+    // remove step misses. Skipped when the user opts into additive mode.
+    beforeAdd: options.add ? undefined : createCleanupBeforeAddHook(dir, options.dotfiles, logger)
   };
 
   // gh-pages@6 silently absorbs errors via its internal .then(_, onRejected)

@@ -6,6 +6,8 @@
  */
 
 import { logging } from '@angular-devkit/core';
+import * as fs from 'fs/promises';
+import * as path from 'path';
 import * as util from 'util';
 
 import { Schema } from '../deploy/schema';
@@ -223,6 +225,86 @@ export async function injectTokenIntoRepoUrl(options: PreparedOptions): Promise<
       );
     }
   }
+}
+
+/**
+ * Minimal subset of the gh-pages internal Git class that our cleanup hook relies on.
+ * See src/node_modules/gh-pages/lib/git.js — `Git.prototype.exec`, `Git.prototype.rm`, `cwd`, `output`.
+ */
+export interface GhPagesGit {
+  cwd: string;
+  output: string;
+  exec(...args: string[]): Promise<GhPagesGit>;
+  rm(files: string[]): Promise<GhPagesGit>;
+}
+
+/**
+ * Recursively walk a directory and return the set of relative file paths,
+ * using POSIX separators so the output matches what `git ls-files` prints.
+ * Honors the same dotfile-inclusion semantics as gh-pages' `options.dotfiles`.
+ */
+export async function collectDistFiles(
+  baseDir: string,
+  includeDotfiles: boolean
+): Promise<Set<string>> {
+  const files = new Set<string>();
+
+  async function walk(relDir: string): Promise<void> {
+    const fullDir = relDir ? path.join(baseDir, relDir) : baseDir;
+    const entries = await fs.readdir(fullDir, { withFileTypes: true });
+    for (const entry of entries) {
+      if (!includeDotfiles && entry.name.startsWith('.')) {
+        continue;
+      }
+      const relPath = relDir ? `${relDir}/${entry.name}` : entry.name;
+      if (entry.isDirectory()) {
+        await walk(relPath);
+      } else if (entry.isFile()) {
+        files.add(relPath);
+      }
+    }
+  }
+
+  await walk('');
+  return files;
+}
+
+/**
+ * Create a `beforeAdd` hook that removes leftover files from the gh-pages branch
+ * before gh-pages stages our dist for commit.
+ *
+ * Why this exists (issue #204):
+ * gh-pages@6.3.0's "Removing files" step calls globby without `dot: true`, so
+ * dotfiles (.gitignore, .gitmodules, .github/…) and submodule gitlinks from the
+ * gh-pages branch are NOT removed before our dist is copied on top. They then
+ * get re-committed and leak into the deploy.
+ *
+ * Fix: after gh-pages' broken remove + our file copy, ask git what it still has
+ * indexed (`git ls-files -z`), diff against the set of files in our dist, and
+ * `git rm` the leftovers. `git rm` correctly handles submodule gitlinks too.
+ *
+ * Upstream fix: tschaub/gh-pages#612 (merged 2025-08-09, unreleased as of
+ * gh-pages@6.3.0). When a release containing that PR lands, this hook becomes
+ * redundant and can be removed.
+ */
+export function createCleanupBeforeAddHook(
+  distDir: string,
+  dotfiles: boolean,
+  logger: logging.LoggerApi
+): (git: GhPagesGit) => Promise<void> {
+  return async (git) => {
+    const distFiles = await collectDistFiles(distDir, dotfiles);
+    await git.exec('ls-files', '-z');
+    const tracked = (git.output || '').split('\0').filter(Boolean);
+    const toRemove = tracked.filter((f) => !distFiles.has(f));
+    if (toRemove.length === 0) {
+      return;
+    }
+    logger.info(
+      `Removing ${toRemove.length} leftover file(s) from gh-pages branch not in dist: ${toRemove.join(', ')}`
+    );
+    await git.rm(toRemove);
+  };
 }
 
 /**

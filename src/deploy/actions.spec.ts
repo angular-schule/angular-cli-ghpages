@@ -119,7 +119,7 @@ describe('Deploy Angular apps', () => {
       expect(dir).toBe(`dist/${PROJECT}/browser`);
     });
 
-    it('appends /browser when outputPath is string (Angular 18-19)', async () => {
+    it('appends /browser when outputPath is a string', async () => {
       const dir = await captureDir('dist/my-app');
       expect(dir).toBe('dist/my-app/browser');
     });

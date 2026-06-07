@@ -155,7 +155,7 @@ describe('ng-add', () => {
     });
   });
 
-  describe('Angular 17+ outputPath formats', () => {
+  describe('outputPath formats', () => {
     it('should accept Angular 20+ projects without outputPath (uses default)', async () => {
       const tree = Tree.empty();
       tree.create(

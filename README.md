@@ -40,15 +40,15 @@
 
 A detailed changelog is available in the [releases](https://github.com/angular-schule/angular-cli-ghpages/releases) section.
 
-`angular-cli-ghpages` v3 supports Angular 18 to 21.
-For previous versions of Angular, use v1 or v2.
+`angular-cli-ghpages` supports Angular 20 to 22.
+For previous versions of Angular, use an older release of this package.
 
 ## ⚠️ Prerequisites <a name="prerequisites"></a>
 
 This command has the following prerequisites:
 
 - Git 1.9 or higher (execute `git --version` to check your version)
-- Angular project created via [Angular CLI](https://github.com/angular/angular-cli) v18 or greater
+- Angular project created via [Angular CLI](https://github.com/angular/angular-cli) v20 or greater
 - Older Angular projects can still use a v1.x version or use the standalone program. See the documentation at [README_standalone](https://github.com/angular-schule/angular-cli-ghpages/blob/master/docs/README_standalone.md).
 
 ## 🚀 Quick Start <a name="quickstart"></a>

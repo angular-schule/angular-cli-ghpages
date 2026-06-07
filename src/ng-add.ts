@@ -49,14 +49,10 @@ export const ngAdd = (options: NgAddOptions) => async (
     );
   }
 
-  // outputPath validation:
-  // - Angular 20+: outputPath is omitted (uses default dist/<project-name>)
-  // - Angular 17-19: object format { base: "dist/app", browser: "", ... }
-  // - Earlier versions: string format "dist/app"
-  // See: https://github.com/angular/angular-cli/pull/26675
+  // outputPath validation: accept undefined (Angular 20+ default), string, or { base, ... } object.
   const outputPath = buildTarget.options?.outputPath;
   const hasValidOutputPath =
-    outputPath === undefined || // Angular 20+ uses sensible defaults
+    outputPath === undefined ||
     typeof outputPath === 'string' ||
     (typeof outputPath === 'object' && outputPath !== null && 'base' in outputPath);
 

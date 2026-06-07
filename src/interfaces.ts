@@ -16,7 +16,7 @@ export type AngularOutputPath = string | AngularOutputPathObject;
  * Validates:
  * - value is an object (not null, not array)
  * - base property exists and is a non-empty string
- * - browser property, if present, is a string (can be empty for Angular 19+ SPA mode)
+ * - browser property, if present, is a string (empty string allowed for SPA mode)
  */
 export function isOutputPathObject(value: unknown): value is AngularOutputPathObject {
   if (!value || typeof value !== 'object' || Array.isArray(value)) {

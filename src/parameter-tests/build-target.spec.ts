@@ -3,6 +3,7 @@ import { JsonObject, logging } from '@angular-devkit/core';
 import deploy from '../deploy/actions';
 import { BuildTarget } from '../interfaces';
 import { Schema } from '../deploy/schema';
+import { MockInstance } from 'vitest';
 
 /**
  * BUILD TARGET RESOLUTION TESTS
@@ -18,7 +19,7 @@ import { Schema } from '../deploy/schema';
 
 describe('Build Target Resolution', () => {
   let context: BuilderContext;
-  let scheduleTargetSpy: jest.SpyInstance;
+  let scheduleTargetSpy: MockInstance;
   let capturedOptions: Schema | null = null;
 
   const PROJECT = 'test-project';
@@ -33,7 +34,7 @@ describe('Build Target Resolution', () => {
   beforeEach(() => {
     capturedOptions = null;
     context = createMockContext();
-    scheduleTargetSpy = jest.spyOn(context, 'scheduleTarget');
+    scheduleTargetSpy = vi.spyOn(context, 'scheduleTarget');
   });
 
   describe('buildTarget parameter', () => {

@@ -20,10 +20,10 @@ import {
 
 export async function run(
   dir: string,
-  options: PreparedOptions,
+  options: Schema | PreparedOptions,
   logger: logging.LoggerApi
 ) {
-  options = await prepareOptions(options, logger);
+  const prepared = await prepareOptions(options, logger);
 
   // Provide a cache-dir fallback when there's no package.json in cwd
   // (e.g. `npx angular-cli-ghpages` in a static-content repo). Without this,
@@ -41,18 +41,18 @@ export async function run(
 
   // always clean the cache directory.
   // avoids "Error: Remote url mismatch."
-  if (options.dryRun) {
+  if (prepared.dryRun) {
     logger.info('Dry-run / SKIPPED: cleaning of the cache directory');
   } else {
     ghpages.clean();
   }
 
   await checkIfDistFolderExists(dir);
-  await createNotFoundFile(dir, options, logger);
+  await createNotFoundFile(dir, prepared, logger);
   // Note: CNAME and .nojekyll files are now created by gh-pages v6+ via options
-  await publishViaGhPages(ghpages, dir, options, logger);
+  await publishViaGhPages(ghpages, dir, prepared, logger);
 
-  if (!options.dryRun) {
+  if (!prepared.dryRun) {
     logger.info(
       '🌟 Successfully published via angular-cli-ghpages! Have a nice day!'
     );

@@ -1,7 +1,8 @@
 {
   "extends": "./tsconfig.json",
   "compilerOptions": {
-    "declaration": true
+    "declaration": true,
+    "types": ["node"]
   },
-  "exclude": ["node_modules", "test", "**/*spec.ts"]
+  "exclude": ["node_modules", "dist", "**/*spec.ts", "vitest.config.ts"]
 }

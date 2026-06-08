@@ -1,35 +1,33 @@
 /**
  * Tests for angular-cli-ghpages fork-specific fixes and features
- * 
+ *
  * This file contains tests for the 2 intentional improvements we made
  * to commander v3.0.2 for angular-cli-ghpages:
- * 
+ *
  * FIX 1/2: Tightened negate detection regex
  * FIX 2/2: Support for short-only and custom version flags
- * 
+ *
  * These tests do NOT exist in the original commander v3.0.2.
  */
 
+import { MockInstance } from "vitest";
+
 const commander = require('../');
 
-describe('Fork Fix 1: Negate detection with tightened regex', () => {
-  // This is implicitly tested by test.options.bool.no.spec.ts
-  // No additional tests needed here
-});
 
 describe('Fork Fix 2: Version short-only and custom flags', () => {
   describe('version() with short-only flag', () => {
-    let exitSpy: jest.SpyInstance;
-    let writeSpy: jest.SpyInstance;
+    let exitSpy: MockInstance;
+    let writeSpy: MockInstance;
     let captured: {out: string, code: null | number};
 
     beforeEach(() => {
       captured = {out: '', code: null};
-      exitSpy = jest.spyOn(process, 'exit').mockImplementation((c?: number) => {
+      exitSpy = vi.spyOn(process, 'exit').mockImplementation((c?: number) => {
         captured.code = c ?? 0;
         return undefined as never;
       });
-      writeSpy = jest.spyOn(process.stdout, 'write').mockImplementation((s: string | Uint8Array) => {
+      writeSpy = vi.spyOn(process.stdout, 'write').mockImplementation((s: string | Uint8Array) => {
         captured.out += s;
         return true;
       });
@@ -68,17 +66,17 @@ describe('Fork Fix 2: Version short-only and custom flags', () => {
   });
 
   describe('helpOption() with custom flags', () => {
-    let exitSpy: jest.SpyInstance;
-    let writeSpy: jest.SpyInstance;
+    let exitSpy: MockInstance;
+    let writeSpy: MockInstance;
     let exitCode: null | number;
 
     beforeEach(() => {
       exitCode = null;
-      exitSpy = jest.spyOn(process, 'exit').mockImplementation((c?: number) => {
+      exitSpy = vi.spyOn(process, 'exit').mockImplementation((c?: number) => {
         exitCode = c ?? 0;
         throw new Error(`exit(${c})`);
       });
-      writeSpy = jest.spyOn(process.stdout, 'write').mockImplementation(() => true);
+      writeSpy = vi.spyOn(process.stdout, 'write').mockImplementation(() => true);
     });
 
     afterEach(() => {
@@ -88,7 +86,7 @@ describe('Fork Fix 2: Version short-only and custom flags', () => {
 
     it('fires help listener with default flags', () => {
       const program = new commander.Command();
-      const spy = jest.fn();
+      const spy = vi.fn();
       program.on('--help', spy);
       expect(() => program.parse(['node', 'x', '--help'])).toThrow('exit(0)');
       expect(spy).toHaveBeenCalled();
@@ -97,7 +95,7 @@ describe('Fork Fix 2: Version short-only and custom flags', () => {
 
     it('fires help listener after helpOption override', () => {
       const program = new commander.Command().helpOption('-?, --helpme');
-      const spy = jest.fn();
+      const spy = vi.fn();
       program.on('--helpme', spy);
       expect(() => program.parse(['node', 'x', '--helpme'])).toThrow('exit(0)');
       expect(spy).toHaveBeenCalled();
@@ -106,14 +104,14 @@ describe('Fork Fix 2: Version short-only and custom flags', () => {
   });
 
   describe('opts() includes version with custom flags', () => {
-    let exitSpy: jest.SpyInstance;
-    let writeSpy: jest.SpyInstance;
+    let exitSpy: MockInstance;
+    let writeSpy: MockInstance;
 
     beforeEach(() => {
-      exitSpy = jest.spyOn(process, 'exit').mockImplementation((code?: number) => {
+      exitSpy = vi.spyOn(process, 'exit').mockImplementation((code?: number) => {
         return undefined as never;
       });
-      writeSpy = jest.spyOn(process.stdout, 'write').mockImplementation(() => true);
+      writeSpy = vi.spyOn(process.stdout, 'write').mockImplementation(() => true);
     });
 
     afterEach(() => {
@@ -174,12 +172,12 @@ describe('Fork Fix 2: Version short-only and custom flags', () => {
   });
 
   describe('unknown options with attached values', () => {
-    let errSpy: jest.SpyInstance;
-    let exitSpy: jest.SpyInstance;
+    let errSpy: MockInstance;
+    let exitSpy: MockInstance;
 
     beforeEach(() => {
-      errSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
-      exitSpy = jest.spyOn(process, 'exit').mockImplementation((code?: number) => {
+      errSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+      exitSpy = vi.spyOn(process, 'exit').mockImplementation((code?: number) => {
         return undefined as never;
       });
     });

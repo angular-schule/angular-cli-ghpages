@@ -9,20 +9,21 @@ import * as fs from 'fs/promises';
 import * as os from 'os';
 import * as path from 'path';
 import { logging } from '@angular-devkit/core';
+import { MockInstance } from 'vitest';
 
 import * as helpers from './engine.prepare-options-helpers';
 import { Schema } from '../deploy/schema';
 
 describe('prepareOptions helpers - intensive tests', () => {
   let testLogger: logging.Logger;
-  let infoSpy: jest.SpyInstance;
-  let warnSpy: jest.SpyInstance;
+  let infoSpy: MockInstance;
+  let warnSpy: MockInstance;
   const originalEnv = process.env;
 
   beforeEach(() => {
     testLogger = new logging.Logger('test');
-    infoSpy = jest.spyOn(testLogger, 'info');
-    warnSpy = jest.spyOn(testLogger, 'warn');
+    infoSpy = vi.spyOn(testLogger, 'info');
+    warnSpy = vi.spyOn(testLogger, 'warn');
     // Create fresh copy of environment for each test
     // This preserves PATH, HOME, etc. needed by git
     process.env = { ...originalEnv };
@@ -106,7 +107,7 @@ describe('prepareOptions helpers - intensive tests', () => {
 
     it('should call original debuglog for non-gh-pages modules', () => {
       const util = require('util');
-      const originalDebuglogSpy = jest.fn(originalDebuglog);
+      const originalDebuglogSpy = vi.fn(originalDebuglog);
       util.debuglog = originalDebuglogSpy;
 
       helpers.setupMonkeypatch(testLogger);

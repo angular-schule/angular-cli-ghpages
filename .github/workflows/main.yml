@@ -2,7 +2,10 @@ name: Build and test
 
 on:
   push:
-    branches: [main, big-update]
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
 
 jobs:
   build-and-test:
@@ -124,3 +127,16 @@ jobs:
           npx ng deploy
           cd /tmp/remote-21.git && git branch | grep gh-pages
           echo "Angular 21: build + deploy successful"
+
+      - name: Test Angular 22
+        run: |
+          cd /tmp
+          git init --bare remote-22.git
+          npx @angular/cli@22 new test-app-22 --defaults
+          cd test-app-22
+          git remote add origin /tmp/remote-22.git
+          npm link angular-cli-ghpages
+          npx ng add angular-cli-ghpages
+          npx ng deploy
+          cd /tmp/remote-22.git && git branch | grep gh-pages
+          echo "Angular 22: build + deploy successful"

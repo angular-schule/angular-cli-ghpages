@@ -281,6 +281,24 @@ The `getRemoteUrl` function in `src/engine/engine.prepare-options-helpers.ts` ca
 
 **Current baseline:** Tests are pinned to gh-pages v6.3.0 behavior and error messages.
 
+## Supporting a new Angular version
+
+When a new major Angular version ships, add support with a **minimal, non-breaking bump** — extend the upper bound and keep the existing majors. Only drop an old version when keeping it actually costs logic or workarounds. Bloated tests alone aren't enough: a broken build for late-upgrading (e.g. enterprise) projects costs more goodwill than the version costs us.
+
+Checklist (example: adding Angular 22):
+
+1. **Confirm the engine still works.** Check the `angular.json` that `@angular/cli@vNN` generates (the `application` schematic) and confirm the `outputPath` handling in `src/deploy/actions.ts` still covers it. No logic change should be needed unless the build output shape changed.
+2. **`src/package.json`** – extend the upper bounds only:
+   - `@angular-devkit/architect`: `<0.2200.0` → `<0.2300.0` (the devkit minor is `0.NN00.0`)
+   - `@angular-devkit/core` & `@angular-devkit/schematics`: `<22.0.0` → `<23.0.0`
+   - peer `@angular/cli`: `<22.0.0` → `<23.0.0`
+   - leave `devDependencies` pinned at the floor (Angular 18) so the build keeps verifying against the minimum supported version
+   - bump `version` (minor for additive support), and `engines.node` only if the floor actually moved (keep a wide `>=` bound)
+3. **`README.md`** – update the "supports Angular X to Y" line.
+4. **`.github/workflows/main.yml`** – add a `Test Angular NN` step (copy the previous one).
+5. **Test fixture** – add `src/test-fixtures/angular-NN.json` (the real `ng new` output) plus a matching block and cross-version assertions in `angular-versions.spec.ts`.
+6. **Verify:** `cd src && npm run build && npm test`. CI then runs a real `ng new` → `ng add` → `ng deploy` against every supported version.
+
 ## Keeping track of all the forks
 
 [ngx-deploy-starter](https://github.com/angular-schule/ngx-deploy-starter/) and

@@ -1,6 +1,6 @@
 {
   "name": "angular-cli-ghpages",
-  "version": "3.0.3",
+  "version": "3.1.0",
   "description": "Deploy your Angular app to GitHub Pages or Cloudflare Pages directly from the Angular CLI (ng deploy)",
   "main": "index.js",
   "types": "index.d.ts",
@@ -71,12 +71,12 @@
     "typescript": "~5.2.2"
   },
   "dependencies": {
-    "@angular-devkit/architect": ">=0.1800.0 <0.2200.0",
-    "@angular-devkit/core": ">=18.0.0 <22.0.0",
-    "@angular-devkit/schematics": ">=18.0.0 <22.0.0",
+    "@angular-devkit/architect": ">=0.1800.0 <0.2300.0",
+    "@angular-devkit/core": ">=18.0.0 <23.0.0",
+    "@angular-devkit/schematics": ">=18.0.0 <23.0.0",
     "gh-pages": "6.3.0"
   },
   "peerDependencies": {
-    "@angular/cli": ">=18.0.0 <22.0.0"
+    "@angular/cli": ">=18.0.0 <23.0.0"
   }
 }

@@ -7,7 +7,7 @@
  *
  * Key difference relevant to us:
  * - Angular 18-19: outputPath is a string like "dist/<project>"
- * - Angular 20-21: outputPath is MISSING (uses default dist/<project>)
+ * - Angular 20-22: outputPath is MISSING (uses default dist/<project>)
  */
 
 import { SchematicContext, Tree } from '@angular-devkit/schematics';
@@ -34,6 +34,7 @@ const angular18Config = JSON.parse(fs.readFileSync(path.join(fixturesDir, 'angul
 const angular19Config = JSON.parse(fs.readFileSync(path.join(fixturesDir, 'angular-19.json'), 'utf-8'));
 const angular20Config = JSON.parse(fs.readFileSync(path.join(fixturesDir, 'angular-20.json'), 'utf-8'));
 const angular21Config = JSON.parse(fs.readFileSync(path.join(fixturesDir, 'angular-21.json'), 'utf-8'));
+const angular22Config = JSON.parse(fs.readFileSync(path.join(fixturesDir, 'angular-22.json'), 'utf-8'));
 
 describe('Angular Version Compatibility', () => {
   describe('Angular 18', () => {
@@ -104,12 +105,30 @@ describe('Angular Version Compatibility', () => {
     });
   });
 
+  describe('Angular 22', () => {
+    it('has NO outputPath (uses default)', () => {
+      const options = angular22Config.projects.ng22.architect.build.options;
+      expect(options.outputPath).toBeUndefined();
+    });
+
+    it('ng add succeeds despite missing outputPath', async () => {
+      const tree = Tree.empty();
+      tree.create('angular.json', JSON.stringify(angular22Config));
+
+      const result = await ngAdd({ project: 'ng22' })(tree, mockContext);
+      const resultConfig = JSON.parse(result.read('angular.json')!.toString());
+
+      expect(resultConfig.projects.ng22.architect.deploy.builder).toBe('angular-cli-ghpages:deploy');
+    });
+  });
+
   describe('Cross-version compatibility', () => {
     it('all versions have projectType: application', () => {
       expect(angular18Config.projects.ng18.projectType).toBe('application');
       expect(angular19Config.projects.ng19.projectType).toBe('application');
       expect(angular20Config.projects.ng20.projectType).toBe('application');
       expect(angular21Config.projects.ng21.projectType).toBe('application');
+      expect(angular22Config.projects.ng22.projectType).toBe('application');
     });
 
     it('all versions have build target', () => {
@@ -117,13 +136,15 @@ describe('Angular Version Compatibility', () => {
       expect(angular19Config.projects.ng19.architect.build).toBeDefined();
       expect(angular20Config.projects.ng20.architect.build).toBeDefined();
       expect(angular21Config.projects.ng21.architect.build).toBeDefined();
+      expect(angular22Config.projects.ng22.architect.build).toBeDefined();
     });
 
-    it('outputPath evolution: string → string → undefined → undefined', () => {
+    it('outputPath evolution: string → string → undefined → undefined → undefined', () => {
       expect(typeof angular18Config.projects.ng18.architect.build.options.outputPath).toBe('string');
       expect(typeof angular19Config.projects.ng19.architect.build.options.outputPath).toBe('string');
       expect(angular20Config.projects.ng20.architect.build.options.outputPath).toBeUndefined();
       expect(angular21Config.projects.ng21.architect.build.options.outputPath).toBeUndefined();
+      expect(angular22Config.projects.ng22.architect.build.options.outputPath).toBeUndefined();
     });
   });
 });

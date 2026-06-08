@@ -1,4 +1,4 @@
-import { MockInstance } from "vitest";
+import { MockInstance } from 'vitest';
 
 const commander = require('../');
 // var program = require('../')

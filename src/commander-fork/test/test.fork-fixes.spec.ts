@@ -10,7 +10,7 @@
  * These tests do NOT exist in the original commander v3.0.2.
  */
 
-import { MockInstance } from "vitest";
+import { MockInstance } from 'vitest';
 
 const commander = require('../');
 

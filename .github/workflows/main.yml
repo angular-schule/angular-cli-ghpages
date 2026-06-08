@@ -3,6 +3,9 @@ name: Build and test
 on:
   push:
     branches: [main, big-update]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
 
 jobs:
   build-and-test:

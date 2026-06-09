@@ -1,4 +1,5 @@
 import { SchematicContext, Tree } from '@angular-devkit/schematics';
+import { Mock } from 'vitest';
 
 import { ngAdd } from './ng-add';
 

@@ -65,7 +65,7 @@ export interface PublishOptions {
   cname?: string;
   add?: boolean;
   git?: string;
-  beforeAdd?: (git: any) => void | Promise<void>;
+  beforeAdd?: (git: unknown) => void | Promise<void>;
   [key: string]: unknown; // Allow additional gh-pages options
 }
 

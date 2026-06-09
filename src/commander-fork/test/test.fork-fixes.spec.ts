@@ -14,6 +14,8 @@ import { MockInstance } from 'vitest';
 
 const commander = require('../');
 
+// Fork Fix 1 (tightened negate-detection regex) is implicitly covered by
+// test.options.bool.no.spec.ts — no dedicated tests needed here.
 
 describe('Fork Fix 2: Version short-only and custom flags', () => {
   describe('version() with short-only flag', () => {

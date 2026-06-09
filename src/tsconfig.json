@@ -14,7 +14,7 @@
     "lib": ["es2022"],
     "skipLibCheck": true,
     "esModuleInterop": true,
-    "types": ["vitest/globals"]
+    "types": ["vitest/globals", "node"]
   },
   "angularCompilerOptions": {
     "skipTemplateCodegen": true,

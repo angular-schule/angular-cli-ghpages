@@ -13,6 +13,7 @@
 import { SchematicContext, Tree } from '@angular-devkit/schematics';
 import fs from 'fs';
 import path from 'path';
+import { Mock } from 'vitest';
 import { ngAdd } from '../ng-add';
 
 // Mock context with logger - only the methods we actually use

@@ -15,6 +15,7 @@
     - [Advanced: Angular Builder Integration](#advanced-angular-builder-integration)
   - [Dependency on gh-pages Internal API](#dependency-on-gh-pages-internal-api)
     - [Remote URL Discovery](#remote-url-discovery)
+  - [Supporting a new Angular version](#supporting-a-new-angular-version)
   - [Keeping track of all the forks](#keeping-track-of-all-the-forks)
 
 ## How to start

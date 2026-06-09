@@ -3,6 +3,7 @@ import { JsonObject, logging } from '@angular-devkit/core';
 import { BuildTarget, PublishOptions } from '../interfaces';
 import { Schema } from '../deploy/schema';
 import { cleanupMonkeypatch } from '../engine/engine.prepare-options-helpers';
+import { Mock } from 'vitest';
 
 /**
  * ANGULAR BUILDER INTEGRATION TESTS
@@ -77,7 +78,7 @@ describe('Angular Builder Integration Tests', () => {
         if (callback) {
           callback(null);
         }
-        return Promise.resolve() as any;
+        return Promise.resolve();
       }
     );
   });

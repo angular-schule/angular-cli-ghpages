@@ -1,5 +1,7 @@
 import { logging } from '@angular-devkit/core';
 
+import { Mock, MockInstance } from 'vitest';
+
 import * as engine from './engine';
 import { cleanupMonkeypatch } from './engine.prepare-options-helpers';
 

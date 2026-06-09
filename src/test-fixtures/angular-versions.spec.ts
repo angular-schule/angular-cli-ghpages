@@ -17,13 +17,13 @@ import { ngAdd } from '../ng-add';
 
 // Mock context with logger - only the methods we actually use
 const mockLogger = {
-  info: jest.fn(),
-  warn: jest.fn(),
-  error: jest.fn(),
-  debug: jest.fn(),
-  fatal: jest.fn(),
-  log: jest.fn(),
-  createChild: jest.fn()
+  info: vi.fn(),
+  warn: vi.fn(),
+  error: vi.fn(),
+  debug: vi.fn(),
+  fatal: vi.fn(),
+  log: vi.fn(),
+  createChild: vi.fn()
 };
 
 const mockContext = { logger: mockLogger } as unknown as SchematicContext;

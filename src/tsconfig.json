@@ -1,10 +1,8 @@
 {
   "compilerOptions": {
-    "baseUrl": ".",
-    "experimentalDecorators": true,
-    "emitDecoratorMetadata": true,
     "module": "commonjs",
-    "target": "es2015",
+    "moduleResolution": "node",
+    "target": "es2022",
     "noImplicitAny": true,
     "outDir": "dist",
     "rootDir": ".",
@@ -13,16 +11,10 @@
     "declaration": false,
     "removeComments": true,
     "strictNullChecks": true,
-    "lib": [
-      "es2015",
-      "dom",
-      "es2015.promise",
-      "es2015.collection",
-      "es2015.iterable"
-    ],
+    "lib": ["es2022"],
     "skipLibCheck": true,
-    "moduleResolution": "node",
-    "esModuleInterop": true
+    "esModuleInterop": true,
+    "types": ["vitest/globals"]
   },
   "angularCompilerOptions": {
     "skipTemplateCodegen": true,

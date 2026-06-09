@@ -25,36 +25,28 @@ import { cleanupMonkeypatch } from '../engine/engine.prepare-options-helpers';
  */
 
 // Captured options from gh-pages.publish()
-let capturedPublishOptions: PublishOptions | null = null;
-
-// Mock gh-pages/lib/git module (imported by engine.ts)
-jest.mock('gh-pages/lib/git', () => {
-  return jest.fn().mockImplementation(() => ({
-    // Mock git instance methods if needed
-  }));
+const { capturedOptions } = vi.hoisted(() => {
+  const capturedOptions = { value: null as PublishOptions | null };
+  return { capturedOptions };
 });
 
-// Mock gh-pages module — engine uses the callback form (#205)
-jest.mock('gh-pages', () => ({
-  clean: jest.fn(),
-  publish: jest.fn((_dir: string, options: PublishOptions, callback?: (error: Error | null) => void) => {
-    capturedPublishOptions = options;
-    if (callback) {
-      callback(null);
-    }
-    return Promise.resolve();
-  })
+// Mock gh-pages/lib/git module (imported by engine.ts)
+vi.mock('gh-pages/lib/git', () => ({
+  default: vi.fn().mockImplementation(() => ({}))
 }));
 
 // Mock utils.pathExists
-jest.mock('../utils', () => ({
-  ...jest.requireActual('../utils'),
-  pathExists: jest.fn(() => Promise.resolve(true))
+vi.mock('../utils', async () => ({
+  ...(await vi.importActual('../utils')),
+  pathExists: vi.fn(() => Promise.resolve(true))
 }));
 
 // Import after mocking
 import deploy from '../deploy/actions';
 import * as engine from '../engine/engine';
+
+// Spy on gh-pages at module level — vi.mock can't intercept dynamic require() in engine.ts
+const ghPagesModule = require('gh-pages');
 
 describe('Angular Builder Integration Tests', () => {
   let context: BuilderContext;
@@ -74,13 +66,26 @@ describe('Angular Builder Integration Tests', () => {
 
     // Clean up any previous monkeypatch so each test starts fresh
     cleanupMonkeypatch();
-    capturedPublishOptions = null;
+    capturedOptions.value = null;
     context = createMockContext();
+
+    // Spy on gh-pages to intercept calls from engine.run()
+    vi.spyOn(ghPagesModule, 'clean').mockImplementation(() => {});
+    vi.spyOn(ghPagesModule, 'publish').mockImplementation(
+      (_dir: string, options: PublishOptions, callback?: (error: Error | null) => void) => {
+        capturedOptions.value = options;
+        if (callback) {
+          callback(null);
+        }
+        return Promise.resolve() as any;
+      }
+    );
   });
 
   afterEach(() => {
     // Restore original environment
     process.env = originalEnv;
+    vi.restoreAllMocks();
   });
 
   afterAll(() => {
@@ -98,10 +103,10 @@ describe('Angular Builder Integration Tests', () => {
 
       await deploy(engine, context, BUILD_TARGET, options);
 
-      expect(capturedPublishOptions).not.toBeNull();
-      expect(capturedPublishOptions!.dotfiles).toBe(false);
+      expect(capturedOptions.value).not.toBeNull();
+      expect(capturedOptions.value!.dotfiles).toBe(false);
       // Internal options should NOT be passed to gh-pages
-      expect(capturedPublishOptions!.noDotfiles).toBeUndefined();
+      expect(capturedOptions.value!.noDotfiles).toBeUndefined();
     });
 
     it('should transform noNotfound: true to notfound: false in complete flow', async () => {
@@ -113,11 +118,11 @@ describe('Angular Builder Integration Tests', () => {
 
       await deploy(engine, context, BUILD_TARGET, options);
 
-      expect(capturedPublishOptions).not.toBeNull();
+      expect(capturedOptions.value).not.toBeNull();
       // notfound is internal to angular-cli-ghpages, NOT passed to gh-pages
       // (notfound controls 404.html creation which we do ourselves)
-      expect(capturedPublishOptions!.notfound).toBeUndefined();
-      expect(capturedPublishOptions!.noNotfound).toBeUndefined();
+      expect(capturedOptions.value!.notfound).toBeUndefined();
+      expect(capturedOptions.value!.noNotfound).toBeUndefined();
     });
 
     it('should transform noNojekyll: true to nojekyll: false in complete flow', async () => {
@@ -129,10 +134,10 @@ describe('Angular Builder Integration Tests', () => {
 
       await deploy(engine, context, BUILD_TARGET, options);
 
-      expect(capturedPublishOptions).not.toBeNull();
+      expect(capturedOptions.value).not.toBeNull();
       // nojekyll IS passed to gh-pages v6+ (delegated to gh-pages)
-      expect(capturedPublishOptions!.nojekyll).toBe(false);
-      expect(capturedPublishOptions!.noNojekyll).toBeUndefined();
+      expect(capturedOptions.value!.nojekyll).toBe(false);
+      expect(capturedOptions.value!.noNojekyll).toBeUndefined();
     });
 
     it('should transform all three negation flags together in complete flow', async () => {
@@ -146,16 +151,16 @@ describe('Angular Builder Integration Tests', () => {
 
       await deploy(engine, context, BUILD_TARGET, options);
 
-      expect(capturedPublishOptions).not.toBeNull();
-      expect(capturedPublishOptions!.dotfiles).toBe(false);
+      expect(capturedOptions.value).not.toBeNull();
+      expect(capturedOptions.value!.dotfiles).toBe(false);
       // nojekyll IS passed to gh-pages v6+ (delegated)
-      expect(capturedPublishOptions!.nojekyll).toBe(false);
+      expect(capturedOptions.value!.nojekyll).toBe(false);
       // notfound is internal (404.html creation by angular-cli-ghpages)
-      expect(capturedPublishOptions!.notfound).toBeUndefined();
+      expect(capturedOptions.value!.notfound).toBeUndefined();
       // negated options should NOT be passed
-      expect(capturedPublishOptions!.noDotfiles).toBeUndefined();
-      expect(capturedPublishOptions!.noNotfound).toBeUndefined();
-      expect(capturedPublishOptions!.noNojekyll).toBeUndefined();
+      expect(capturedOptions.value!.noDotfiles).toBeUndefined();
+      expect(capturedOptions.value!.noNotfound).toBeUndefined();
+      expect(capturedOptions.value!.noNojekyll).toBeUndefined();
     });
 
     it('should default all boolean flags to true when not specified', async () => {
@@ -166,12 +171,12 @@ describe('Angular Builder Integration Tests', () => {
 
       await deploy(engine, context, BUILD_TARGET, options);
 
-      expect(capturedPublishOptions).not.toBeNull();
-      expect(capturedPublishOptions!.dotfiles).toBe(true);
+      expect(capturedOptions.value).not.toBeNull();
+      expect(capturedOptions.value!.dotfiles).toBe(true);
       // nojekyll IS passed to gh-pages v6+ (delegated)
-      expect(capturedPublishOptions!.nojekyll).toBe(true);
+      expect(capturedOptions.value!.nojekyll).toBe(true);
       // notfound is internal (404.html creation by angular-cli-ghpages)
-      expect(capturedPublishOptions!.notfound).toBeUndefined();
+      expect(capturedOptions.value!.notfound).toBeUndefined();
     });
   });
 
@@ -182,8 +187,8 @@ describe('Angular Builder Integration Tests', () => {
 
       await deploy(engine, context, BUILD_TARGET, options);
 
-      expect(capturedPublishOptions).not.toBeNull();
-      expect(capturedPublishOptions!.repo).toBe(repo);
+      expect(capturedOptions.value).not.toBeNull();
+      expect(capturedOptions.value!.repo).toBe(repo);
     });
 
     it('should pass branch through complete flow unchanged', async () => {
@@ -193,8 +198,8 @@ describe('Angular Builder Integration Tests', () => {
 
       await deploy(engine, context, BUILD_TARGET, options);
 
-      expect(capturedPublishOptions).not.toBeNull();
-      expect(capturedPublishOptions!.branch).toBe(branch);
+      expect(capturedOptions.value).not.toBeNull();
+      expect(capturedOptions.value!.branch).toBe(branch);
     });
 
     it('should pass message through complete flow unchanged', async () => {
@@ -204,8 +209,8 @@ describe('Angular Builder Integration Tests', () => {
 
       await deploy(engine, context, BUILD_TARGET, options);
 
-      expect(capturedPublishOptions).not.toBeNull();
-      expect(capturedPublishOptions!.message).toBe(message);
+      expect(capturedOptions.value).not.toBeNull();
+      expect(capturedOptions.value!.message).toBe(message);
     });
 
     it('should transform name and email into user object in complete flow', async () => {
@@ -217,8 +222,8 @@ describe('Angular Builder Integration Tests', () => {
 
       await deploy(engine, context, BUILD_TARGET, options);
 
-      expect(capturedPublishOptions).not.toBeNull();
-      expect(capturedPublishOptions!.user).toEqual(expectedUser);
+      expect(capturedOptions.value).not.toBeNull();
+      expect(capturedOptions.value!.user).toEqual(expectedUser);
     });
 
     it('should pass cname to gh-pages v6+ (delegated to gh-pages)', async () => {
@@ -228,9 +233,9 @@ describe('Angular Builder Integration Tests', () => {
 
       await deploy(engine, context, BUILD_TARGET, options);
 
-      expect(capturedPublishOptions).not.toBeNull();
+      expect(capturedOptions.value).not.toBeNull();
       // cname IS now passed to gh-pages v6+ (delegated file creation)
-      expect(capturedPublishOptions!.cname).toBe(cname);
+      expect(capturedOptions.value!.cname).toBe(cname);
     });
   });
 
@@ -242,15 +247,13 @@ describe('Angular Builder Integration Tests', () => {
 
       await deploy(engine, context, BUILD_TARGET, options);
 
-      expect(capturedPublishOptions).not.toBeNull();
-      expect(capturedPublishOptions!.add).toBe(add);
+      expect(capturedOptions.value).not.toBeNull();
+      expect(capturedOptions.value!.add).toBe(add);
     });
 
     it('should not call gh-pages.publish when dryRun is true', async () => {
-      const ghPages = require('gh-pages');
-
       // Reset mock to clear calls from previous tests
-      ghPages.publish.mockClear();
+      vi.mocked(ghPagesModule.publish).mockClear();
 
       const repo = 'https://github.com/test/repo.git';
       const options: Schema = { repo, dryRun: true, noBuild: true };
@@ -258,7 +261,7 @@ describe('Angular Builder Integration Tests', () => {
       await deploy(engine, context, BUILD_TARGET, options);
 
       // Verify publish was not called in this test
-      expect(ghPages.publish).not.toHaveBeenCalled();
+      expect(ghPagesModule.publish).not.toHaveBeenCalled();
     });
   });
 
@@ -290,37 +293,37 @@ describe('Angular Builder Integration Tests', () => {
 
       await deploy(engine, context, BUILD_TARGET, options);
 
-      expect(capturedPublishOptions).not.toBeNull();
+      expect(capturedOptions.value).not.toBeNull();
 
       // Verify passthrough parameters
-      expect(capturedPublishOptions!.repo).toBe(repo);
-      expect(capturedPublishOptions!.remote).toBe(remote);
-      expect(capturedPublishOptions!.branch).toBe(branch);
-      expect(capturedPublishOptions!.message).toBe(message);
-      expect(capturedPublishOptions!.add).toBe(add);
+      expect(capturedOptions.value!.repo).toBe(repo);
+      expect(capturedOptions.value!.remote).toBe(remote);
+      expect(capturedOptions.value!.branch).toBe(branch);
+      expect(capturedOptions.value!.message).toBe(message);
+      expect(capturedOptions.value!.add).toBe(add);
 
       // cname and nojekyll ARE passed to gh-pages v6+ (delegated)
-      expect(capturedPublishOptions!.cname).toBe(cname);
-      expect(capturedPublishOptions!.nojekyll).toBe(false);
+      expect(capturedOptions.value!.cname).toBe(cname);
+      expect(capturedOptions.value!.nojekyll).toBe(false);
 
       // notfound is internal (404.html creation by angular-cli-ghpages)
-      expect(capturedPublishOptions!.notfound).toBeUndefined();
+      expect(capturedOptions.value!.notfound).toBeUndefined();
 
       // Negated options should NOT be passed
-      expect(capturedPublishOptions!.noDotfiles).toBeUndefined();
-      expect(capturedPublishOptions!.noNotfound).toBeUndefined();
-      expect(capturedPublishOptions!.noNojekyll).toBeUndefined();
-      expect(capturedPublishOptions!.name).toBeUndefined();
-      expect(capturedPublishOptions!.email).toBeUndefined();
+      expect(capturedOptions.value!.noDotfiles).toBeUndefined();
+      expect(capturedOptions.value!.noNotfound).toBeUndefined();
+      expect(capturedOptions.value!.noNojekyll).toBeUndefined();
+      expect(capturedOptions.value!.name).toBeUndefined();
+      expect(capturedOptions.value!.email).toBeUndefined();
 
       // Verify user object transformation
-      expect(capturedPublishOptions!.user).toEqual({ name, email });
+      expect(capturedOptions.value!.user).toEqual({ name, email });
 
       // Verify boolean negation transformations
-      expect(capturedPublishOptions!.dotfiles).toBe(false);
+      expect(capturedOptions.value!.dotfiles).toBe(false);
 
       // Verify engine defaults are set
-      expect(capturedPublishOptions!.git).toBe('git');
+      expect(capturedOptions.value!.git).toBe('git');
     });
   });
 

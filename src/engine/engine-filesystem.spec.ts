@@ -14,6 +14,7 @@ import { logging } from '@angular-devkit/core';
 import * as fs from 'fs/promises';
 import * as os from 'os';
 import * as path from 'path';
+import { MockInstance } from 'vitest';
 
 import * as engine from './engine';
 import { cleanupMonkeypatch } from './engine.prepare-options-helpers';
@@ -22,7 +23,7 @@ import { pathExists } from '../utils';
 describe('engine - real filesystem tests', () => {
   const logger = new logging.Logger('test');
   let testDir: string;
-  let loggerInfoSpy: jest.SpyInstance;
+  let loggerInfoSpy: MockInstance;
 
   beforeEach(async () => {
     // Clean up any previous monkeypatch so each test starts fresh
@@ -35,7 +36,7 @@ describe('engine - real filesystem tests', () => {
     await fs.mkdir(testDir, { recursive: true });
 
     // Spy on logger to capture warnings
-    loggerInfoSpy = jest.spyOn(logger, 'info');
+    loggerInfoSpy = vi.spyOn(logger, 'info');
   });
 
   afterEach(async () => {
@@ -59,8 +60,8 @@ describe('engine - real filesystem tests', () => {
       await fs.writeFile(indexPath, indexContent);
 
       const ghpages = require('gh-pages');
-      jest.spyOn(ghpages, 'clean').mockImplementation(() => {});
-      jest.spyOn(ghpages, 'publish').mockImplementation((_dir: unknown, _opts: unknown, callback?: (error: Error | null) => void) => {
+      vi.spyOn(ghpages, 'clean').mockImplementation(() => {});
+      vi.spyOn(ghpages, 'publish').mockImplementation((_dir: unknown, _opts: unknown, callback?: (error: Error | null) => void) => {
         if (callback) {
           callback(null);
         }
@@ -88,8 +89,8 @@ describe('engine - real filesystem tests', () => {
       await fs.writeFile(indexPath, '<html><body>Test</body></html>');
 
       const ghpages = require('gh-pages');
-      jest.spyOn(ghpages, 'clean').mockImplementation(() => {});
-      jest.spyOn(ghpages, 'publish').mockImplementation((_dir: unknown, _opts: unknown, callback?: (error: Error | null) => void) => {
+      vi.spyOn(ghpages, 'clean').mockImplementation(() => {});
+      vi.spyOn(ghpages, 'publish').mockImplementation((_dir: unknown, _opts: unknown, callback?: (error: Error | null) => void) => {
         if (callback) {
           callback(null);
         }
@@ -113,8 +114,8 @@ describe('engine - real filesystem tests', () => {
       // No index.html created - directory is empty
 
       const ghpages = require('gh-pages');
-      jest.spyOn(ghpages, 'clean').mockImplementation(() => {});
-      jest.spyOn(ghpages, 'publish').mockImplementation((_dir: unknown, _opts: unknown, callback?: (error: Error | null) => void) => {
+      vi.spyOn(ghpages, 'clean').mockImplementation(() => {});
+      vi.spyOn(ghpages, 'publish').mockImplementation((_dir: unknown, _opts: unknown, callback?: (error: Error | null) => void) => {
         if (callback) {
           callback(null);
         }
@@ -147,7 +148,7 @@ describe('engine - real filesystem tests', () => {
       await fs.writeFile(indexPath, '<html><body>Test</body></html>');
 
       const ghpages = require('gh-pages');
-      jest.spyOn(ghpages, 'clean').mockImplementation(() => {});
+      vi.spyOn(ghpages, 'clean').mockImplementation(() => {});
 
       const options = {
         notfound: true,
@@ -184,10 +185,10 @@ describe('engine - real filesystem tests', () => {
       await fs.writeFile(indexPath, '<html>test</html>');
 
       const ghpages = require('gh-pages');
-      jest.spyOn(ghpages, 'clean').mockImplementation(() => {});
+      vi.spyOn(ghpages, 'clean').mockImplementation(() => {});
 
       let capturedOptions: { cname?: string; nojekyll?: boolean } = {};
-      const publishSpy = jest.spyOn(ghpages, 'publish').mockImplementation(
+      const publishSpy = vi.spyOn(ghpages, 'publish').mockImplementation(
         (_dir: string, options: { cname?: string; nojekyll?: boolean }, callback?: (error: Error | null) => void) => {
           capturedOptions = options;
           if (callback) {
@@ -216,10 +217,10 @@ describe('engine - real filesystem tests', () => {
       await fs.writeFile(indexPath, '<html>test</html>');
 
       const ghpages = require('gh-pages');
-      jest.spyOn(ghpages, 'clean').mockImplementation(() => {});
+      vi.spyOn(ghpages, 'clean').mockImplementation(() => {});
 
       let capturedOptions: { cname?: string; nojekyll?: boolean } = {};
-      const publishSpy = jest.spyOn(ghpages, 'publish').mockImplementation(
+      const publishSpy = vi.spyOn(ghpages, 'publish').mockImplementation(
         (_dir: string, options: { cname?: string; nojekyll?: boolean }, callback?: (error: Error | null) => void) => {
           capturedOptions = options;
           if (callback) {
@@ -246,10 +247,10 @@ describe('engine - real filesystem tests', () => {
       await fs.writeFile(indexPath, '<html>test</html>');
 
       const ghpages = require('gh-pages');
-      jest.spyOn(ghpages, 'clean').mockImplementation(() => {});
+      vi.spyOn(ghpages, 'clean').mockImplementation(() => {});
 
       let capturedOptions: { cname?: string; nojekyll?: boolean } = {};
-      const publishSpy = jest.spyOn(ghpages, 'publish').mockImplementation(
+      const publishSpy = vi.spyOn(ghpages, 'publish').mockImplementation(
         (_dir: string, options: { cname?: string; nojekyll?: boolean }, callback?: (error: Error | null) => void) => {
           capturedOptions = options;
           if (callback) {
@@ -283,10 +284,10 @@ describe('engine - real filesystem tests', () => {
       await fs.writeFile(indexPath, '<html>test</html>');
 
       const ghpages = require('gh-pages');
-      jest.spyOn(ghpages, 'clean').mockImplementation(() => {});
+      vi.spyOn(ghpages, 'clean').mockImplementation(() => {});
 
       let capturedOptions: { cname?: string; nojekyll?: boolean } = {};
-      const publishSpy = jest.spyOn(ghpages, 'publish').mockImplementation(
+      const publishSpy = vi.spyOn(ghpages, 'publish').mockImplementation(
         (_dir: string, options: { cname?: string; nojekyll?: boolean }, callback?: (error: Error | null) => void) => {
           capturedOptions = options;
           if (callback) {
@@ -314,10 +315,10 @@ describe('engine - real filesystem tests', () => {
       await fs.writeFile(indexPath, '<html>test</html>');
 
       const ghpages = require('gh-pages');
-      jest.spyOn(ghpages, 'clean').mockImplementation(() => {});
+      vi.spyOn(ghpages, 'clean').mockImplementation(() => {});
 
       let capturedOptions: { cname?: string; nojekyll?: boolean } = {};
-      const publishSpy = jest.spyOn(ghpages, 'publish').mockImplementation(
+      const publishSpy = vi.spyOn(ghpages, 'publish').mockImplementation(
         (_dir: string, options: { cname?: string; nojekyll?: boolean }, callback?: (error: Error | null) => void) => {
           capturedOptions = options;
           if (callback) {

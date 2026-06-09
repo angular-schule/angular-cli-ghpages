@@ -6,22 +6,21 @@
 import {
   BuilderContext,
   BuilderRun,
-  ScheduleOptions,
-  Target
 } from '@angular-devkit/architect/src';
 import { JsonObject, logging } from '@angular-devkit/core';
 import { Schema } from './schema';
+import { Mock } from 'vitest';
 
 // Mock the deploy function to prevent actual deployment
-jest.mock('./actions', () => ({
+vi.mock('./actions', () => ({
   __esModule: true,
-  default: jest.fn().mockResolvedValue(undefined)
+  default: vi.fn().mockResolvedValue(undefined)
 }));
 
 // Mock the engine module
-jest.mock('../engine/engine', () => ({
-  run: jest.fn().mockResolvedValue(undefined),
-  prepareOptions: jest.fn().mockImplementation((options) => Promise.resolve(options))
+vi.mock('../engine/engine', () => ({
+  run: vi.fn().mockResolvedValue(undefined),
+  prepareOptions: vi.fn().mockImplementation((options) => Promise.resolve(options))
 }));
 
 // Import after mocking dependencies
@@ -30,11 +29,11 @@ import deployMock from './actions';
 
 describe('builder.ts executeDeploy', () => {
   let mockContext: BuilderContext;
-  let errorSpy: jest.Mock;
+  let errorSpy: Mock;
 
   beforeEach(() => {
-    jest.clearAllMocks();
-    errorSpy = jest.fn();
+    vi.clearAllMocks();
+    errorSpy = vi.fn();
 
     mockContext = {
       target: {
@@ -51,23 +50,23 @@ describe('builder.ts executeDeploy', () => {
       id: 1,
       logger: {
         error: errorSpy,
-        info: jest.fn(),
-        warn: jest.fn(),
-        debug: jest.fn(),
-        fatal: jest.fn(),
-        log: jest.fn(),
-        createChild: jest.fn()
+        info: vi.fn(),
+        warn: vi.fn(),
+        debug: vi.fn(),
+        fatal: vi.fn(),
+        log: vi.fn(),
+        createChild: vi.fn()
       } as unknown as logging.LoggerApi,
       workspaceRoot: '/test',
-      addTeardown: jest.fn(),
-      validateOptions: jest.fn().mockResolvedValue({}),
-      getBuilderNameForTarget: jest.fn().mockResolvedValue(''),
-      getTargetOptions: jest.fn().mockResolvedValue({ outputPath: 'dist/test' } as JsonObject),
-      reportProgress: jest.fn(),
-      reportStatus: jest.fn(),
-      reportRunning: jest.fn(),
-      scheduleBuilder: jest.fn().mockResolvedValue({} as BuilderRun),
-      scheduleTarget: jest.fn().mockResolvedValue({
+      addTeardown: vi.fn(),
+      validateOptions: vi.fn().mockResolvedValue({}),
+      getBuilderNameForTarget: vi.fn().mockResolvedValue(''),
+      getTargetOptions: vi.fn().mockResolvedValue({ outputPath: 'dist/test' } as JsonObject),
+      reportProgress: vi.fn(),
+      reportStatus: vi.fn(),
+      reportRunning: vi.fn(),
+      scheduleBuilder: vi.fn().mockResolvedValue({} as BuilderRun),
+      scheduleTarget: vi.fn().mockResolvedValue({
         result: Promise.resolve({ success: true })
       } as BuilderRun)
     } as unknown as BuilderContext;
@@ -123,7 +122,7 @@ describe('builder.ts executeDeploy', () => {
 
   describe('deploy error handling', () => {
     it('should catch deploy errors and return success: false with error message', async () => {
-      (deployMock as jest.Mock).mockRejectedValueOnce(new Error('Deployment failed'));
+      (deployMock as Mock).mockRejectedValueOnce(new Error('Deployment failed'));
 
       const options: Schema = { noBuild: true };
 
@@ -135,7 +134,7 @@ describe('builder.ts executeDeploy', () => {
     });
 
     it('should handle non-Error thrown values using String()', async () => {
-      (deployMock as jest.Mock).mockRejectedValueOnce('String error');
+      (deployMock as Mock).mockRejectedValueOnce('String error');
 
       const options: Schema = { noBuild: true };
 
@@ -147,7 +146,7 @@ describe('builder.ts executeDeploy', () => {
     });
 
     it('should handle object thrown values using String()', async () => {
-      (deployMock as jest.Mock).mockRejectedValueOnce({ code: 500, msg: 'Server error' });
+      (deployMock as Mock).mockRejectedValueOnce({ code: 500, msg: 'Server error' });
 
       const options: Schema = { noBuild: true };
 

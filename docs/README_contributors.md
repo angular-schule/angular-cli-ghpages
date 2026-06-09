@@ -1,14 +1,21 @@
 # angular-cli-ghpages: README for contributors
 
-- [How to start](#how-to-start)
-- [Local development](#local-development)
-  - [1. Angular CLI](#1-angular-cli)
-  - [2. npm link](#2-npm-link)
-  - [3. Adding to an Angular project -- ng add](#3-adding-to-an-angular-project----ng-add)
-  - [4. Testing](#4-testing)
-  - [5. Debugging](#5-debugging)
-- [Testing the standalone CLI](#testing-the-standalone-cli)
-- [Publish to NPM](#publish-to-npm)
+- [angular-cli-ghpages: README for contributors](#angular-cli-ghpages-readme-for-contributors)
+  - [How to start](#how-to-start)
+  - [Local development](#local-development)
+    - [1. Optional: Latest Angular version](#1-optional-latest-angular-version)
+    - [2. npm link](#2-npm-link)
+    - [3. Adding to an Angular project -- ng add](#3-adding-to-an-angular-project----ng-add)
+    - [4. Testing](#4-testing)
+    - [5. Debugging](#5-debugging)
+  - [Testing the standalone CLI](#testing-the-standalone-cli)
+  - [Publish to NPM](#publish-to-npm)
+  - [Programmatic Usage](#programmatic-usage)
+    - [Available Types](#available-types)
+    - [Advanced: Angular Builder Integration](#advanced-angular-builder-integration)
+  - [Dependency on gh-pages Internal API](#dependency-on-gh-pages-internal-api)
+    - [Remote URL Discovery](#remote-url-discovery)
+  - [Keeping track of all the forks](#keeping-track-of-all-the-forks)
 
 ## How to start
 
@@ -150,7 +157,7 @@ Once you have completed the previous steps to `npm link` the local copy of `angu
 
 ### 4. Testing
 
-Testing is done with [Jest](https://jestjs.io/).
+Testing is done with [Vitest](https://vitest.dev/).
 To run the tests:
 
 ```sh

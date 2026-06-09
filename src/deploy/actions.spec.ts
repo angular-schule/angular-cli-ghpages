@@ -27,7 +27,7 @@ describe('Deploy Angular apps', () => {
   beforeEach(() => initMocks());
 
   it('should invoke the builder', async () => {
-    const spy = jest.spyOn(context, 'scheduleTarget');
+    const spy = vi.spyOn(context, 'scheduleTarget');
     await deploy(mockEngine, context, BUILD_TARGET, {});
 
     expect(spy).toHaveBeenCalledWith(
@@ -41,7 +41,7 @@ describe('Deploy Angular apps', () => {
   });
 
   it('should invoke the builder with the baseHref', async () => {
-    const spy = jest.spyOn(context, 'scheduleTarget');
+    const spy = vi.spyOn(context, 'scheduleTarget');
     await deploy(mockEngine, context, BUILD_TARGET, { baseHref: '/folder' });
 
     expect(spy).toHaveBeenCalledWith(
@@ -55,7 +55,7 @@ describe('Deploy Angular apps', () => {
   });
 
   it('should invoke engine.run', async () => {
-    const spy = jest.spyOn(mockEngine, 'run');
+    const spy = vi.spyOn(mockEngine, 'run');
     await deploy(mockEngine, context, BUILD_TARGET, {});
 
     expect(spy).toHaveBeenCalledWith('dist/some-folder/browser', {}, context.logger);

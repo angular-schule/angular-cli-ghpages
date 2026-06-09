@@ -1,3 +1,5 @@
+import { MockInstance } from 'vitest';
+
 /**
  * Module dependencies.
  */
@@ -7,8 +9,8 @@ const commander = require('../');
 //     , should = require('should');
 
 describe('command.allowUnknownOption', () => {
-let stubError: jest.SpyInstance;
-let stubExit: jest.SpyInstance;
+let stubError: MockInstance;
+let stubExit: MockInstance;
 
 function resetStubStatus() {
   stubError.mockClear();
@@ -16,8 +18,8 @@ function resetStubStatus() {
 }
 
 beforeEach(() => {
-  stubError = jest.spyOn(console, 'error').mockImplementation(() => {});
-  stubExit = jest.spyOn(process, 'exit').mockImplementation((code?: number) => {
+  stubError = vi.spyOn(console, 'error').mockImplementation(() => {});
+  stubExit = vi.spyOn(process, 'exit').mockImplementation((code?: number) => {
     return undefined as never;
   });
 });

@@ -12,12 +12,23 @@
 
 import { ChildProcess } from 'child_process';
 
-import { pathExists } from '../utils';
+import * as engine from './engine';
+import { cleanupMonkeypatch } from './engine.prepare-options-helpers';
+import { logging } from '@angular-devkit/core';
 
 const path = require('path');
 const fs = require('fs/promises');
 const os = require('os');
 const { EventEmitter } = require('events');
+
+// Mock utils.pathExists so engine.run() passes the dist folder check
+vi.mock('../utils', async () => {
+  const actual = await vi.importActual<typeof import('../utils')>('../utils');
+  return {
+    ...actual,
+    pathExists: vi.fn().mockResolvedValue(true)
+  };
+});
 
 // Types for better type safety
 interface SpawnCall {
@@ -57,7 +68,24 @@ const EXPECTED_GIT_COMMANDS = [
   'rm', 'add', 'config', 'diff-index', 'commit', 'tag', 'push', 'update-ref'
 ];
 
-const mockSpawn = jest.fn((cmd: string, args: string[] | undefined, opts: unknown) => {
+const { mockSpawn, mockCopy, mockGetUser } = vi.hoisted(() => {
+  const mockCopy = vi.fn(() => Promise.resolve());
+  const mockGetUser = vi.fn(() => Promise.resolve(null));
+  const mockSpawn = vi.fn();
+  return { mockSpawn, mockCopy, mockGetUser };
+});
+
+vi.mock('child_process', () => ({
+  spawn: mockSpawn
+}));
+
+vi.mock('gh-pages/lib/util', () => ({
+  copy: mockCopy,
+  getUser: mockGetUser
+}));
+
+// Configure mockSpawn with full implementation (after hoisted declaration)
+mockSpawn.mockImplementation((cmd: string, args: string[] | undefined, opts: unknown) => {
   const capturedArgs = args || [];
   spawnCalls.push({ cmd, args: capturedArgs, options: opts });
 
@@ -98,19 +126,6 @@ const mockSpawn = jest.fn((cmd: string, args: string[] | undefined, opts: unknow
   return mockChild;
 });
 
-jest.mock('child_process', () => ({
-  spawn: mockSpawn
-}));
-
-// Mock gh-pages/lib/util to avoid file copy operations
-const mockCopy = jest.fn(() => Promise.resolve());
-const mockGetUser = jest.fn(() => Promise.resolve(null));
-
-jest.mock('gh-pages/lib/util', () => ({
-  copy: mockCopy,
-  getUser: mockGetUser
-}));
-
 // Require gh-pages after mocking
 const ghPages = require('gh-pages');
 
@@ -118,7 +133,7 @@ const ghPages = require('gh-pages');
 function publishAndHandle(
   basePath: string,
   options: unknown,
-  done: jest.DoneCallback,
+  done: ((err?: unknown) => void),
   assertions: () => void
 ): void {
   ghPages.publish(basePath, options, (err: Error | null) => {
@@ -1025,16 +1040,23 @@ describe('gh-pages v6.3.0 - behavioral snapshot', () => {
    * still pass; if they change callback semantics, it will fail loudly.
    */
   describe('auth-failure silent-swallow regression (issue #205)', () => {
-    const engine = require('./engine');
-    const { cleanupMonkeypatch } = require('./engine.prepare-options-helpers');
-    const { logging } = require('@angular-devkit/core');
+    // engine.run() → require('gh-pages') uses the REAL child_process (not vi.mock'd),
+    // so we must spy on the actual module to intercept spawn calls.
+    let realCp: typeof import('child_process');
+    let realSpawnSpy: ReturnType<typeof vi.spyOn>;
 
     beforeEach(() => {
       cleanupMonkeypatch();
+      realCp = require('node:child_process');
+      realSpawnSpy = vi.spyOn(realCp, 'spawn');
+    });
+
+    afterEach(() => {
+      realSpawnSpy.mockRestore();
     });
 
     it('engine.run() should reject when git clone fails with fatal: Authentication failed', async () => {
-      mockSpawn.mockImplementationOnce((cmd: string, args: string[] | undefined) => {
+      realSpawnSpy.mockImplementation(((cmd: string, args?: string[]) => {
         const capturedArgs = args || [];
         spawnCalls.push({ cmd, args: capturedArgs, options: undefined });
         const child = createMockChildProcess();
@@ -1048,7 +1070,7 @@ describe('gh-pages v6.3.0 - behavioral snapshot', () => {
           child.emit!('close', 128);
         });
         return child;
-      });
+      }) as typeof realCp.spawn);
 
       const options = {
         repo: 'https://x-access-token:bad-token@github.com/owner/repo.git',
@@ -1062,8 +1084,10 @@ describe('gh-pages v6.3.0 - behavioral snapshot', () => {
         engine.run(basePath, options, new logging.NullLogger())
       ).rejects.toThrow();
 
-      expect(spawnCalls[0]?.cmd).toBe('git');
-      expect(spawnCalls[0]?.args[0]).toBe('clone');
+      const cloneCall = spawnCalls.find(c => c.cmd === 'git' && c.args[0] === 'clone');
+      expect(cloneCall).toBeDefined();
+      expect(cloneCall!.cmd).toBe('git');
+      expect(cloneCall!.args[0]).toBe('clone');
     });
   });
 
@@ -1073,12 +1097,19 @@ describe('gh-pages v6.3.0 - behavioral snapshot', () => {
    * via `git ls-files` and `git rm` the leftovers while leaving dist files alone.
    */
   describe('submodule / dotfile cleanup regression (issue #204)', () => {
-    const engine = require('./engine');
-    const { cleanupMonkeypatch } = require('./engine.prepare-options-helpers');
-    const { logging } = require('@angular-devkit/core');
+    // engine.run() → require('gh-pages') uses the REAL child_process (not vi.mock'd),
+    // so we must spy on the actual module to intercept spawn calls.
+    let realCp: typeof import('child_process');
+    let realSpawnSpy: ReturnType<typeof vi.spyOn>;
 
     beforeEach(() => {
       cleanupMonkeypatch();
+      realCp = require('node:child_process');
+      realSpawnSpy = vi.spyOn(realCp, 'spawn');
+    });
+
+    afterEach(() => {
+      realSpawnSpy.mockRestore();
     });
 
     it('engine.run() should git rm leftover gh-pages branch files not present in dist', async () => {
@@ -1092,9 +1123,8 @@ describe('gh-pages v6.3.0 - behavioral snapshot', () => {
         'build' // submodule gitlink
       ];
 
-      // Reconfigure the default mockSpawn so `git ls-files` returns our leftover set.
-      // Other git commands keep the outer describe's default behavior.
-      mockSpawn.mockImplementation((cmd: string, args: string[] | undefined, opts: unknown) => {
+      // Spy on the real child_process.spawn so `git ls-files` returns our leftover set.
+      realSpawnSpy.mockImplementation(((cmd: string, args?: string[], opts?: unknown) => {
         const capturedArgs = args || [];
         spawnCalls.push({ cmd, args: capturedArgs, options: opts });
 
@@ -1120,7 +1150,7 @@ describe('gh-pages v6.3.0 - behavioral snapshot', () => {
           child.emit!('close', 0);
         });
         return child;
-      });
+      }) as typeof realCp.spawn);
 
       const options = {
         repo,

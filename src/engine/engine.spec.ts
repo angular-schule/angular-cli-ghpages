@@ -3,6 +3,17 @@ import { logging } from '@angular-devkit/core';
 import * as engine from './engine';
 import { cleanupMonkeypatch } from './engine.prepare-options-helpers';
 
+// Mock utils.pathExists at module level
+vi.mock('../utils', async () => {
+  const actual = await vi.importActual<typeof import('../utils')>('../utils');
+  return {
+    ...actual,
+    pathExists: vi.fn(actual.pathExists)
+  };
+});
+
+import { pathExists } from '../utils';
+
 describe('engine', () => {
   describe('prepareOptions', () => {
     const logger = new logging.NullLogger();
@@ -168,15 +179,8 @@ describe('engine', () => {
       // BUG: await !fse.pathExists(dir) - applies ! to Promise (always false, error NEVER thrown)
       // FIX: !(await fse.pathExists(dir)) - awaits first, then negates (error IS thrown)
 
-      // Mock gh-pages module
-      jest.mock('gh-pages', () => ({
-        clean: jest.fn(),
-        publish: jest.fn()
-      }));
-
       // Mock pathExists from utils to return false
-      const utils = require('../utils');
-      jest.spyOn(utils, 'pathExists').mockResolvedValue(false);
+      vi.mocked(pathExists).mockResolvedValue(false);
 
       const nonExistentDir = '/path/to/nonexistent/dir';
       const expectedErrorMessage = 'Dist folder does not exist. Check the dir --dir parameter or build the project first!';
@@ -185,14 +189,17 @@ describe('engine', () => {
         engine.run(nonExistentDir, { dotfiles: true, notfound: true, nojekyll: true }, logger)
       ).rejects.toThrow(expectedErrorMessage);
 
-      expect(utils.pathExists).toHaveBeenCalledWith(nonExistentDir);
+      expect(pathExists).toHaveBeenCalledWith(nonExistentDir);
+
+      // Reset mock state
+      vi.mocked(pathExists).mockReset();
     });
   });
 
   describe('prepareOptions - user credentials warnings', () => {
     it('should warn when only name is set without email', async () => {
       const testLogger = new logging.Logger('test');
-      const warnSpy = jest.spyOn(testLogger, 'warn');
+      const warnSpy = vi.spyOn(testLogger, 'warn');
 
       const options = { name: 'John Doe' };
       const expectedWarning = 'WARNING: Both --name and --email must be set together to configure git user. Only --name is set. Git will use the local or global git config instead.';
@@ -204,7 +211,7 @@ describe('engine', () => {
 
     it('should warn when only email is set without name', async () => {
       const testLogger = new logging.Logger('test');
-      const warnSpy = jest.spyOn(testLogger, 'warn');
+      const warnSpy = vi.spyOn(testLogger, 'warn');
 
       const options = { email: 'john@example.com' };
       const expectedWarning = 'WARNING: Both --name and --email must be set together to configure git user. Only --email is set. Git will use the local or global git config instead.';
@@ -216,7 +223,7 @@ describe('engine', () => {
 
     it('should NOT warn when both name and email are set', async () => {
       const testLogger = new logging.Logger('test');
-      const warnSpy = jest.spyOn(testLogger, 'warn');
+      const warnSpy = vi.spyOn(testLogger, 'warn');
 
       const options = { name: 'John Doe', email: 'john@example.com' };
 
@@ -230,7 +237,7 @@ describe('engine', () => {
   describe('prepareOptions - deprecated noSilent warning', () => {
     it('should warn when noSilent parameter is used', async () => {
       const testLogger = new logging.Logger('test');
-      const warnSpy = jest.spyOn(testLogger, 'warn');
+      const warnSpy = vi.spyOn(testLogger, 'warn');
 
       const options = { noSilent: true };
       const expectedWarning = 'The --no-silent parameter is deprecated and no longer needed. Verbose logging is now always enabled. This parameter will be ignored.';
@@ -242,7 +249,7 @@ describe('engine', () => {
 
     it('should NOT warn when noSilent is not provided', async () => {
       const testLogger = new logging.Logger('test');
-      const warnSpy = jest.spyOn(testLogger, 'warn');
+      const warnSpy = vi.spyOn(testLogger, 'warn');
 
       const options = {};
 
@@ -257,24 +264,22 @@ describe('engine', () => {
     // We now use await ghPages.publish() directly instead of callback-based approach
     const logger = new logging.NullLogger();
 
-    let pathExistsSpy: jest.SpyInstance;
-    let ghpagesCleanSpy: jest.SpyInstance;
-    let ghpagesPublishSpy: jest.SpyInstance;
+    let ghpagesCleanSpy: MockInstance;
+    let ghpagesPublishSpy: MockInstance;
 
     beforeEach(() => {
       // Setup persistent mocks for utils.pathExists
-      const utils = require('../utils');
-      pathExistsSpy = jest.spyOn(utils, 'pathExists').mockResolvedValue(true);
+      vi.mocked(pathExists).mockResolvedValue(true);
 
       // Setup persistent mocks for gh-pages
       const ghpages = require('gh-pages');
-      ghpagesCleanSpy = jest.spyOn(ghpages, 'clean').mockImplementation(() => {});
-      ghpagesPublishSpy = jest.spyOn(ghpages, 'publish');
+      ghpagesCleanSpy = vi.spyOn(ghpages, 'clean').mockImplementation(() => {});
+      ghpagesPublishSpy = vi.spyOn(ghpages, 'publish');
     });
 
     afterEach(() => {
       // Clean up spies
-      pathExistsSpy.mockRestore();
+      vi.mocked(pathExists).mockReset();
       ghpagesCleanSpy.mockRestore();
       ghpagesPublishSpy.mockRestore();
     });
@@ -363,7 +368,7 @@ describe('engine', () => {
 
     it('should forward gh-pages debuglog calls to Angular logger', async () => {
       const testLogger = new logging.Logger('test');
-      const infoSpy = jest.spyOn(testLogger, 'info');
+      const infoSpy = vi.spyOn(testLogger, 'info');
 
       await engine.prepareOptions({}, testLogger);
 
@@ -381,7 +386,7 @@ describe('engine', () => {
 
     it('should forward gh-pages debuglog calls with formatting to Angular logger', async () => {
       const testLogger = new logging.Logger('test');
-      const infoSpy = jest.spyOn(testLogger, 'info');
+      const infoSpy = vi.spyOn(testLogger, 'info');
 
       await engine.prepareOptions({}, testLogger);
 
@@ -397,11 +402,11 @@ describe('engine', () => {
 
     it('should call original debuglog for non-gh-pages modules', async () => {
       const testLogger = new logging.Logger('test');
-      const infoSpy = jest.spyOn(testLogger, 'info');
+      const infoSpy = vi.spyOn(testLogger, 'info');
 
       const util = require('util');
       const originalDebuglogFn = util.debuglog;
-      const originalDebuglogSpy = jest.fn(originalDebuglogFn);
+      const originalDebuglogSpy = vi.fn(originalDebuglogFn);
       util.debuglog = originalDebuglogSpy;
 
       await engine.prepareOptions({}, testLogger);
@@ -422,7 +427,7 @@ describe('engine', () => {
       // the original util.debuglog and our interception won't work.
 
       const testLogger = new logging.Logger('test');
-      const infoSpy = jest.spyOn(testLogger, 'info');
+      const infoSpy = vi.spyOn(testLogger, 'info');
 
       // Clear gh-pages from require cache to simulate fresh load
       const ghPagesPath = require.resolve('gh-pages');

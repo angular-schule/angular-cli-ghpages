@@ -15,25 +15,25 @@ import * as engine from './engine';
 import { cleanupMonkeypatch } from './engine.prepare-options-helpers';
 
 // Mock utils.pathExists at module level
-jest.mock('../utils', () => ({
-  ...jest.requireActual('../utils'),
-  pathExists: jest.fn().mockResolvedValue(true)
+vi.mock('../utils', async () => ({
+  ...(await vi.importActual('../utils')),
+  pathExists: vi.fn().mockResolvedValue(true)
 }));
 
 // Mock Git class from gh-pages to avoid spawning actual git processes
-jest.mock('gh-pages/lib/git', () => {
-  return jest.fn().mockImplementation(() => ({
-    getRemoteUrl: jest.fn().mockResolvedValue('https://github.com/test/repo.git')
-  }));
-});
+vi.mock('gh-pages/lib/git', () => ({
+  default: vi.fn().mockImplementation(() => ({
+    getRemoteUrl: vi.fn().mockResolvedValue('https://github.com/test/repo.git')
+  }))
+}));
 
 describe('engine - gh-pages integration', () => {
   const logger = new logging.NullLogger();
   const originalEnv = process.env;
 
   // Only spy on gh-pages methods
-  let ghpagesCleanSpy: jest.SpyInstance;
-  let ghpagesPublishSpy: jest.SpyInstance;
+  let ghpagesCleanSpy: MockInstance;
+  let ghpagesPublishSpy: MockInstance;
 
   beforeEach(() => {
     // Clean up any previous monkeypatch so each test starts fresh
@@ -45,13 +45,13 @@ describe('engine - gh-pages integration', () => {
     if (ghpagesCleanSpy) {
       ghpagesCleanSpy.mockClear();
     } else {
-      ghpagesCleanSpy = jest.spyOn(ghpages, 'clean');
+      ghpagesCleanSpy = vi.spyOn(ghpages, 'clean');
     }
 
     if (ghpagesPublishSpy) {
       ghpagesPublishSpy.mockClear();
     } else {
-      ghpagesPublishSpy = jest.spyOn(ghpages, 'publish');
+      ghpagesPublishSpy = vi.spyOn(ghpages, 'publish');
     }
 
     // engine uses the callback form of gh-pages.publish() — see #205
@@ -411,7 +411,7 @@ describe('engine - gh-pages integration', () => {
 
     it('should log what WOULD be published during dry-run', async () => {
       const testLogger = new logging.Logger('test');
-      const infoSpy = jest.spyOn(testLogger, 'info');
+      const infoSpy = vi.spyOn(testLogger, 'info');
 
       const testDir = '/test/dist';
       const repo = 'https://github.com/test/repo.git';
@@ -607,7 +607,7 @@ describe('engine - gh-pages integration', () => {
       });
 
       const testLogger = new logging.Logger('test');
-      const infoSpy = jest.spyOn(testLogger, 'info');
+      const infoSpy = vi.spyOn(testLogger, 'info');
 
       const testDir = '/test/dist';
       const options = { dotfiles: true, notfound: true, nojekyll: true };

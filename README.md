@@ -67,7 +67,7 @@ If you already have an existing Angular project on GitHub, skip steps 1 and 2.
    cd your-angular-project
    ```
 
-2. By default, the Angular CLI initializes a Git repository for you.  
+2. By default, the Angular CLI initializes a Git repository for you.
    To add a new remote for GitHub, use the `git remote add` command:
 
    ```sh
@@ -108,7 +108,7 @@ If you already have an existing Angular project on GitHub, skip steps 1 and 2.
 
    Please be aware of the `--base-href` option. It is necessary when your project will be deployed to a non-root folder. See more details below.
 
-5. Your project should be available at `https://<username>.github.io/<repositoryname>`.  
+5. Your project should be available at `https://<username>.github.io/<repositoryname>`.
    Learn more about GitHub pages on the [official website](https://pages.github.com/).
 
 ## ⚙️ Installation <a name="installation"></a>
@@ -267,7 +267,7 @@ Learn more about ["personal access tokens" here](https://help.github.com/article
 - Default: `Auto-generated commit` (string)
 - Example: `ng deploy --message="What could possibly go wrong?"`
 
-The commit message **must be wrapped in quotes** if there are any spaces in the text.  
+The commit message **must be wrapped in quotes** if there are any spaces in the text.
 Some additional text is always added to the message, if the command runs on Travis CI, CircleCI or GitHub Actions.
 
 #### --branch <a name="branch"></a>

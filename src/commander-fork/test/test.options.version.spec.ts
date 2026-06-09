@@ -1,3 +1,5 @@
+import { MockInstance } from 'vitest';
+
 const commander = require('../');
 // var program = require('../')
 //   , should = require('should');
@@ -5,8 +7,8 @@ const commander = require('../');
 describe('options.version', () => {
 let capturedExitCode: number;
 let capturedOutput: string;
-let exitSpy: jest.SpyInstance;
-let writeSpy: jest.SpyInstance;
+let exitSpy: MockInstance;
+let writeSpy: MockInstance;
 
 // program.version('0.0.1');
 
@@ -17,11 +19,11 @@ let writeSpy: jest.SpyInstance;
   capturedExitCode = -1;
   capturedOutput = '';
 
-  exitSpy = jest.spyOn(process, 'exit').mockImplementation((code?: number) => {
+  exitSpy = vi.spyOn(process, 'exit').mockImplementation((code?: number) => {
     capturedExitCode = code ?? 0;
     return undefined as never;
   });
-  writeSpy = jest.spyOn(process.stdout, 'write').mockImplementation((output: string | Uint8Array) => {
+  writeSpy = vi.spyOn(process.stdout, 'write').mockImplementation((output: string | Uint8Array) => {
     capturedOutput += output;
     return true;
   });

@@ -24,13 +24,14 @@
       "preLaunchTask": "npm build"
     },
     {
-      "name": "Debug Jest Tests",
+      "name": "Debug Vitest Tests",
       "type": "node",
       "request": "launch",
       "runtimeArgs": [
         "--inspect-brk",
-        "${workspaceRoot}/src/node_modules/.bin/jest",
-        "--runInBand"
+        "${workspaceRoot}/src/node_modules/.bin/vitest",
+        "--run",
+        "--no-file-parallelism"
       ],
       "cwd": "${workspaceFolder}/src",
       "console": "integratedTerminal",

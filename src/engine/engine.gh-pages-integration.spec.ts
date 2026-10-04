@@ -22,11 +22,17 @@ vi.mock('../utils', async () => ({
 }));
 
 // Mock Git class from gh-pages to avoid spawning actual git processes
-vi.mock('gh-pages/lib/git', () => ({
-  default: vi.fn().mockImplementation(() => ({
-    getRemoteUrl: vi.fn().mockResolvedValue('https://github.com/test/repo.git')
-  }))
-}));
+vi.mock('gh-pages/lib/git', () => {
+  class MockGit {
+    getRemoteUrl = vi.fn().mockResolvedValue(
+      'https://github.com/test/repo.git'
+    );
+  }
+
+  return {
+    default: MockGit
+  };
+});
 
 describe('engine - gh-pages integration', () => {
   const logger = new logging.NullLogger();

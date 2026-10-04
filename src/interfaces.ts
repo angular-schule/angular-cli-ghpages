@@ -1,3 +1,5 @@
+import type {GhPagesGit} from './engine/engine.prepare-options-helpers';
+
 /**
  * Angular outputPath configuration
  * Can be either a string (path) or an object with base + browser properties
@@ -65,7 +67,7 @@ export interface PublishOptions {
   cname?: string;
   add?: boolean;
   git?: string;
-  beforeAdd?: (git: unknown) => void | Promise<void>;
+  beforeAdd?: (git: GhPagesGit) => void | Promise<void>;
   [key: string]: unknown; // Allow additional gh-pages options
 }
 

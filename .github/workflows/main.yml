@@ -64,7 +64,7 @@ jobs:
           git config --global user.email "ci@test.local"
 
       - name: Download build artifact
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: dist
           path: src/dist

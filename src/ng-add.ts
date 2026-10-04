@@ -20,7 +20,7 @@ export const ngAdd = (options: NgAddOptions) => async (
   if (!options.project) {
     if (workspace.projects.size === 1) {
       // If there is only one project, return that one.
-      options.project = Array.from(workspace.projects.keys())[0];
+      options.project = Array.from(workspace.projects.keys())[0] as string;
     } else {
       throw new SchematicsException(
         'There is more than one project in your workspace. Please select it manually by using the --project argument.'

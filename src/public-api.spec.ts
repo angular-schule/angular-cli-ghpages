@@ -81,10 +81,6 @@ describe('Public API', () => {
   });
 
   describe('Advanced Option Processing Functions', () => {
-    it('should export setupMonkeypatch function', () => {
-      expect(typeof publicApi.setupMonkeypatch).toBe('function');
-    });
-
     it('should export mapNegatedBooleans function', () => {
       expect(typeof publicApi.mapNegatedBooleans).toBe('function');
     });

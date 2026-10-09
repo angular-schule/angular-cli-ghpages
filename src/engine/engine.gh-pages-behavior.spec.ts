@@ -1,19 +1,16 @@
 /**
- * Behavioral snapshot tests for gh-pages v6.3.0
+ * Behavioral snapshot tests for gh-pages-fork publish()
  *
- * These tests capture the EXACT internal behavior of gh-pages.publish().
- * Focus: Git commands executed in correct order with correct arguments.
+ * These tests pin the git commands that publish() executes, in order and with
+ * their arguments, to the behavior of gh-pages v6.3.0 that angular-cli-ghpages
+ * has always relied on. Any change to the fork that alters this behavior fails here.
  *
- * Purpose: When upgrading gh-pages, these tests will break if behavior changes.
- * This ensures we maintain exact compatibility for our users.
- *
- * Approach: Mock child_process and gh-pages/lib/util, use real filesystem
+ * Approach: Mock child_process and gh-pages-fork/lib/util (copy, getUser), use real filesystem
  */
 
 import { ChildProcess } from 'child_process';
 
 import * as engine from './engine';
-import { cleanupMonkeypatch } from './engine.prepare-options-helpers';
 import { logging } from '@angular-devkit/core';
 
 const path = require('path');
@@ -47,8 +44,7 @@ let spawnCalls: SpawnCall[] = [];
 // Track current test context for deterministic mock behavior
 let currentTestContext: TestContext = {};
 
-// Factory function to create mock child process compatible with gh-pages expectations
-// gh-pages lib/git.js expects: child.stdout.on, child.stderr.on, child.on('close')
+// Mock child process with what gh-pages-fork lib/git.ts uses: stdout/stderr 'data', 'close'
 function createMockChildProcess(): Partial<ChildProcess> {
   const child: Partial<ChildProcess> = new EventEmitter();
   child.stdout = new EventEmitter() as unknown as ChildProcess['stdout'];
@@ -57,15 +53,14 @@ function createMockChildProcess(): Partial<ChildProcess> {
 }
 
 /**
- * Whitelist of expected git commands from gh-pages v6.3.0
+ * Whitelist of git subcommands that publish() may run.
  *
- * Strict whitelist: If gh-pages changes git subcommands in future versions,
- * this array must be updated first and tests will fail loudly.
- * This is intentional - we want to know about any new git operations.
+ * Strict whitelist: any new git operation must be added here first,
+ * so it can't slip in unnoticed.
  */
 const EXPECTED_GIT_COMMANDS = [
-  'clone', 'clean', 'fetch', 'checkout', 'ls-remote', 'ls-files', 'reset',
-  'rm', 'add', 'config', 'diff-index', 'commit', 'tag', 'push', 'update-ref'
+  'clone', 'clean', 'fetch', 'checkout', 'ls-remote', 'reset',
+  'rm', 'add', 'config', 'diff-index', 'commit', 'push'
 ];
 
 const { mockSpawn, mockCopy, mockGetUser } = vi.hoisted(() => {
@@ -79,13 +74,14 @@ vi.mock('child_process', () => ({
   spawn: mockSpawn
 }));
 
-vi.mock('gh-pages/lib/util', () => ({
+vi.mock('../gh-pages-fork/lib/util', async () => ({
+  ...(await vi.importActual('../gh-pages-fork/lib/util')),
   copy: mockCopy,
   getUser: mockGetUser
 }));
 
-// Configure mockSpawn with full implementation (after hoisted declaration)
-mockSpawn.mockImplementation((cmd: string, args: string[] | undefined, opts: unknown) => {
+// Default implementation; tests that need other responses override it, beforeEach restores it
+function defaultSpawn(cmd: string, args: string[] | undefined, opts: unknown) {
   const capturedArgs = args || [];
   spawnCalls.push({ cmd, args: capturedArgs, options: opts });
 
@@ -124,33 +120,20 @@ mockSpawn.mockImplementation((cmd: string, args: string[] | undefined, opts: unk
   });
 
   return mockChild;
-});
-
-// Require gh-pages after mocking
-const ghPages = require('gh-pages');
-
-// Helper to avoid duplicate error handling
-function publishAndHandle(
-  basePath: string,
-  options: unknown,
-  done: ((err?: unknown) => void),
-  assertions: () => void
-): void {
-  ghPages.publish(basePath, options, (err: Error | null) => {
-    if (err) {
-      done(err);
-      return;
-    }
-    try {
-      assertions();
-      done();
-    } catch (assertionError) {
-      done(assertionError);
-    }
-  });
 }
 
-describe('gh-pages v6.3.0 - behavioral snapshot', () => {
+import * as ghPages from '../gh-pages-fork/lib';
+
+async function publishAndHandle(
+  basePath: string,
+  options: ghPages.PublishOptions,
+  assertions: () => void
+): Promise<void> {
+  await ghPages.publish(basePath, options);
+  assertions();
+}
+
+describe('gh-pages-fork publish() - behavioral snapshot (gh-pages v6.3.0 behavior)', () => {
   let tempDir: string;
   let basePath: string;
 
@@ -180,20 +163,21 @@ describe('gh-pages v6.3.0 - behavioral snapshot', () => {
     // Clear all mock calls and context
     spawnCalls = [];
     currentTestContext = {};
-    mockSpawn.mockClear();
+    mockSpawn.mockReset();
+    mockSpawn.mockImplementation(defaultSpawn);
     mockCopy.mockClear();
     mockGetUser.mockClear();
   });
 
   describe('Git command execution order', () => {
-    it('should execute critical git commands in sequence', (done) => {
+    it('should execute critical git commands in sequence', async () => {
       const repo = 'https://github.com/test/order-test.git';
       const branch = 'gh-pages';
       currentTestContext.repo = repo;
 
       const options = { repo, branch, message: 'Deploy' };
 
-      publishAndHandle(basePath, options, done, () => {
+      await publishAndHandle(basePath, options, () => {
         // Extract git commands in order
         const gitCommands = spawnCalls
           .filter(call => call.cmd === 'git')
@@ -218,12 +202,12 @@ describe('gh-pages v6.3.0 - behavioral snapshot', () => {
       });
     });
 
-    it('should execute ls-remote before checkout', (done) => {
+    it('should execute ls-remote before checkout', async () => {
       const repo = 'https://github.com/test/ls-remote-test.git';
       currentTestContext.repo = repo;
       const options = { repo, message: 'Deploy' };
 
-      publishAndHandle(basePath, options, done, () => {
+      await publishAndHandle(basePath, options, () => {
         const gitCommands = spawnCalls
           .filter(call => call.cmd === 'git')
           .map(call => call.args[0]);
@@ -240,13 +224,13 @@ describe('gh-pages v6.3.0 - behavioral snapshot', () => {
   });
 
   describe('Git clone command', () => {
-    it('should clone with exact repository URL', (done) => {
+    it('should clone with exact repository URL', async () => {
       const repo = 'https://github.com/angular-schule/test-repo.git';
       const branch = 'production';
       currentTestContext.repo = repo;
       const options = { repo, branch, message: 'Deploy' };
 
-      publishAndHandle(basePath, options, done, () => {
+      await publishAndHandle(basePath, options, () => {
         const cloneCall = spawnCalls.find(call =>
           call.cmd === 'git' && call.args[0] === 'clone'
         );
@@ -278,7 +262,7 @@ describe('gh-pages v6.3.0 - behavioral snapshot', () => {
      * - Exact argument position and value
      * - This ensures optimal performance for all deployments
      */
-    it('should use default depth=1 for optimal performance', (done) => {
+    it('should use default depth=1 for optimal performance', async () => {
       const repo = 'https://github.com/test/depth-test.git';
       const branch = 'gh-pages';
       currentTestContext.repo = repo;
@@ -286,7 +270,7 @@ describe('gh-pages v6.3.0 - behavioral snapshot', () => {
       // Don't specify depth - rely on gh-pages default
       const options = { repo, branch, message: 'Deploy' };
 
-      publishAndHandle(basePath, options, done, () => {
+      await publishAndHandle(basePath, options, () => {
         const cloneCall = spawnCalls.find(call =>
           call.cmd === 'git' && call.args[0] === 'clone'
         );
@@ -295,18 +279,18 @@ describe('gh-pages v6.3.0 - behavioral snapshot', () => {
         // Find --depth flag and verify next argument is exactly 1
         const depthFlagIndex = cloneCall?.args.indexOf('--depth');
         expect(depthFlagIndex).toBeGreaterThan(-1);
-        expect(cloneCall?.args[depthFlagIndex! + 1]).toBe(1);
+        expect(cloneCall?.args[depthFlagIndex! + 1]).toBe('1');
       });
     });
   });
 
   describe('Git add and commit', () => {
-    it('should add all files with dot notation', (done) => {
+    it('should add all files with dot notation', async () => {
       const repo = 'https://github.com/test/add-test.git';
       currentTestContext.repo = repo;
       const options = { repo, message: 'Deploy' };
 
-      publishAndHandle(basePath, options, done, () => {
+      await publishAndHandle(basePath, options, () => {
         const addCall = spawnCalls.find(call =>
           call.cmd === 'git' && call.args[0] === 'add'
         );
@@ -316,13 +300,13 @@ describe('gh-pages v6.3.0 - behavioral snapshot', () => {
       });
     });
 
-    it('should commit with exact message provided', (done) => {
+    it('should commit with exact message provided', async () => {
       const repo = 'https://github.com/test/commit-test.git';
       const message = 'Custom deployment message with special chars: émojis 🚀';
       currentTestContext.repo = repo;
       const options = { repo, message };
 
-      publishAndHandle(basePath, options, done, () => {
+      await publishAndHandle(basePath, options, () => {
         const commitCall = spawnCalls.find(call =>
           call.cmd === 'git' && call.args[0] === 'commit'
         );
@@ -349,14 +333,14 @@ describe('gh-pages v6.3.0 - behavioral snapshot', () => {
    * - NO --force flag (because we don't pass history: false)
    */
   describe('Git push command', () => {
-    it('should push to correct remote and branch with --tags flag', (done) => {
+    it('should push to correct remote and branch with --tags flag', async () => {
       const repo = 'https://github.com/test/push-test.git';
       const branch = 'gh-pages';
       const remote = 'upstream';
       currentTestContext.repo = repo;
       const options = { repo, branch, remote, message: 'Deploy' };
 
-      publishAndHandle(basePath, options, done, () => {
+      await publishAndHandle(basePath, options, () => {
         const pushCall = spawnCalls.find(call =>
           call.cmd === 'git' && call.args[0] === 'push'
         );
@@ -369,12 +353,12 @@ describe('gh-pages v6.3.0 - behavioral snapshot', () => {
       });
     });
 
-    it('should NOT use force push (we rely on gh-pages default history: true)', (done) => {
+    it('should NOT use force push (we rely on gh-pages default history: true)', async () => {
       const repo = 'https://github.com/test/no-force-test.git';
       currentTestContext.repo = repo;
       const options = { repo, message: 'Deploy' };
 
-      publishAndHandle(basePath, options, done, () => {
+      await publishAndHandle(basePath, options, () => {
         const pushCall = spawnCalls.find(call =>
           call.cmd === 'git' && call.args[0] === 'push'
         );
@@ -387,12 +371,12 @@ describe('gh-pages v6.3.0 - behavioral snapshot', () => {
   });
 
   describe('File copy operation', () => {
-    it('should copy exact test files from basePath to cache destination', (done) => {
+    it('should copy exact test files from basePath to cache destination', async () => {
       const repo = 'https://github.com/test/copy-test.git';
       currentTestContext.repo = repo;
       const options = { repo, message: 'Deploy' };
 
-      publishAndHandle(basePath, options, done, () => {
+      await publishAndHandle(basePath, options, () => {
         expect(mockCopy).toHaveBeenCalledTimes(1);
 
         const callArgs = mockCopy.mock.calls[0];
@@ -442,12 +426,12 @@ describe('gh-pages v6.3.0 - behavioral snapshot', () => {
    * - We also verify that add: true NEVER calls git rm (critical)
    */
   describe('Git rm command behavior', () => {
-    it('should maintain standard command order with add: false (default)', (done) => {
+    it('should maintain standard command order with add: false (default)', async () => {
       const repo = 'https://github.com/test/rm-default-test.git';
       currentTestContext.repo = repo;
       const options = { repo, message: 'Deploy', add: false };
 
-      publishAndHandle(basePath, options, done, () => {
+      await publishAndHandle(basePath, options, () => {
         const gitCommands = spawnCalls
           .filter(call => call.cmd === 'git')
           .map(call => call.args[0]);
@@ -466,12 +450,12 @@ describe('gh-pages v6.3.0 - behavioral snapshot', () => {
       });
     });
 
-    it('should NEVER execute git rm when add: true (skips removal entirely)', (done) => {
+    it('should NEVER execute git rm when add: true (skips removal entirely)', async () => {
       const repo = 'https://github.com/test/rm-add-test.git';
       currentTestContext.repo = repo;
       const options = { repo, message: 'Deploy', add: true };
 
-      publishAndHandle(basePath, options, done, () => {
+      await publishAndHandle(basePath, options, () => {
         const rmCall = spawnCalls.find(call =>
           call.cmd === 'git' && call.args[0] === 'rm'
         );
@@ -507,12 +491,12 @@ describe('gh-pages v6.3.0 - behavioral snapshot', () => {
    * - .htaccess (dotfile)
    */
   describe('Dotfiles option', () => {
-    it('should include dotfiles when dotfiles: true (our default)', (done) => {
+    it('should include dotfiles when dotfiles: true (our default)', async () => {
       const repo = 'https://github.com/test/dotfiles-true.git';
       currentTestContext.repo = repo;
       const options = { repo, message: 'Deploy', dotfiles: true };
 
-      publishAndHandle(basePath, options, done, () => {
+      await publishAndHandle(basePath, options, () => {
         // gh-pages uses globby with { dot: options.dotfiles } (lib/index.js line 90)
         expect(mockCopy).toHaveBeenCalledTimes(1);
 
@@ -535,12 +519,12 @@ describe('gh-pages v6.3.0 - behavioral snapshot', () => {
       });
     });
 
-    it('should exclude dotfiles when dotfiles: false', (done) => {
+    it('should exclude dotfiles when dotfiles: false', async () => {
       const repo = 'https://github.com/test/dotfiles-false.git';
       currentTestContext.repo = repo;
       const options = { repo, message: 'Deploy', dotfiles: false };
 
-      publishAndHandle(basePath, options, done, () => {
+      await publishAndHandle(basePath, options, () => {
         expect(mockCopy).toHaveBeenCalledTimes(1);
 
         const callArgs = mockCopy.mock.calls[0];
@@ -581,13 +565,13 @@ describe('gh-pages v6.3.0 - behavioral snapshot', () => {
    * - This confirms the option is accepted by gh-pages
    */
   describe('Git executable option', () => {
-    it('should accept git executable option (we pass our default "git")', (done) => {
+    it('should accept git executable option (we pass our default "git")', async () => {
       const repo = 'https://github.com/test/git-exe-test.git';
       const gitExecutable = 'git'; // Our default from defaults.ts line 15
       currentTestContext.repo = repo;
       const options = { repo, message: 'Deploy', git: gitExecutable };
 
-      publishAndHandle(basePath, options, done, () => {
+      await publishAndHandle(basePath, options, () => {
         // Find all git commands
         const gitCalls = spawnCalls.filter(call => call.cmd === 'git');
 
@@ -604,14 +588,14 @@ describe('gh-pages v6.3.0 - behavioral snapshot', () => {
   });
 
   describe('User credentials', () => {
-    it('should configure git user.email with exact value', (done) => {
+    it('should configure git user.email with exact value', async () => {
       const repo = 'https://github.com/test/user-test.git';
       const name = 'Deploy Bot';
       const email = 'bot@example.com';
       currentTestContext.repo = repo;
       const options = { repo, message: 'Deploy', user: { name, email } };
 
-      publishAndHandle(basePath, options, done, () => {
+      await publishAndHandle(basePath, options, () => {
         const configEmailCall = spawnCalls.find(call =>
           call.cmd === 'git' &&
           call.args[0] === 'config' &&
@@ -623,14 +607,14 @@ describe('gh-pages v6.3.0 - behavioral snapshot', () => {
       });
     });
 
-    it('should configure git user.name with exact value', (done) => {
+    it('should configure git user.name with exact value', async () => {
       const repo = 'https://github.com/test/username-test.git';
       const name = 'Deploy Bot';
       const email = 'bot@example.com';
       currentTestContext.repo = repo;
       const options = { repo, message: 'Deploy', user: { name, email } };
 
-      publishAndHandle(basePath, options, done, () => {
+      await publishAndHandle(basePath, options, () => {
         const configNameCall = spawnCalls.find(call =>
           call.cmd === 'git' &&
           call.args[0] === 'config' &&
@@ -656,12 +640,12 @@ describe('gh-pages v6.3.0 - behavioral snapshot', () => {
    * - If gh-pages changes defaults, we'll catch it
    */
   describe('Git tag command', () => {
-    it('should NEVER create git tags (we do not use tag option)', (done) => {
+    it('should NEVER create git tags (we do not use tag option)', async () => {
       const repo = 'https://github.com/test/no-tag-test.git';
       currentTestContext.repo = repo;
       const options = { repo, message: 'Deploy' };
 
-      publishAndHandle(basePath, options, done, () => {
+      await publishAndHandle(basePath, options, () => {
         const tagCall = spawnCalls.find(call =>
           call.cmd === 'git' && call.args[0] === 'tag'
         );
@@ -692,13 +676,13 @@ describe('gh-pages v6.3.0 - behavioral snapshot', () => {
    * - This is what we want: verbose logging for deployments
    */
   describe('gh-pages default options (we do not pass these)', () => {
-    it('should push to remote (gh-pages default push: true)', (done) => {
+    it('should push to remote (gh-pages default push: true)', async () => {
       const repo = 'https://github.com/test/default-push-test.git';
       currentTestContext.repo = repo;
       const options = { repo, message: 'Deploy' };
       // We DON'T pass push option, gh-pages defaults to push: true
 
-      publishAndHandle(basePath, options, done, () => {
+      await publishAndHandle(basePath, options, () => {
         const pushCall = spawnCalls.find(call =>
           call.cmd === 'git' && call.args[0] === 'push'
         );
@@ -708,13 +692,13 @@ describe('gh-pages v6.3.0 - behavioral snapshot', () => {
       });
     });
 
-    it('should use root destination (gh-pages default dest: ".")', (done) => {
+    it('should use root destination (gh-pages default dest: ".")', async () => {
       const repo = 'https://github.com/test/default-dest-test.git';
       currentTestContext.repo = repo;
       const options = { repo, message: 'Deploy' };
       // We DON'T pass dest option, gh-pages defaults to dest: '.'
 
-      publishAndHandle(basePath, options, done, () => {
+      await publishAndHandle(basePath, options, () => {
         // Copy destination should be at root of cache (not in subdirectory)
         expect(mockCopy).toHaveBeenCalledTimes(1);
 
@@ -728,13 +712,13 @@ describe('gh-pages v6.3.0 - behavioral snapshot', () => {
       });
     });
 
-    it('should include all files (gh-pages default src: "**/*")', (done) => {
+    it('should include all files (gh-pages default src: "**/*")', async () => {
       const repo = 'https://github.com/test/default-src-test.git';
       currentTestContext.repo = repo;
       const options = { repo, message: 'Deploy' };
       // We DON'T pass src option, gh-pages defaults to src: '**/*'
 
-      publishAndHandle(basePath, options, done, () => {
+      await publishAndHandle(basePath, options, () => {
         expect(mockCopy).toHaveBeenCalledTimes(1);
 
         const callArgs = mockCopy.mock.calls[0];
@@ -748,14 +732,14 @@ describe('gh-pages v6.3.0 - behavioral snapshot', () => {
       });
     });
 
-    it('should use default remove pattern (gh-pages default remove: ".")', (done) => {
+    it('should use default remove pattern (gh-pages default remove: ".")', async () => {
       const repo = 'https://github.com/test/default-remove-test.git';
       currentTestContext.repo = repo;
       const options = { repo, message: 'Deploy', add: false };
       // We DON'T pass remove option, gh-pages defaults to remove: '.'
       // With add: false, gh-pages will attempt to remove files matching '.'
 
-      publishAndHandle(basePath, options, done, () => {
+      await publishAndHandle(basePath, options, () => {
         // Since it's a fresh clone, there may be no files to remove
         // But we verify the removal logic is executed (not skipped like with add: true)
         const gitCommands = spawnCalls
@@ -783,7 +767,7 @@ describe('gh-pages v6.3.0 - behavioral snapshot', () => {
    * - Documents expected error recovery behavior
    */
   describe('Error scenarios', () => {
-    it('should retry git clone without branch/depth options on failure', (done) => {
+    it('should retry git clone without branch/depth options on failure', async () => {
       const repo = 'https://github.com/test/clone-failure-test.git';
       currentTestContext.repo = repo;
       const branch = 'new-branch';
@@ -841,38 +825,27 @@ describe('gh-pages v6.3.0 - behavioral snapshot', () => {
         return mockChild;
       });
 
-      ghPages.publish(basePath, options, (err: Error | null) => {
-        if (err) {
-          done(err);
-          return;
-        }
+      await ghPages.publish(basePath, options);
 
-        try {
-          const cloneCalls = spawnCalls.filter(call =>
-            call.cmd === 'git' && call.args[0] === 'clone'
-          );
+      const cloneCalls = spawnCalls.filter(call =>
+        call.cmd === 'git' && call.args[0] === 'clone'
+      );
 
-          // CRITICAL: Must have exactly 2 clone attempts
-          expect(cloneCalls.length).toBe(2);
+      // CRITICAL: Must have exactly 2 clone attempts
+      expect(cloneCalls.length).toBe(2);
 
-          // First attempt: with --branch and --depth
-          expect(cloneCalls[0].args).toContain('--branch');
-          expect(cloneCalls[0].args).toContain(branch);
-          expect(cloneCalls[0].args).toContain('--depth');
+      // First attempt: with --branch and --depth
+      expect(cloneCalls[0].args).toContain('--branch');
+      expect(cloneCalls[0].args).toContain(branch);
+      expect(cloneCalls[0].args).toContain('--depth');
 
-          // Second attempt: WITHOUT --branch and --depth (fallback)
-          expect(cloneCalls[1].args).not.toContain('--branch');
-          expect(cloneCalls[1].args).not.toContain('--depth');
-          expect(cloneCalls[1].args).toContain(repo);
-
-          done();
-        } catch (assertionError) {
-          done(assertionError);
-        }
-      });
+      // Second attempt: WITHOUT --branch and --depth (fallback)
+      expect(cloneCalls[1].args).not.toContain('--branch');
+      expect(cloneCalls[1].args).not.toContain('--depth');
+      expect(cloneCalls[1].args).toContain(repo);
     });
 
-    it('should NOT commit when no changes exist (diff-index returns 0)', (done) => {
+    it('should NOT commit when no changes exist (diff-index returns 0)', async () => {
       const repo = 'https://github.com/test/no-changes-test.git';
       currentTestContext.repo = repo;
       const options = { repo, message: 'Deploy' };
@@ -913,35 +886,24 @@ describe('gh-pages v6.3.0 - behavioral snapshot', () => {
         return mockChild;
       });
 
-      ghPages.publish(basePath, options, (err: Error | null) => {
-        if (err) {
-          done(err);
-          return;
-        }
+      await ghPages.publish(basePath, options);
 
-        try {
-          const commitCall = spawnCalls.find(call =>
-            call.cmd === 'git' && call.args[0] === 'commit'
-          );
+      const commitCall = spawnCalls.find(call =>
+        call.cmd === 'git' && call.args[0] === 'commit'
+      );
 
-          // CRITICAL: Commit should NOT be called when no changes
-          // gh-pages uses: git diff-index --quiet HEAD || git commit -m "message"
-          expect(commitCall).toBeUndefined();
+      // CRITICAL: Commit should NOT be called when no changes
+      // gh-pages uses: git diff-index --quiet HEAD || git commit -m "message"
+      expect(commitCall).toBeUndefined();
 
-          // But push should still be called (even with no new commits)
-          const pushCall = spawnCalls.find(call =>
-            call.cmd === 'git' && call.args[0] === 'push'
-          );
-          expect(pushCall).toBeDefined();
-
-          done();
-        } catch (assertionError) {
-          done(assertionError);
-        }
-      });
+      // But push should still be called (even with no new commits)
+      const pushCall = spawnCalls.find(call =>
+        call.cmd === 'git' && call.args[0] === 'push'
+      );
+      expect(pushCall).toBeDefined();
     });
 
-    it('should handle deployment without user credentials (uses getUser)', (done) => {
+    it('should handle deployment without user credentials (uses getUser)', async () => {
       const repo = 'https://github.com/test/no-user-test.git';
       currentTestContext.repo = repo;
       const options = { repo, message: 'Deploy' };
@@ -983,34 +945,22 @@ describe('gh-pages v6.3.0 - behavioral snapshot', () => {
         return mockChild;
       });
 
-      ghPages.publish(basePath, options, (err: Error | null) => {
-        if (err) {
-          done(err);
-          return;
-        }
+      await ghPages.publish(basePath, options);
 
-        try {
-          // Verify getUser was called (our mock returns null)
-          expect(mockGetUser).toHaveBeenCalled();
+      // Verify getUser was called (our mock returns null)
+      expect(mockGetUser).toHaveBeenCalled();
 
-          // Verify NO git config commands for user.name/user.email
-          const configUserCalls = spawnCalls.filter(call =>
-            call.cmd === 'git' &&
-            call.args[0] === 'config' &&
-            (call.args[1] === 'user.name' || call.args[1] === 'user.email')
-          );
+      // Verify NO git config commands for user.name/user.email
+      const configUserCalls = spawnCalls.filter(call =>
+        call.cmd === 'git' &&
+        call.args[0] === 'config' &&
+        (call.args[1] === 'user.name' || call.args[1] === 'user.email')
+      );
 
-          // When getUser returns null, gh-pages skips git config
-          // (relies on global/local git config)
-          expect(configUserCalls.length).toBe(0);
-
-          done();
-        } catch (assertionError) {
-          done(assertionError);
-        }
-      });
+      // When getUser returns null, gh-pages skips git config
+      // (relies on global/local git config)
+      expect(configUserCalls.length).toBe(0);
     });
-
   });
 
   /**
@@ -1033,44 +983,24 @@ describe('gh-pages v6.3.0 - behavioral snapshot', () => {
    */
 
   /**
-   * End-to-end canary for issue #205: drives the REAL gh-pages library
-   * through engine.run() with a mocked child_process.spawn that simulates
-   * an HTTPS auth failure during `git clone`. If upstream gh-pages ever
-   * fixes the `.then(_, onRejected)` absorption pattern, this test will
-   * still pass; if they change callback semantics, it will fail loudly.
+   * Regression for issue #205: a failing git command must reject engine.run(),
+   * never end in a "Successfully published" message.
    */
-  describe('auth-failure silent-swallow regression (issue #205)', () => {
-    // engine.run() → require('gh-pages') uses the REAL child_process (not vi.mock'd),
-    // so we must spy on the actual module to intercept spawn calls.
-    let realCp: typeof import('child_process');
-    let realSpawnSpy: ReturnType<typeof vi.spyOn>;
-
-    beforeEach(() => {
-      cleanupMonkeypatch();
-      realCp = require('node:child_process');
-      realSpawnSpy = vi.spyOn(realCp, 'spawn');
-    });
-
-    afterEach(() => {
-      realSpawnSpy.mockRestore();
-    });
-
+  describe('auth-failure regression (issue #205)', () => {
     it('engine.run() should reject when git clone fails with fatal: Authentication failed', async () => {
-      realSpawnSpy.mockImplementation(((cmd: string, args?: string[]) => {
+      mockSpawn.mockImplementation((cmd: string, args: string[] | undefined) => {
         const capturedArgs = args || [];
         spawnCalls.push({ cmd, args: capturedArgs, options: undefined });
         const child = createMockChildProcess();
         setImmediate(() => {
           child.stderr!.emit(
             'data',
-            Buffer.from(
-              "fatal: Authentication failed for 'https://github.com/owner/repo.git'"
-            )
+            Buffer.from("fatal: Authentication failed for 'https://github.com/owner/repo.git'")
           );
           child.emit!('close', 128);
         });
         return child;
-      }) as typeof realCp.spawn);
+      });
 
       const options = {
         repo: 'https://x-access-token:bad-token@github.com/owner/repo.git',
@@ -1082,75 +1012,22 @@ describe('gh-pages v6.3.0 - behavioral snapshot', () => {
 
       await expect(
         engine.run(basePath, options, new logging.NullLogger())
-      ).rejects.toThrow();
+      ).rejects.toThrow('fatal: Authentication failed');
 
       const cloneCall = spawnCalls.find(c => c.cmd === 'git' && c.args[0] === 'clone');
       expect(cloneCall).toBeDefined();
-      expect(cloneCall!.cmd).toBe('git');
-      expect(cloneCall!.args[0]).toBe('clone');
     });
   });
 
   /**
-   * End-to-end regression for issue #204: gh-pages@6.3.0's "Removing files" step
-   * skips dotfiles and submodule gitlinks. Our beforeAdd hook should catch them
-   * via `git ls-files` and `git rm` the leftovers while leaving dist files alone.
+   * Regression for issue #204: leftover files of the gh-pages branch (dotfiles,
+   * dot-directories, submodule gitlinks) must not survive a deploy. publish()
+   * removes every tracked file before copying dist, unless `add` is set.
    */
   describe('submodule / dotfile cleanup regression (issue #204)', () => {
-    // engine.run() → require('gh-pages') uses the REAL child_process (not vi.mock'd),
-    // so we must spy on the actual module to intercept spawn calls.
-    let realCp: typeof import('child_process');
-    let realSpawnSpy: ReturnType<typeof vi.spyOn>;
-
-    beforeEach(() => {
-      cleanupMonkeypatch();
-      realCp = require('node:child_process');
-      realSpawnSpy = vi.spyOn(realCp, 'spawn');
-    });
-
-    afterEach(() => {
-      realSpawnSpy.mockRestore();
-    });
-
-    it('engine.run() should git rm leftover gh-pages branch files not present in dist', async () => {
+    it('engine.run() should remove all tracked files after checkout and before adding dist', async () => {
       const repo = 'https://github.com/owner/leftover-test.git';
       currentTestContext.repo = repo;
-
-      const leftoverFiles = [
-        '.github/workflows/deploy.yml',
-        '.gitignore',
-        '.gitmodules',
-        'build' // submodule gitlink
-      ];
-
-      // Spy on the real child_process.spawn so `git ls-files` returns our leftover set.
-      realSpawnSpy.mockImplementation(((cmd: string, args?: string[], opts?: unknown) => {
-        const capturedArgs = args || [];
-        spawnCalls.push({ cmd, args: capturedArgs, options: opts });
-
-        if (cmd === 'git' && capturedArgs[0] && !EXPECTED_GIT_COMMANDS.includes(capturedArgs[0])) {
-          throw new Error(`Unexpected git command: ${capturedArgs[0]}. Add to whitelist if intentional.`);
-        }
-
-        const child = createMockChildProcess();
-        setImmediate(() => {
-          let output = '';
-          if (cmd === 'git' && capturedArgs[0] === 'ls-files') {
-            output = leftoverFiles.join('\0') + '\0';
-          } else if (cmd === 'git' && capturedArgs[0] === 'config' &&
-                     capturedArgs[1] === '--get' && capturedArgs[2]?.startsWith('remote.')) {
-            output = repo;
-          } else if (cmd === 'git' && capturedArgs[0] === 'ls-remote') {
-            output = 'refs/heads/gh-pages';
-          } else if (cmd === 'git' && capturedArgs[0] === 'diff-index') {
-            child.emit!('close', 1);
-            return;
-          }
-          child.stdout!.emit('data', Buffer.from(output));
-          child.emit!('close', 0);
-        });
-        return child;
-      }) as typeof realCp.spawn);
 
       const options = {
         repo,
@@ -1162,21 +1039,24 @@ describe('gh-pages v6.3.0 - behavioral snapshot', () => {
 
       await engine.run(basePath, options, new logging.NullLogger());
 
-      // Our hook should have issued `git ls-files -z`.
-      const lsFilesCall = spawnCalls.find(c => c.cmd === 'git' && c.args[0] === 'ls-files');
-      expect(lsFilesCall).toBeDefined();
-      expect(lsFilesCall!.args).toContain('-z');
+      const gitCalls = spawnCalls.filter(c => c.cmd === 'git').map(c => c.args.join(' '));
+      const resetIndex = gitCalls.indexOf('reset --hard origin/gh-pages');
+      const rmIndex = gitCalls.indexOf('rm --ignore-unmatch -r -f -- .');
+      const addIndex = gitCalls.indexOf('add .');
 
-      // And a subsequent `git rm` that targets exactly the leftovers.
-      const rmCalls = spawnCalls.filter(c => c.cmd === 'git' && c.args[0] === 'rm');
-      const cleanupCall = rmCalls.find(c => leftoverFiles.every(f => c.args.includes(f)));
-      expect(cleanupCall).toBeDefined();
+      expect(resetIndex).toBeGreaterThan(-1);
+      expect(rmIndex).toBeGreaterThan(resetIndex);
+      expect(addIndex).toBeGreaterThan(rmIndex);
+      expect(mockCopy).toHaveBeenCalledTimes(1);
+    });
 
-      // Dist files (from the outer beforeAll: index.html, main.js, styles.css, .htaccess)
-      // must NOT be in the cleanup call — those are files we just copied.
-      for (const distFile of ['index.html', 'main.js', 'styles.css', '.htaccess']) {
-        expect(cleanupCall!.args).not.toContain(distFile);
-      }
+    it('engine.run() should keep existing files with add: true', async () => {
+      const repo = 'https://github.com/owner/leftover-add-test.git';
+      currentTestContext.repo = repo;
+
+      await engine.run(basePath, { repo, add: true, notfound: false, nojekyll: false }, new logging.NullLogger());
+
+      expect(spawnCalls.some(c => c.cmd === 'git' && c.args[0] === 'rm')).toBe(false);
     });
   });
 });

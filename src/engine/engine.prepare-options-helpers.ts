@@ -6,14 +6,9 @@
  */
 
 import { logging } from '@angular-devkit/core';
-import * as fs from 'fs/promises';
-import * as os from 'os';
-import * as path from 'path';
-import * as util from 'util';
 
 import { Schema } from '../deploy/schema';
-// Internal API dependency - by design. See getRemoteUrl() JSDoc for rationale and fallback options.
-import Git from 'gh-pages/lib/git';
+import { Git } from '../gh-pages-fork/lib/git';
 
 /**
  * Type for options with the three boolean flags that prepareOptions adds,
@@ -23,120 +18,9 @@ export type PreparedOptions = Schema & {
   dotfiles: boolean;
   notfound: boolean;
   nojekyll: boolean;
+  git?: string;
   user?: { name: string; email: string };
 };
-
-// Store original debuglog for cleanup (using CommonJS require for mutable access)
-// eslint-disable-next-line @typescript-eslint/no-var-requires
-const utilMutable = require('util');
-let originalDebuglog: typeof util.debuglog | null = null;
-
-/**
- * Setup monkeypatch for util.debuglog to intercept gh-pages logging
- *
- * gh-pages uses util.debuglog('gh-pages') internally for all verbose logging.
- * We intercept it and forward to Angular logger instead of stderr.
- *
- * CRITICAL: This must be called BEFORE requiring gh-pages, otherwise gh-pages
- * will cache the original util.debuglog and our interception won't work.
- *
- * NOTE: We use require('util') instead of ES import because ES module namespace
- * objects are read-only. CommonJS require returns a mutable object that we can patch.
- */
-export function setupMonkeypatch(logger: logging.LoggerApi): void {
-  // Guard against multiple calls - only patch once
-  // If we're already patched, just return (prevents stack overflow from recursive calls)
-  if (originalDebuglog !== null) {
-    return;
-  }
-
-  originalDebuglog = utilMutable.debuglog;
-
-  utilMutable.debuglog = (set: string) => {
-    // gh-pages uses util.debuglog('gh-pages') internally for all verbose logging
-    // Intercept it and forward to Angular logger instead of stderr
-    if (set === 'gh-pages') {
-      return function (...args: unknown[]) {
-        const message = util.format.apply(util, args);
-        logger.info(message);
-      };
-    }
-    return originalDebuglog!(set);
-  };
-}
-
-/**
- * Cleanup monkeypatch - restore original util.debuglog
- * Exported for testing
- */
-export function cleanupMonkeypatch(): void {
-  if (originalDebuglog) {
-    utilMutable.debuglog = originalDebuglog;
-    originalDebuglog = null;
-  }
-}
-
-/**
- * Ensure gh-pages' internal `find-cache-dir` call resolves to a real path.
- *
- * gh-pages@6.3.0 calls `findCacheDir({ name: 'gh-pages' })` for both `clean()`
- * and `publish()`. `find-cache-dir` walks up from cwd looking for a
- * `package.json`; if none is found (e.g. `npx angular-cli-ghpages` run in a
- * repo that is just a `dist/` folder), it returns `undefined`, and gh-pages
- * then blows up with `TypeError: The "path" argument must be of type string
- * ... Received undefined` inside `path.join(undefined, ...)`.
- *
- * Workaround: `find-cache-dir` honors the `CACHE_DIR` env var — if set (and
- * not a boolean-ish value), it returns `path.join(CACHE_DIR, name)` without
- * any package.json lookup. We set it to an os.tmpdir() fallback, but only
- * when (a) the user hasn't already set it themselves, and (b) no package.json
- * is reachable from cwd. See issue #203.
- *
- * We don't use find-cache-dir to probe because it captures `process.env` by
- * reference at module load and is then cached in `require.cache`; that makes
- * it brittle under test reassignment of `process.env`.
- *
- * MUST run before gh-pages' `clean()` / `publish()` invoke find-cache-dir.
- */
-export function ensureGhPagesCacheDir(cwd: string = process.cwd()): void {
-  // Respect a user-set CACHE_DIR. find-cache-dir itself treats boolean-ish
-  // values as "not set" (it opts out of its early return), so mirror that.
-  const existing = process.env.CACHE_DIR;
-  if (existing && !['true', 'false', '1', '0'].includes(existing)) {
-    return;
-  }
-
-  if (hasReachablePackageJson(cwd)) {
-    return;
-  }
-
-  // Stable, per-user fallback location. gh-pages itself creates
-  // `<CACHE_DIR>/gh-pages/<filenamify(repo)>` underneath this.
-  process.env.CACHE_DIR = path.join(os.tmpdir(), 'angular-cli-ghpages-cache');
-}
-
-/**
- * Walk up from `startDir` looking for a `package.json`. Mirrors what
- * pkg-dir/find-cache-dir do internally, but avoids their module-level
- * `process.env` caching (see `ensureGhPagesCacheDir`).
- */
-function hasReachablePackageJson(startDir: string): boolean {
-  // eslint-disable-next-line @typescript-eslint/no-var-requires
-  const fsSync = require('fs');
-  let dir = path.resolve(startDir);
-  // Safety cap against pathological infinite loops; real trees are <50 deep.
-  for (let i = 0; i < 50; i++) {
-    if (fsSync.existsSync(path.join(dir, 'package.json'))) {
-      return true;
-    }
-    const parent = path.dirname(dir);
-    if (parent === dir) {
-      return false;
-    }
-    dir = parent;
-  }
-  return false;
-}
 
 /**
  * Map negated boolean options to positive boolean options
@@ -291,116 +175,13 @@ export async function injectTokenIntoRepoUrl(options: PreparedOptions): Promise<
 }
 
 /**
- * Minimal subset of the gh-pages internal Git class that our cleanup hook relies on.
- * See src/node_modules/gh-pages/lib/git.js — `Git.prototype.exec`, `Git.prototype.rm`, `cwd`, `output`.
- */
-export interface GhPagesGit {
-  cwd: string;
-  output: string;
-  exec(...args: string[]): Promise<GhPagesGit>;
-  rm(files: string[]): Promise<GhPagesGit>;
-}
-
-/**
- * Recursively walk a directory and return the set of relative file paths,
- * using POSIX separators so the output matches what `git ls-files` prints.
- * Honors the same dotfile-inclusion semantics as gh-pages' `options.dotfiles`.
- */
-export async function collectDistFiles(
-  baseDir: string,
-  includeDotfiles: boolean
-): Promise<Set<string>> {
-  const files = new Set<string>();
-
-  async function walk(relDir: string): Promise<void> {
-    const fullDir = relDir ? path.join(baseDir, relDir) : baseDir;
-    const entries = await fs.readdir(fullDir, { withFileTypes: true });
-    for (const entry of entries) {
-      if (!includeDotfiles && entry.name.startsWith('.')) {
-        continue;
-      }
-      const relPath = relDir ? `${relDir}/${entry.name}` : entry.name;
-      if (entry.isDirectory()) {
-        await walk(relPath);
-      } else if (entry.isFile()) {
-        files.add(relPath);
-      }
-    }
-  }
-
-  await walk('');
-  return files;
-}
-
-/**
- * Create a `beforeAdd` hook that removes leftover files from the gh-pages branch
- * before gh-pages stages our dist for commit.
+ * Get the URL of `options.remote` from the git repository in the current working directory.
  *
- * Why this exists (issue #204):
- * gh-pages@6.3.0's "Removing files" step calls globby without `dot: true`, so
- * dotfiles (.gitignore, .gitmodules, .github/…) and submodule gitlinks from the
- * gh-pages branch are NOT removed before our dist is copied on top. They then
- * get re-committed and leak into the deploy.
- *
- * Fix: after gh-pages' broken remove + our file copy, ask git what it still has
- * indexed (`git ls-files -z`), diff against the set of files in our dist, and
- * `git rm` the leftovers. `git rm` correctly handles submodule gitlinks too.
- *
- * `generatedFiles` lists files that gh-pages itself writes into the clone
- * (`.nojekyll`, `CNAME`). They never exist in dist, so they are kept explicitly;
- * otherwise a redeploy would remove the `.nojekyll` that gh-pages just created.
- *
- * Upstream fix: tschaub/gh-pages#612 (merged 2025-08-09, unreleased as of
- * gh-pages@6.3.0). When a release containing that PR lands, this hook becomes
- * redundant and can be removed.
- */
-export function createCleanupBeforeAddHook(
-  distDir: string,
-  dotfiles: boolean,
-  logger: logging.LoggerApi,
-  generatedFiles: string[]
-): (git: GhPagesGit) => Promise<void> {
-  return async (git) => {
-    const distFiles = await collectDistFiles(distDir, dotfiles);
-    await git.exec('ls-files', '-z');
-    const tracked = (git.output || '').split('\0').filter(Boolean);
-    const toRemove = tracked.filter((f) => !distFiles.has(f) && !generatedFiles.includes(f));
-    if (toRemove.length === 0) {
-      return;
-    }
-    logger.info(
-      `Removing ${toRemove.length} leftover file(s) from gh-pages branch not in dist: ${toRemove.join(', ')}`
-    );
-    await git.rm(toRemove);
-  };
-}
-
-/**
- * Get the remote URL from the git repository
- *
- * ⚠️  WARNING: This uses gh-pages internal API (gh-pages/lib/git)
- *
- * UPGRADE RISK:
- * - This function depends on gh-pages/lib/git which is an internal module
- * - Not part of gh-pages public API - could break in any version
- * - When upgrading gh-pages, verify this still works:
- *   1. Check if gh-pages/lib/git still exists
- *   2. Check if Git class constructor signature is unchanged
- *   3. Check if getRemoteUrl() method still exists and works
- *
- * FALLBACK OPTIONS if this breaks:
- * - Option 1: Shell out to `git config --get remote.origin.url` directly
- * - Option 2: Use a dedicated git library (simple-git, nodegit)
- * - Option 3: Require users to always pass --repo explicitly
- *
- * IMPORTANT: This function expects options.remote to be set (our defaults provide 'origin')
- * It should NOT be called with undefined remote, as gh-pages will convert it to string "undefined"
+ * process.cwd() is the directory from which ng deploy was invoked, i.e. the project root.
+ * Expects options.remote to be set (our defaults provide 'origin').
  *
  * Exported for testing - internal use only
  */
 export async function getRemoteUrl(options: Schema & { git?: string; remote?: string }): Promise<string> {
-  // process.cwd() returns the directory from which ng deploy was invoked.
-  // This is the expected behavior - users run ng deploy from their project root.
-  const git = new Git(process.cwd(), options.git);
-  return await git.getRemoteUrl(options.remote);
+  return new Git(process.cwd(), options.git).getRemoteUrl(options.remote ?? 'origin');
 }

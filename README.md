@@ -354,7 +354,6 @@ A CNAME file will be created enabling you to use a custom domain.
 
 If it is set to `true`, it will only add, and never remove existing files.
 By default, existing files in the target branch are removed before adding new ones.
-[More information](https://www.npmjs.com/package/gh-pages#optionsadd).
 
 #### --dir <a name="dir"></a>
 

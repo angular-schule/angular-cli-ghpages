@@ -58,67 +58,6 @@ describe('prepareOptions helpers - intensive tests', () => {
     process.env = originalEnv;
   });
 
-  describe('setupMonkeypatch', () => {
-    let originalDebuglog: typeof import('util').debuglog;
-
-    beforeEach(() => {
-      // First, clean up any previous monkeypatch state
-      helpers.cleanupMonkeypatch();
-      const util = require('util');
-      originalDebuglog = util.debuglog;
-    });
-
-    afterEach(() => {
-      // Use our cleanup function to properly restore state
-      helpers.cleanupMonkeypatch();
-    });
-
-    it('should replace util.debuglog with custom implementation', () => {
-      const util = require('util');
-      const debuglogBefore = util.debuglog;
-
-      helpers.setupMonkeypatch(testLogger);
-
-      expect(util.debuglog).not.toBe(debuglogBefore);
-    });
-
-    it('should forward gh-pages debuglog calls to logger', () => {
-      helpers.setupMonkeypatch(testLogger);
-
-      const util = require('util');
-      const ghPagesLogger = util.debuglog('gh-pages');
-      const testMessage = 'Test gh-pages message';
-
-      ghPagesLogger(testMessage);
-
-      expect(infoSpy).toHaveBeenCalledWith(testMessage);
-    });
-
-    it('should format messages with placeholders before forwarding', () => {
-      helpers.setupMonkeypatch(testLogger);
-
-      const util = require('util');
-      const ghPagesLogger = util.debuglog('gh-pages');
-
-      ghPagesLogger('Publishing %d files to %s branch', 42, 'gh-pages');
-
-      expect(infoSpy).toHaveBeenCalledWith('Publishing 42 files to gh-pages branch');
-    });
-
-    it('should call original debuglog for non-gh-pages modules', () => {
-      const util = require('util');
-      const originalDebuglogSpy = vi.fn(originalDebuglog);
-      util.debuglog = originalDebuglogSpy;
-
-      helpers.setupMonkeypatch(testLogger);
-
-      const otherLogger = util.debuglog('some-other-module');
-
-      expect(originalDebuglogSpy).toHaveBeenCalledWith('some-other-module');
-      expect(infoSpy).not.toHaveBeenCalled();
-    });
-  });
-
   describe('mapNegatedBooleans', () => {
     it('should set dotfiles to false when noDotfiles is true', () => {
       const options: helpers.PreparedOptions = { dotfiles: true, notfound: true, nojekyll: true };
@@ -581,24 +520,7 @@ describe('prepareOptions helpers - intensive tests', () => {
 
   });
 
-  describe('getRemoteUrl - gh-pages/lib/git internal API', () => {
-    /**
-     * CRITICAL: This tests our dependency on gh-pages internal API
-     *
-     * These tests will BREAK if gh-pages changes:
-     * - gh-pages/lib/git module structure
-     * - Git class constructor signature
-     * - getRemoteUrl() method signature or behavior
-     *
-     * Testing approach:
-     * - We're IN a git repository, so getRemoteUrl() succeeds and returns a URL
-     * - We verify the function is callable and returns string URLs
-     * - We test error cases by using invalid parameters
-     *
-     * If these tests fail after upgrading gh-pages, see the WARNING
-     * comment in engine.prepare-options-helpers.ts for fallback options.
-     */
-
+  describe('getRemoteUrl', () => {
     /**
      * Environment assumptions for this test:
      * - Tests must be run from a git clone of angular-schule/angular-cli-ghpages
@@ -630,26 +552,22 @@ describe('prepareOptions helpers - intensive tests', () => {
         remote: 'nonexistent-remote-12345' // Remote that definitely doesn't exist
       };
 
-      // Expected message from gh-pages v6.3.0 (lib/git.js)
-      // If this fails after upgrading gh-pages, the internal API changed
       await expect(helpers.getRemoteUrl(options))
         .rejects
         .toThrow('Failed to get remote.nonexistent-remote-12345.url (task must either be run in a git repository with a configured nonexistent-remote-12345 remote or must be configured with the "repo" option).');
     });
 
     it('should throw helpful error when not in a git repository', async () => {
-      // Change to a non-git directory (also incidentally exercises ensureGhPagesCacheDir via engine.run elsewhere)
+      // Change to a non-git directory
       const originalCwd = process.cwd();
-      const fs = require('fs/promises');
-      const tempDir = path.join(require('os').tmpdir(), 'not-a-git-repo-test-' + Date.now());
+      const tempDir = path.join(os.tmpdir(), 'not-a-git-repo-test-' + Date.now());
       await fs.mkdir(tempDir, { recursive: true });
 
       try {
         process.chdir(tempDir);
         const options = { remote: 'origin' };
 
-        // Expected message from gh-pages v6.3.0 (lib/git.js)
-        // Note: gh-pages returns same error for both "not in git repo" and "remote doesn't exist"
+        // Same error for both "not in a git repo" and "remote doesn't exist"
         await expect(helpers.getRemoteUrl(options))
           .rejects
           .toThrow('Failed to get remote.origin.url (task must either be run in a git repository with a configured origin remote or must be configured with the "repo" option).');
@@ -657,111 +575,6 @@ describe('prepareOptions helpers - intensive tests', () => {
         process.chdir(originalCwd);
         await fs.rm(tempDir, { recursive: true, force: true });
       }
-    });
-  });
-
-  describe('ensureGhPagesCacheDir - find-cache-dir fallback (issue #203)', () => {
-    // Each test must explicitly manage CACHE_DIR because the outer beforeEach
-    // clones `originalEnv` but does NOT delete CACHE_DIR.
-    beforeEach(() => {
-      delete process.env.CACHE_DIR;
-    });
-
-    it('sets CACHE_DIR to an os.tmpdir() fallback when cwd has no package.json', async () => {
-      const tmp = await fs.mkdtemp(path.join(os.tmpdir(), 'ghp-203-unit-'));
-      try {
-        helpers.ensureGhPagesCacheDir(tmp);
-        expect(process.env.CACHE_DIR).toBeDefined();
-        // Must be inside os.tmpdir() and non-empty
-        expect(process.env.CACHE_DIR!.startsWith(os.tmpdir())).toBe(true);
-      } finally {
-        await fs.rm(tmp, { recursive: true, force: true });
-      }
-    });
-
-    it('does NOT set CACHE_DIR when cwd has a reachable package.json', () => {
-      // This repo root (parent of __dirname) has a package.json, so find-cache-dir succeeds.
-      const repoDir = path.resolve(__dirname, '..');
-      helpers.ensureGhPagesCacheDir(repoDir);
-      expect(process.env.CACHE_DIR).toBeUndefined();
-    });
-
-    it('respects a user-set CACHE_DIR (does not overwrite)', async () => {
-      const tmp = await fs.mkdtemp(path.join(os.tmpdir(), 'ghp-203-respect-'));
-      try {
-        const userChosen = '/user/chosen/cache';
-        process.env.CACHE_DIR = userChosen;
-        helpers.ensureGhPagesCacheDir(tmp);
-        expect(process.env.CACHE_DIR).toBe(userChosen);
-      } finally {
-        await fs.rm(tmp, { recursive: true, force: true });
-      }
-    });
-
-    it('DOES apply fallback when CACHE_DIR is a boolean-ish value (matches find-cache-dir semantics)', async () => {
-      const tmp = await fs.mkdtemp(path.join(os.tmpdir(), 'ghp-203-boolish-'));
-      try {
-        process.env.CACHE_DIR = 'true'; // find-cache-dir treats this as "unset"
-        helpers.ensureGhPagesCacheDir(tmp);
-        expect(process.env.CACHE_DIR).not.toBe('true');
-        expect(process.env.CACHE_DIR!.startsWith(os.tmpdir())).toBe(true);
-      } finally {
-        await fs.rm(tmp, { recursive: true, force: true });
-      }
-    });
-
-    it('fallback path is inside os.tmpdir() and includes our namespace', async () => {
-      const tmp = await fs.mkdtemp(path.join(os.tmpdir(), 'ghp-203-ns-'));
-      try {
-        helpers.ensureGhPagesCacheDir(tmp);
-        expect(process.env.CACHE_DIR).toBeDefined();
-        expect(process.env.CACHE_DIR!).toBe(path.join(os.tmpdir(), 'angular-cli-ghpages-cache'));
-      } finally {
-        await fs.rm(tmp, { recursive: true, force: true });
-      }
-    });
-  });
-
-  describe('createCleanupBeforeAddHook', () => {
-    let distDir: string;
-
-    beforeEach(async () => {
-      distDir = await fs.mkdtemp(path.join(os.tmpdir(), 'ghp-hook-'));
-      await fs.writeFile(path.join(distDir, 'index.html'), '<html></html>');
-    });
-
-    afterEach(async () => {
-      await fs.rm(distDir, { recursive: true, force: true });
-    });
-
-    function createGit(tracked: string[]) {
-      const git: helpers.GhPagesGit = {
-        cwd: '/clone',
-        output: '',
-        exec: vi.fn(async () => {
-          git.output = tracked.join('\0');
-          return git;
-        }),
-        rm: vi.fn(async () => git)
-      };
-      return git;
-    }
-
-    it('keeps generated files that are tracked but not in dist', async () => {
-      const git = createGit(['.nojekyll', 'CNAME', 'index.html']);
-      const generatedFiles = ['.nojekyll', 'CNAME'];
-
-      await helpers.createCleanupBeforeAddHook(distDir, true, testLogger, generatedFiles)(git);
-
-      expect(git.rm).not.toHaveBeenCalled();
-    });
-
-    it('removes tracked files that are neither in dist nor generated', async () => {
-      const git = createGit(['.nojekyll', 'index.html', 'stale.html']);
-
-      await helpers.createCleanupBeforeAddHook(distDir, true, testLogger, [])(git);
-
-      expect(git.rm).toHaveBeenCalledWith(['.nojekyll', 'stale.html']);
     });
   });
 });

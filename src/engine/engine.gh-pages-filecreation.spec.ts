@@ -1,22 +1,18 @@
 /**
- * gh-pages v6+ file creation tests (REAL filesystem with local git repo)
+ * gh-pages-fork file creation tests (REAL filesystem with local git repo)
  *
- * These tests verify that gh-pages ACTUALLY creates CNAME and .nojekyll files
+ * These tests verify that publish() ACTUALLY creates CNAME and .nojekyll files
  * on the REAL filesystem when the options are passed.
  *
  * IMPORTANT: These tests do NOT mock child_process or fs.
- * This ensures we test the actual gh-pages behavior, not mocked behavior.
  *
  * Approach:
  * - Create a local bare git repository for each test
- * - gh-pages clones from the local repo (no network required)
- * - Run with push: false to complete cleanly without network
- * - Verify files after publish completes
+ * - publish() clones from and pushes to the local repo (no network required)
+ * - Verify files in the clone after publish completes
  *
- * Why this matters:
- * - We delegated CNAME/.nojekyll creation from angular-cli-ghpages to gh-pages v6+
- * - We must verify gh-pages actually creates these files
- * - Unlike 404.html (which we still create ourselves), these files are gh-pages' responsibility
+ * 404.html is created by the engine in dist; CNAME and .nojekyll are written
+ * by publish() into its clone.
  */
 
 import * as path from 'path';
@@ -26,24 +22,15 @@ import { execSync } from 'child_process';
 
 import { pathExists } from '../utils';
 
-// NO MOCKS - we want real gh-pages behavior
-const ghPages = require('gh-pages');
-const filenamify = require('filenamify');
+import * as ghPages from '../gh-pages-fork/lib';
 
-describe('gh-pages v6+ CNAME/.nojekyll file creation (REAL filesystem)', () => {
+describe('gh-pages-fork CNAME/.nojekyll file creation (REAL filesystem)', () => {
   let tempDir: string;
   let basePath: string;
   let bareRepoPath: string;
-  let cacheBaseDir: string;
 
   // Unique ID to prevent conflicts with parallel test runs
   const testRunId = `${Date.now()}-${Math.random().toString(36).substring(7)}`;
-
-  beforeAll(async () => {
-    // Get the cache directory that gh-pages will use
-    const findCacheDir = require('find-cache-dir');
-    cacheBaseDir = findCacheDir({ name: 'gh-pages' });
-  });
 
   beforeEach(async () => {
     // Create a unique temp directory for this test
@@ -58,8 +45,7 @@ describe('gh-pages v6+ CNAME/.nojekyll file creation (REAL filesystem)', () => {
     bareRepoPath = path.join(tempDir, 'bare-repo.git');
     execSync(`git init --bare "${bareRepoPath}"`, { stdio: 'pipe' });
 
-    // Initialize gh-pages branch in the bare repo
-    // gh-pages needs the branch to exist, so we create it with an initial commit
+    // Initialize the gh-pages branch in the bare repo with an initial commit
     const initWorkDir = path.join(tempDir, 'init-work');
     await fs.mkdir(initWorkDir, { recursive: true });
     execSync(`git init "${initWorkDir}"`, { stdio: 'pipe' });
@@ -72,23 +58,18 @@ describe('gh-pages v6+ CNAME/.nojekyll file creation (REAL filesystem)', () => {
     execSync(`git -C "${initWorkDir}" remote add origin "${bareRepoPath}"`, { stdio: 'pipe' });
     execSync(`git -C "${initWorkDir}" push -u origin gh-pages`, { stdio: 'pipe' });
 
-    // Clean gh-pages cache before each test
-    ghPages.clean();
+    // Every test starts from a fresh clone
+    await ghPages.clean();
   });
 
   afterEach(async () => {
-    // Clean gh-pages cache to remove repo-specific cache directories
-    ghPages.clean();
+    await ghPages.clean();
     // Cleanup temp directory
     await fs.rm(tempDir, { recursive: true, force: true });
   });
 
-  /**
-   * Helper to get the cache directory path for a repo URL
-   * gh-pages uses filenamify to convert repo URL to directory name
-   */
   function getCacheDir(repoPath: string): string {
-    return path.join(cacheBaseDir, filenamify(repoPath, { replacement: '!' }));
+    return ghPages.getCacheDir(repoPath);
   }
 
   describe('CNAME file creation', () => {
@@ -101,18 +82,12 @@ describe('gh-pages v6+ CNAME/.nojekyll file creation (REAL filesystem)', () => {
         branch: 'gh-pages',
         cname: testDomain,
         message: 'Test CNAME creation',
-        user: { name: 'Test', email: 'test@test.com' },
-        push: false // Don't push - just verify file creation
+        user: { name: 'Test', email: 'test@test.com' }
       };
 
-      await new Promise<void>((resolve, reject) => {
-        ghPages.publish(basePath, options, (err: Error | null) => {
-          if (err) reject(err);
-          else resolve();
-        });
-      });
+      await ghPages.publish(basePath, options);
 
-      // Verify CNAME file was created by gh-pages
+      // Verify CNAME file was created by publish()
       const cnamePath = path.join(cacheDir, 'CNAME');
       const exists = await pathExists(cnamePath);
       expect(exists).toBe(true);
@@ -129,16 +104,10 @@ describe('gh-pages v6+ CNAME/.nojekyll file creation (REAL filesystem)', () => {
         branch: 'gh-pages',
         // cname NOT provided
         message: 'Test no CNAME',
-        user: { name: 'Test', email: 'test@test.com' },
-        push: false
+        user: { name: 'Test', email: 'test@test.com' }
       };
 
-      await new Promise<void>((resolve, reject) => {
-        ghPages.publish(basePath, options, (err: Error | null) => {
-          if (err) reject(err);
-          else resolve();
-        });
-      });
+      await ghPages.publish(basePath, options);
 
       const cnamePath = path.join(cacheDir, 'CNAME');
       const exists = await pathExists(cnamePath);
@@ -155,16 +124,10 @@ describe('gh-pages v6+ CNAME/.nojekyll file creation (REAL filesystem)', () => {
         branch: 'gh-pages',
         nojekyll: true,
         message: 'Test nojekyll creation',
-        user: { name: 'Test', email: 'test@test.com' },
-        push: false
+        user: { name: 'Test', email: 'test@test.com' }
       };
 
-      await new Promise<void>((resolve, reject) => {
-        ghPages.publish(basePath, options, (err: Error | null) => {
-          if (err) reject(err);
-          else resolve();
-        });
-      });
+      await ghPages.publish(basePath, options);
 
       const nojekyllPath = path.join(cacheDir, '.nojekyll');
       const exists = await pathExists(nojekyllPath);
@@ -179,16 +142,10 @@ describe('gh-pages v6+ CNAME/.nojekyll file creation (REAL filesystem)', () => {
         branch: 'gh-pages',
         nojekyll: false,
         message: 'Test no nojekyll',
-        user: { name: 'Test', email: 'test@test.com' },
-        push: false
+        user: { name: 'Test', email: 'test@test.com' }
       };
 
-      await new Promise<void>((resolve, reject) => {
-        ghPages.publish(basePath, options, (err: Error | null) => {
-          if (err) reject(err);
-          else resolve();
-        });
-      });
+      await ghPages.publish(basePath, options);
 
       const nojekyllPath = path.join(cacheDir, '.nojekyll');
       const exists = await pathExists(nojekyllPath);
@@ -207,16 +164,10 @@ describe('gh-pages v6+ CNAME/.nojekyll file creation (REAL filesystem)', () => {
         cname: testDomain,
         nojekyll: true,
         message: 'Test both files',
-        user: { name: 'Test', email: 'test@test.com' },
-        push: false
+        user: { name: 'Test', email: 'test@test.com' }
       };
 
-      await new Promise<void>((resolve, reject) => {
-        ghPages.publish(basePath, options, (err: Error | null) => {
-          if (err) reject(err);
-          else resolve();
-        });
-      });
+      await ghPages.publish(basePath, options);
 
       // Verify CNAME
       const cnamePath = path.join(cacheDir, 'CNAME');

@@ -1,9 +1,6 @@
 import { logging } from '@angular-devkit/core';
 
-import { Mock, MockInstance } from 'vitest';
-
 import * as engine from './engine';
-import { cleanupMonkeypatch } from './engine.prepare-options-helpers';
 
 // Mock utils.pathExists at module level
 vi.mock('../utils', async () => {
@@ -16,14 +13,23 @@ vi.mock('../utils', async () => {
 
 import { pathExists } from '../utils';
 
+vi.mock('../gh-pages-fork/lib', async () => {
+  const actual = await vi.importActual<typeof import('../gh-pages-fork/lib')>('../gh-pages-fork/lib');
+  return {
+    ...actual,
+    clean: vi.fn(),
+    publish: vi.fn()
+  };
+});
+
+import * as ghpages from '../gh-pages-fork/lib';
+
 describe('engine', () => {
   describe('prepareOptions', () => {
     const logger = new logging.NullLogger();
     const originalEnv = process.env;
 
     beforeEach(() => {
-      // Clean up any previous monkeypatch so each test starts fresh
-      cleanupMonkeypatch();
 
       // Create fresh copy of environment for each test
       // This preserves PATH, HOME, etc. needed by git
@@ -38,8 +44,6 @@ describe('engine', () => {
     });
 
     afterAll(() => {
-      // Clean up monkeypatch after all tests
-      cleanupMonkeypatch();
       // Restore original environment for other test files
       process.env = originalEnv;
     });
@@ -261,207 +265,63 @@ describe('engine', () => {
     });
   });
 
-  describe('run - gh-pages Promise error handling', () => {
-    // gh-pages v5+ supports Promise-based API (fixed the bug where early errors didn't reject)
-    // We now use await ghPages.publish() directly instead of callback-based approach
+  describe('run - publish error handling', () => {
     const logger = new logging.NullLogger();
-
-    let ghpagesCleanSpy: MockInstance;
-    let ghpagesPublishSpy: MockInstance;
+    const testDir = '/test/dist';
+    const options = { dotfiles: true, notfound: true, nojekyll: true };
 
     beforeEach(() => {
-      // Setup persistent mocks for utils.pathExists
       vi.mocked(pathExists).mockResolvedValue(true);
-
-      // Setup persistent mocks for gh-pages
-      const ghpages = require('gh-pages');
-      ghpagesCleanSpy = vi.spyOn(ghpages, 'clean').mockImplementation(() => {});
-      ghpagesPublishSpy = vi.spyOn(ghpages, 'publish');
+      vi.mocked(ghpages.clean).mockResolvedValue(undefined);
     });
 
     afterEach(() => {
-      // Clean up spies
       vi.mocked(pathExists).mockReset();
-      ghpagesCleanSpy.mockRestore();
-      ghpagesPublishSpy.mockRestore();
+      vi.mocked(ghpages.clean).mockReset();
+      vi.mocked(ghpages.publish).mockReset();
     });
 
-    // engine uses the callback form of gh-pages.publish() — see #205
-    const mockPublishCallback = (error: Error | null) =>
-      (_dir: unknown, _opts: unknown, callback?: (err: Error | null) => void) => {
-        if (callback) {
-          callback(error);
-        }
-        return Promise.resolve(undefined);
-      };
-
-    it('should reject when gh-pages.publish rejects with error', async () => {
+    it('should reject with the error of publish()', async () => {
       const publishError = new Error('Git push failed: permission denied');
+      vi.mocked(ghpages.publish).mockRejectedValue(publishError);
 
-      ghpagesPublishSpy.mockImplementation(mockPublishCallback(publishError));
-
-      const testDir = '/test/dist';
-      const options = { dotfiles: true, notfound: true, nojekyll: true };
-
-      await expect(
-        engine.run(testDir, options, logger)
-      ).rejects.toThrow('Git push failed: permission denied');
+      await expect(engine.run(testDir, options, logger)).rejects.toBe(publishError);
     });
 
-    it('should preserve error message through rejection', async () => {
-      const detailedError = new Error('Remote url mismatch. Expected https://github.com/user/repo.git but got https://github.com/other/repo.git');
+    it('should resolve when publish() resolves', async () => {
+      vi.mocked(ghpages.publish).mockResolvedValue(undefined);
 
-      ghpagesPublishSpy.mockImplementation(mockPublishCallback(detailedError));
-
-      const testDir = '/test/dist';
-      const options = { dotfiles: true, notfound: true, nojekyll: true };
-
-      await expect(
-        engine.run(testDir, options, logger)
-      ).rejects.toThrow(detailedError);
+      await expect(engine.run(testDir, options, logger)).resolves.toBeUndefined();
     });
 
-    it('should reject with authentication error from gh-pages', async () => {
-      const authError = new Error('Authentication failed: Invalid credentials');
+    it('should clean the cache before publishing', async () => {
+      const calls: string[] = [];
+      vi.mocked(ghpages.clean).mockImplementation(async () => { calls.push('clean'); });
+      vi.mocked(ghpages.publish).mockImplementation(async () => { calls.push('publish'); });
 
-      ghpagesPublishSpy.mockImplementation(mockPublishCallback(authError));
+      await engine.run(testDir, options, logger);
 
-      const testDir = '/test/dist';
-      const options = { dotfiles: true, notfound: true, nojekyll: true };
-
-      await expect(
-        engine.run(testDir, options, logger)
-      ).rejects.toThrow('Authentication failed: Invalid credentials');
+      expect(calls).toEqual(['clean', 'publish']);
     });
 
-    it('should resolve successfully when gh-pages.publish resolves', async () => {
-      ghpagesPublishSpy.mockImplementation(mockPublishCallback(null));
+    it('should neither clean nor publish during dry-run', async () => {
+      await engine.run(testDir, { ...options, dryRun: true }, logger);
 
-      const testDir = '/test/dist';
-      const options = { dotfiles: true, notfound: true, nojekyll: true };
-
-      await expect(
-        engine.run(testDir, options, logger)
-      ).resolves.toBeUndefined();
-    });
-  });
-
-  describe('prepareOptions - monkeypatch verification', () => {
-    beforeEach(() => {
-      // Clean up monkeypatch before each test to start fresh
-      cleanupMonkeypatch();
+      expect(ghpages.clean).not.toHaveBeenCalled();
+      expect(ghpages.publish).not.toHaveBeenCalled();
     });
 
-    afterEach(() => {
-      // Clean up monkeypatch after each test
-      cleanupMonkeypatch();
-    });
-
-    it('should replace util.debuglog with custom implementation', async () => {
-      const testLogger = new logging.Logger('test');
-      const util = require('util');
-      const debuglogBeforePrepare = util.debuglog;
-
-      await engine.prepareOptions({}, testLogger);
-
-      // After prepareOptions, util.debuglog should be replaced
-      expect(util.debuglog).not.toBe(debuglogBeforePrepare);
-    });
-
-    it('should forward gh-pages debuglog calls to Angular logger', async () => {
+    it('should forward publish() log messages to the logger', async () => {
       const testLogger = new logging.Logger('test');
       const infoSpy = vi.spyOn(testLogger, 'info');
+      const message = 'Cloning https://github.com/test/repo.git into /cache';
+      vi.mocked(ghpages.publish).mockImplementation(async (_dir, _options, log) => {
+        log?.(message);
+      });
 
-      await engine.prepareOptions({}, testLogger);
+      await engine.run(testDir, options, testLogger);
 
-      // Now get the patched debuglog for 'gh-pages'
-      const util = require('util');
-      const ghPagesLogger = util.debuglog('gh-pages');
-
-      // Call it with a test message
-      const testMessage = 'Publishing to gh-pages branch';
-      ghPagesLogger(testMessage);
-
-      // Should have forwarded to logger.info()
-      expect(infoSpy).toHaveBeenCalledWith(testMessage);
-    });
-
-    it('should forward gh-pages debuglog calls with formatting to Angular logger', async () => {
-      const testLogger = new logging.Logger('test');
-      const infoSpy = vi.spyOn(testLogger, 'info');
-
-      await engine.prepareOptions({}, testLogger);
-
-      const util = require('util');
-      const ghPagesLogger = util.debuglog('gh-pages');
-
-      // Test with util.format style placeholders
-      ghPagesLogger('Pushing %d files to %s', 42, 'gh-pages');
-
-      // Should format the message and forward to logger.info()
-      expect(infoSpy).toHaveBeenCalledWith('Pushing 42 files to gh-pages');
-    });
-
-    it('should call original debuglog for non-gh-pages modules', async () => {
-      const testLogger = new logging.Logger('test');
-      const infoSpy = vi.spyOn(testLogger, 'info');
-
-      const util = require('util');
-      const originalDebuglogFn = util.debuglog;
-      const originalDebuglogSpy = vi.fn(originalDebuglogFn);
-      util.debuglog = originalDebuglogSpy;
-
-      await engine.prepareOptions({}, testLogger);
-
-      // Now util.debuglog is patched
-      const otherModuleLogger = util.debuglog('some-other-module');
-
-      // Should have called the original debuglog (via our spy)
-      expect(originalDebuglogSpy).toHaveBeenCalledWith('some-other-module');
-
-      // Should NOT have forwarded to Angular logger
-      expect(infoSpy).not.toHaveBeenCalled();
-    });
-
-    it('should monkeypatch util.debuglog before requiring gh-pages', async () => {
-      // This test verifies the critical ordering requirement:
-      // The monkeypatch MUST occur before requiring gh-pages, otherwise gh-pages caches
-      // the original util.debuglog and our interception won't work.
-
-      const testLogger = new logging.Logger('test');
-      const infoSpy = vi.spyOn(testLogger, 'info');
-
-      // Clear gh-pages from require cache to simulate fresh load
-      const ghPagesPath = require.resolve('gh-pages');
-      delete require.cache[ghPagesPath];
-
-      await engine.prepareOptions({}, testLogger);
-
-      // Now require gh-pages for the first time (after monkeypatch)
-      require('gh-pages');
-
-      // Verify our patched debuglog('gh-pages') forwards to the logger
-      const util = require('util');
-      const ghPagesLogger = util.debuglog('gh-pages');
-      ghPagesLogger('test message');
-      expect(infoSpy).toHaveBeenCalledWith('test message');
-    });
-
-    it('should restore original util.debuglog when cleanupMonkeypatch is called', async () => {
-      const testLogger = new logging.Logger('test');
-      const util = require('util');
-      const debuglogBeforeSetup = util.debuglog;
-
-      await engine.prepareOptions({}, testLogger);
-
-      // After prepareOptions, util.debuglog should be patched
-      expect(util.debuglog).not.toBe(debuglogBeforeSetup);
-
-      // Call cleanup
-      cleanupMonkeypatch();
-
-      // After cleanup, util.debuglog should be restored
-      expect(util.debuglog).toBe(debuglogBeforeSetup);
+      expect(infoSpy).toHaveBeenCalledWith(message);
     });
   });
 });

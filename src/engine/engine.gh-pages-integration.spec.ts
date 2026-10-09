@@ -1,19 +1,18 @@
 /**
- * Integration tests for gh-pages library interaction
+ * Integration tests for the interaction with gh-pages-fork
  *
- * These tests verify how engine.ts interacts with the gh-pages library:
- * - When gh-pages.clean() is called
- * - What arguments are passed to gh-pages.publish()
+ * These tests verify how engine.ts interacts with gh-pages-fork:
+ * - When clean() is called
+ * - What arguments are passed to publish()
  * - Which options are passed through vs. filtered out
  * - Dry-run behavior isolation
- * - Options transformation before passing to gh-pages
+ * - Options transformation before passing to publish()
  */
 
 import { logging } from '@angular-devkit/core';
-import { Mock, MockInstance } from 'vitest';
 
 import * as engine from './engine';
-import { cleanupMonkeypatch } from './engine.prepare-options-helpers';
+import * as ghpages from '../gh-pages-fork/lib';
 
 // Mock utils.pathExists at module level
 vi.mock('../utils', async () => ({
@@ -21,8 +20,8 @@ vi.mock('../utils', async () => ({
   pathExists: vi.fn().mockResolvedValue(true)
 }));
 
-// Mock Git class from gh-pages to avoid spawning actual git processes
-vi.mock('gh-pages/lib/git', () => {
+// Mock the Git class to avoid spawning actual git processes for the remote URL lookup
+vi.mock('../gh-pages-fork/lib/git', async () => {
   class MockGit {
     getRemoteUrl = vi.fn().mockResolvedValue(
       'https://github.com/test/repo.git'
@@ -30,45 +29,29 @@ vi.mock('gh-pages/lib/git', () => {
   }
 
   return {
-    default: MockGit
+    ...(await vi.importActual('../gh-pages-fork/lib/git')),
+    Git: MockGit
   };
 });
 
-describe('engine - gh-pages integration', () => {
+vi.mock('../gh-pages-fork/lib', async () => ({
+  ...(await vi.importActual('../gh-pages-fork/lib')),
+  clean: vi.fn(),
+  publish: vi.fn()
+}));
+
+describe('engine - gh-pages-fork integration', () => {
   const logger = new logging.NullLogger();
   const originalEnv = process.env;
 
-  // Only spy on gh-pages methods
-  let ghpagesCleanSpy: MockInstance;
-  let ghpagesPublishSpy: MockInstance;
+  const ghpagesCleanSpy = vi.mocked(ghpages.clean);
+  const ghpagesPublishSpy = vi.mocked(ghpages.publish);
 
   beforeEach(() => {
-    // Clean up any previous monkeypatch so each test starts fresh
-    cleanupMonkeypatch();
-
-    const ghpages = require('gh-pages');
-
-    // Clear any existing mocks from previous tests
-    if (ghpagesCleanSpy) {
-      ghpagesCleanSpy.mockClear();
-    } else {
-      ghpagesCleanSpy = vi.spyOn(ghpages, 'clean');
-    }
-
-    if (ghpagesPublishSpy) {
-      ghpagesPublishSpy.mockClear();
-    } else {
-      ghpagesPublishSpy = vi.spyOn(ghpages, 'publish');
-    }
-
-    // engine uses the callback form of gh-pages.publish() — see #205
-    ghpagesCleanSpy.mockImplementation(() => {});
-    ghpagesPublishSpy.mockImplementation((_dir: string, _opts: unknown, callback?: (error: Error | null) => void) => {
-      if (callback) {
-        callback(null);
-      }
-      return Promise.resolve(undefined);
-    });
+    ghpagesCleanSpy.mockReset();
+    ghpagesPublishSpy.mockReset();
+    ghpagesCleanSpy.mockResolvedValue(undefined);
+    ghpagesPublishSpy.mockResolvedValue(undefined);
 
     // Create fresh copy of environment for each test
     // This preserves PATH, HOME, etc. needed by git
@@ -83,13 +66,11 @@ describe('engine - gh-pages integration', () => {
   });
 
   afterAll(() => {
-    // Clean up monkeypatch after all tests
-    cleanupMonkeypatch();
     // Restore original environment for other test files
     process.env = originalEnv;
   });
 
-  describe('gh-pages.clean() behavior', () => {
+  describe('clean() behavior', () => {
     it('should call clean() before publishing in normal mode', async () => {
       const testDir = '/test/dist';
       const options = { dotfiles: true, notfound: true, nojekyll: true };
@@ -128,7 +109,7 @@ describe('engine - gh-pages integration', () => {
     });
   });
 
-  describe('gh-pages.publish() - directory parameter', () => {
+  describe('publish() - directory parameter', () => {
     it('should pass the correct directory path to publish()', async () => {
       const testDir = '/test/dist/my-app';
       const options = { dotfiles: true, notfound: true, nojekyll: true };
@@ -136,7 +117,7 @@ describe('engine - gh-pages integration', () => {
       await engine.run(testDir, options, logger);
 
       expect(ghpagesPublishSpy).toHaveBeenCalledTimes(1);
-      // engine uses the callback form of gh-pages.publish() — see #205
+      // third argument: log function that forwards to the logger
       expect(ghpagesPublishSpy).toHaveBeenCalledWith(
         testDir,
         expect.any(Object),
@@ -155,8 +136,8 @@ describe('engine - gh-pages integration', () => {
     });
   });
 
-  describe('gh-pages.publish() - options parameter', () => {
-    it('should pass core options to gh-pages', async () => {
+  describe('publish() - options parameter', () => {
+    it('should pass core options to publish()', async () => {
       const testDir = '/test/dist';
       const repo = 'https://github.com/test/repo.git';
       const branch = 'main';
@@ -182,7 +163,7 @@ describe('engine - gh-pages integration', () => {
       expect(actualOptions.remote).toBe(remote);
     });
 
-    it('should pass transformed dotfiles boolean to gh-pages', async () => {
+    it('should pass transformed dotfiles boolean to publish()', async () => {
       const testDir = '/test/dist';
       const options = {
         dotfiles: true,
@@ -263,7 +244,7 @@ describe('engine - gh-pages integration', () => {
       expect(actualOptions.add).toBe(true);
     });
 
-    it('should pass git option to gh-pages', async () => {
+    it('should pass git option to publish()', async () => {
       const testDir = '/test/dist';
       const gitPath = '/custom/path/to/git';
 
@@ -280,7 +261,7 @@ describe('engine - gh-pages integration', () => {
       expect(actualOptions.git).toBe(gitPath);
     });
 
-    it('should NOT pass internal dryRun option to gh-pages', async () => {
+    it('should NOT pass internal dryRun option to publish()', async () => {
       const testDir = '/test/dist';
       const options = {
         dryRun: false, // Internal option, should be filtered out
@@ -295,7 +276,7 @@ describe('engine - gh-pages integration', () => {
       expect(actualOptions.dryRun).toBeUndefined();
     });
 
-    it('should NOT pass internal noDotfiles option to gh-pages', async () => {
+    it('should NOT pass internal noDotfiles option to publish()', async () => {
       const testDir = '/test/dist';
       const options = {
         noDotfiles: false,
@@ -310,7 +291,7 @@ describe('engine - gh-pages integration', () => {
       expect(actualOptions.noDotfiles).toBeUndefined();
     });
 
-    it('should NOT pass internal noNotfound option to gh-pages', async () => {
+    it('should NOT pass internal noNotfound option to publish()', async () => {
       const testDir = '/test/dist';
       const options = {
         noNotfound: false,
@@ -325,7 +306,7 @@ describe('engine - gh-pages integration', () => {
       expect(actualOptions.noNotfound).toBeUndefined();
     });
 
-    it('should NOT pass internal noNojekyll option to gh-pages', async () => {
+    it('should NOT pass internal noNojekyll option to publish()', async () => {
       const testDir = '/test/dist';
       const options = {
         noNojekyll: false,
@@ -340,7 +321,7 @@ describe('engine - gh-pages integration', () => {
       expect(actualOptions.noNojekyll).toBeUndefined();
     });
 
-    it('should NOT pass internal notfound option to gh-pages', async () => {
+    it('should NOT pass internal notfound option to publish()', async () => {
       const testDir = '/test/dist';
       const options = {
         dotfiles: true,
@@ -351,29 +332,29 @@ describe('engine - gh-pages integration', () => {
       await engine.run(testDir, options, logger);
 
       const actualOptions = ghpagesPublishSpy.mock.calls[0][1] as Record<string, unknown>;
-      // notfound remains internal - 404.html is still created by angular-cli-ghpages
+      // notfound stays internal - the engine creates 404.html in dist
       expect(actualOptions.notfound).toBeUndefined();
     });
 
-    it('should pass nojekyll option to gh-pages v6+', async () => {
+    it('should pass nojekyll option to publish()', async () => {
       const testDir = '/test/dist';
       const options = {
         dotfiles: true,
         notfound: true,
-        nojekyll: true // gh-pages v6+ handles .nojekyll file creation
+        nojekyll: true // publish() writes .nojekyll
       };
 
       await engine.run(testDir, options, logger);
 
       const actualOptions = ghpagesPublishSpy.mock.calls[0][1] as Record<string, unknown>;
-      // nojekyll IS now passed to gh-pages v6+ (delegated file creation)
+      // nojekyll IS passed to publish(), which writes .nojekyll
       expect(actualOptions.nojekyll).toBe(true);
     });
 
-    it('should pass cname option to gh-pages v6+', async () => {
+    it('should pass cname option to publish()', async () => {
       const testDir = '/test/dist';
       const options = {
-        cname: 'example.com', // gh-pages v6+ handles CNAME file creation
+        cname: 'example.com', // publish() writes CNAME
         dotfiles: true,
         notfound: true,
         nojekyll: true
@@ -382,12 +363,12 @@ describe('engine - gh-pages integration', () => {
       await engine.run(testDir, options, logger);
 
       const actualOptions = ghpagesPublishSpy.mock.calls[0][1] as Record<string, unknown>;
-      // cname IS now passed to gh-pages v6+ (delegated file creation)
+      // cname IS passed to publish(), which writes CNAME
       expect(actualOptions.cname).toBe('example.com');
     });
   });
 
-  describe('gh-pages.publish() - dry-run mode isolation', () => {
+  describe('publish() - dry-run mode isolation', () => {
     it('should NOT call publish() during dry-run', async () => {
       const testDir = '/test/dist';
       const options = {
@@ -446,7 +427,7 @@ describe('engine - gh-pages integration', () => {
   });
 
   describe('options transformation verification', () => {
-    it('should transform noDotfiles: true to dotfiles: false before passing to gh-pages', async () => {
+    it('should transform noDotfiles: true to dotfiles: false before passing to publish()', async () => {
       const testDir = '/test/dist';
       const options = {
         noDotfiles: true,
@@ -462,7 +443,7 @@ describe('engine - gh-pages integration', () => {
       expect(actualOptions.noDotfiles).toBeUndefined();
     });
 
-    it('should transform noDotfiles: false to dotfiles: true before passing to gh-pages', async () => {
+    it('should transform noDotfiles: false to dotfiles: true before passing to publish()', async () => {
       const testDir = '/test/dist';
       const options = {
         noDotfiles: false,
@@ -492,7 +473,7 @@ describe('engine - gh-pages integration', () => {
       expect(actualOptions.dotfiles).toBe(true);
     });
 
-    it('should NOT pass transformed noNotfound/notfound to gh-pages', async () => {
+    it('should NOT pass transformed noNotfound/notfound to publish()', async () => {
       const testDir = '/test/dist';
       const options = {
         noNotfound: true,
@@ -504,12 +485,12 @@ describe('engine - gh-pages integration', () => {
       await engine.run(testDir, options, logger);
 
       const actualOptions = ghpagesPublishSpy.mock.calls[0][1] as Record<string, unknown>;
-      // notfound remains internal - 404.html is still created by angular-cli-ghpages
+      // notfound stays internal - the engine creates 404.html in dist
       expect(actualOptions.notfound).toBeUndefined();
       expect(actualOptions.noNotfound).toBeUndefined();
     });
 
-    it('should pass transformed noNojekyll to nojekyll: false to gh-pages v6+', async () => {
+    it('should pass transformed noNojekyll to nojekyll: false to publish()', async () => {
       const testDir = '/test/dist';
       const options = {
         noNojekyll: true,
@@ -521,16 +502,14 @@ describe('engine - gh-pages integration', () => {
       await engine.run(testDir, options, logger);
 
       const actualOptions = ghpagesPublishSpy.mock.calls[0][1] as Record<string, unknown>;
-      // nojekyll IS now passed to gh-pages v6+ (delegated file creation)
+      // nojekyll IS passed to publish(), which writes .nojekyll
       expect(actualOptions.nojekyll).toBe(false);
       expect(actualOptions.noNojekyll).toBeUndefined();
     });
   });
 
   describe('Promise handling integration', () => {
-    // engine uses the callback form of gh-pages.publish() — see #205
-
-    it('should invoke gh-pages.publish() with a callback', async () => {
+    it('should invoke publish() with a log function', async () => {
       const testDir = '/test/dist';
       const options = { dotfiles: true, notfound: true, nojekyll: true };
 
@@ -543,13 +522,8 @@ describe('engine - gh-pages integration', () => {
       );
     });
 
-    it('should resolve when gh-pages.publish() invokes the callback with no error', async () => {
-      ghpagesPublishSpy.mockImplementation((_dir: string, _opts: unknown, callback?: (error: Error | null) => void) => {
-        if (callback) {
-          callback(null);
-        }
-        return Promise.resolve(undefined);
-      });
+    it('should resolve when publish() resolves', async () => {
+      ghpagesPublishSpy.mockResolvedValue(undefined);
 
       const testDir = '/test/dist';
       const options = { dotfiles: true, notfound: true, nojekyll: true };
@@ -559,14 +533,9 @@ describe('engine - gh-pages integration', () => {
       ).resolves.toBeUndefined();
     });
 
-    it('should reject when gh-pages.publish() invokes the callback with an error', async () => {
+    it('should reject when publish() rejects', async () => {
       const publishError = new Error('Git push failed');
-      ghpagesPublishSpy.mockImplementation((_dir: string, _opts: unknown, callback?: (error: Error | null) => void) => {
-        if (callback) {
-          callback(publishError);
-        }
-        return Promise.resolve(undefined);
-      });
+      ghpagesPublishSpy.mockRejectedValue(publishError);
 
       const testDir = '/test/dist';
       const options = { dotfiles: true, notfound: true, nojekyll: true };
@@ -578,22 +547,15 @@ describe('engine - gh-pages integration', () => {
   });
 
   describe('silent-swallow regression (issue #205)', () => {
-    // gh-pages@6 absorbs errors into its returned Promise via an internal
-    // .then(_, onRejected) handler that doesn't rethrow. The callback, however,
-    // still fires with the error. Engine must use the callback form so git
-    // failures (e.g. auth errors during clone) surface as rejections.
+    // Git failures (e.g. auth errors during clone) must surface as rejections,
+    // never as a successful deploy.
 
-    it('should reject when gh-pages resolves its promise but delivers an error via callback', async () => {
+    it('should reject when publish() fails with an authentication error', async () => {
       const authError = new Error(
         "fatal: Authentication failed for 'https://github.com/owner/repo.git'"
       );
 
-      ghpagesPublishSpy.mockImplementation((_dir: string, _opts: unknown, callback?: (error: Error | null) => void) => {
-        if (callback) {
-          callback(authError);
-        }
-        return Promise.resolve(undefined);
-      });
+      ghpagesPublishSpy.mockRejectedValue(authError);
 
       const testDir = '/test/dist';
       const options = { dotfiles: true, notfound: true, nojekyll: true };
@@ -603,15 +565,10 @@ describe('engine - gh-pages integration', () => {
       ).rejects.toThrow(/Authentication failed/);
     });
 
-    it('should NOT log the success banner when publish fails via callback', async () => {
+    it('should NOT log the success banner when publish() fails', async () => {
       const authError = new Error('fatal: Authentication failed');
 
-      ghpagesPublishSpy.mockImplementation((_dir: string, _opts: unknown, callback?: (error: Error | null) => void) => {
-        if (callback) {
-          callback(authError);
-        }
-        return Promise.resolve(undefined);
-      });
+      ghpagesPublishSpy.mockRejectedValue(authError);
 
       const testLogger = new logging.Logger('test');
       const infoSpy = vi.spyOn(testLogger, 'info');

@@ -6,7 +6,7 @@
   "types": "index.d.ts",
   "engines": {
     "node": ">=18.19.1",
-    "npm": ">=10.0.0"
+    "npm": ">=9.0.0"
   },
   "bin": {
     "angular-cli-ghpages": "angular-cli-ghpages",

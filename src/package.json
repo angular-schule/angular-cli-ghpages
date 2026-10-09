@@ -13,7 +13,7 @@
     "ngh": "angular-cli-ghpages"
   },
   "scripts": {
-    "prebuild": "node scripts/prebuild.js && json2ts deploy/schema.json > deploy/schema.d.ts",
+    "prebuild": "node scripts/prebuild.js",
     "build": "tsc -p tsconfig.build.json",
     "postbuild": "node scripts/postbuild.js",
     "test": "vitest run"

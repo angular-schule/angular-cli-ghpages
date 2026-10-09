@@ -1,13 +1,12 @@
 import { logging } from '@angular-devkit/core';
 import * as engine from '../engine/engine';
-import { cleanupMonkeypatch } from '../engine/engine.prepare-options-helpers';
 
 /**
  * CRITICAL TEST SUITE: Parameter Passthrough Validation
  *
  * This suite ensures that ALL parameters are correctly passed from our API
- * to gh-pages.publish(). This is essential for upgrading gh-pages and commander
- * without introducing regressions.
+ * to the publish step (gh-pages-fork). This guards changes to the fork and to
+ * the commander fork against regressions.
  *
  * Testing Philosophy:
  * - Use EXPLICIT expected values, never .toContain() for value testing
@@ -21,8 +20,6 @@ describe('Parameter Passthrough Tests', () => {
   const originalEnv = process.env;
 
   beforeEach(() => {
-    // Clean up any previous monkeypatch so each test starts fresh
-    cleanupMonkeypatch();
 
     logger = new logging.NullLogger();
     // Create fresh copy of environment for each test
@@ -50,8 +47,6 @@ describe('Parameter Passthrough Tests', () => {
   });
 
   afterAll(() => {
-    // Clean up monkeypatch after all tests
-    cleanupMonkeypatch();
     // Restore original environment for other test files
     process.env = originalEnv;
   });

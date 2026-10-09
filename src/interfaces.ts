@@ -1,4 +1,4 @@
-import type {GhPagesGit} from './engine/engine.prepare-options-helpers';
+import type {Git} from './gh-pages-fork/lib/git';
 
 /**
  * Angular outputPath configuration
@@ -49,12 +49,10 @@ export interface DeployUser {
 }
 
 /**
- * Options for gh-pages.publish()
- * Based on https://github.com/tschaub/gh-pages#options
+ * Options of the publish() function of the gh-pages npm package.
  *
- * Note: Only includes options that gh-pages actually accepts.
- * Internal options (notfound, noDotfiles, noNotfound, noNojekyll, dryRun)
- * are handled by angular-cli-ghpages before calling gh-pages.
+ * @deprecated angular-cli-ghpages doesn't use the gh-pages package. Kept for API
+ * compatibility; will be removed in the next major version.
  */
 export interface PublishOptions {
   repo?: string;
@@ -67,12 +65,17 @@ export interface PublishOptions {
   cname?: string;
   add?: boolean;
   git?: string;
-  beforeAdd?: (git: GhPagesGit) => void | Promise<void>;
+  beforeAdd?: (git: Git) => void | Promise<void>;
   [key: string]: unknown; // Allow additional gh-pages options
 }
 
+/**
+ * API of the gh-pages npm package.
+ *
+ * @deprecated angular-cli-ghpages doesn't use the gh-pages package. Kept for API
+ * compatibility; will be removed in the next major version.
+ */
 export interface GHPages {
-  // gh-pages v5+ supports both callback and Promise-based APIs
   publish(dir: string, options: PublishOptions, callback: (error: Error | null) => void): void;
   publish(dir: string, options: PublishOptions): Promise<void>;
   clean?(): void;

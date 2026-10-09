@@ -67,7 +67,7 @@
     "json-schema-to-typescript": "^13.1.2",
     "rimraf": "^5.0.5",
     "typescript": "~7.0.2",
-    "vitest": "^3.2.1"
+    "vitest": "^5.0.3"
   },
   "dependencies": {
     "@angular-devkit/architect": ">=0.1800.0 <0.2300.0",

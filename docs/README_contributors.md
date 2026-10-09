@@ -300,7 +300,7 @@ Checklist (example: adding Angular 22):
    - `@angular-devkit/architect`: `<0.2200.0` → `<0.2300.0` (the devkit minor is `0.NN00.0`)
    - `@angular-devkit/core` & `@angular-devkit/schematics`: `<22.0.0` → `<23.0.0`
    - peer `@angular/cli`: `<22.0.0` → `<23.0.0`
-   - leave `devDependencies` pinned at the floor (Angular 18) so the build keeps verifying against the minimum supported version
+   - `devDependencies` may track the newest supported Angular version; the minimum supported version is covered by the `Test Angular NN` steps in CI, which run against every supported major
    - bump `version` (minor for additive support), and `engines.node` only if the floor actually moved (keep a wide `>=` bound)
 3. **`README.md`** – update the "supports Angular X to Y" line.
 4. **`.github/workflows/main.yml`** – add a `Test Angular NN` step (copy the previous one).

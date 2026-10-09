@@ -1,5 +1,3 @@
-import type {Git} from './gh-pages-fork/lib/git';
-
 /**
  * Angular outputPath configuration
  * Can be either a string (path) or an object with base + browser properties
@@ -46,39 +44,6 @@ export function isOutputPathObject(value: unknown): value is AngularOutputPathOb
 export interface DeployUser {
   name: string;
   email: string;
-}
-
-/**
- * Options of the publish() function of the gh-pages npm package.
- *
- * @deprecated angular-cli-ghpages doesn't use the gh-pages package. Kept for API
- * compatibility; will be removed in the next major version.
- */
-export interface PublishOptions {
-  repo?: string;
-  remote?: string;
-  branch?: string;
-  message?: string;
-  user?: { name: string; email: string };
-  dotfiles?: boolean;
-  nojekyll?: boolean;
-  cname?: string;
-  add?: boolean;
-  git?: string;
-  beforeAdd?: (git: Git) => void | Promise<void>;
-  [key: string]: unknown; // Allow additional gh-pages options
-}
-
-/**
- * API of the gh-pages npm package.
- *
- * @deprecated angular-cli-ghpages doesn't use the gh-pages package. Kept for API
- * compatibility; will be removed in the next major version.
- */
-export interface GHPages {
-  publish(dir: string, options: PublishOptions, callback: (error: Error | null) => void): void;
-  publish(dir: string, options: PublishOptions): Promise<void>;
-  clean?(): void;
 }
 
 export interface ArchitectTarget {

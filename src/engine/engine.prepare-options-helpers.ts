@@ -23,14 +23,6 @@ export type PreparedOptions = Schema & {
 };
 
 /**
- * @deprecated No-op. Kept for API compatibility; the deploy engine passes its
- * logger to the publish step directly. Will be removed in the next major version.
- */
-export function setupMonkeypatch(_logger: logging.LoggerApi): void {
-  // intentionally empty
-}
-
-/**
  * Map negated boolean options to positive boolean options
  *
  * Angular-CLI is NOT renaming the vars, so noDotfiles, noNotfound, and noNojekyll

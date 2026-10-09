@@ -251,7 +251,6 @@ The package exports these TypeScript types for programmatic usage:
 - `Schema` - Complete options interface
 - `PreparedOptions` - Internal options after processing
 - `DeployUser` - User credentials type
-- `GHPages`, `PublishOptions` - deprecated, describe the API of the gh-pages npm package
 - `defaults` - Default configuration object
 
 ### Advanced: Angular Builder Integration

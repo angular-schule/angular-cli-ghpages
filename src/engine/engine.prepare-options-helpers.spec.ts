@@ -58,17 +58,6 @@ describe('prepareOptions helpers - intensive tests', () => {
     process.env = originalEnv;
   });
 
-  describe('setupMonkeypatch (deprecated)', () => {
-    it('should leave util.debuglog untouched', () => {
-      const util = require('util');
-      const debuglogBefore = util.debuglog;
-
-      helpers.setupMonkeypatch(testLogger);
-
-      expect(util.debuglog).toBe(debuglogBefore);
-    });
-  });
-
   describe('mapNegatedBooleans', () => {
     it('should set dotfiles to false when noDotfiles is true', () => {
       const options: helpers.PreparedOptions = { dotfiles: true, notfound: true, nojekyll: true };
@@ -571,8 +560,7 @@ describe('prepareOptions helpers - intensive tests', () => {
     it('should throw helpful error when not in a git repository', async () => {
       // Change to a non-git directory
       const originalCwd = process.cwd();
-      const fs = require('fs/promises');
-      const tempDir = path.join(require('os').tmpdir(), 'not-a-git-repo-test-' + Date.now());
+      const tempDir = path.join(os.tmpdir(), 'not-a-git-repo-test-' + Date.now());
       await fs.mkdir(tempDir, { recursive: true });
 
       try {

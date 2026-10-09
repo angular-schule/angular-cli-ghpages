@@ -721,4 +721,47 @@ describe('prepareOptions helpers - intensive tests', () => {
       }
     });
   });
+
+  describe('createCleanupBeforeAddHook', () => {
+    let distDir: string;
+
+    beforeEach(async () => {
+      distDir = await fs.mkdtemp(path.join(os.tmpdir(), 'ghp-hook-'));
+      await fs.writeFile(path.join(distDir, 'index.html'), '<html></html>');
+    });
+
+    afterEach(async () => {
+      await fs.rm(distDir, { recursive: true, force: true });
+    });
+
+    function createGit(tracked: string[]) {
+      const git: helpers.GhPagesGit = {
+        cwd: '/clone',
+        output: '',
+        exec: vi.fn(async () => {
+          git.output = tracked.join('\0');
+          return git;
+        }),
+        rm: vi.fn(async () => git)
+      };
+      return git;
+    }
+
+    it('keeps generated files that are tracked but not in dist', async () => {
+      const git = createGit(['.nojekyll', 'CNAME', 'index.html']);
+      const generatedFiles = ['.nojekyll', 'CNAME'];
+
+      await helpers.createCleanupBeforeAddHook(distDir, true, testLogger, generatedFiles)(git);
+
+      expect(git.rm).not.toHaveBeenCalled();
+    });
+
+    it('removes tracked files that are neither in dist nor generated', async () => {
+      const git = createGit(['.nojekyll', 'index.html', 'stale.html']);
+
+      await helpers.createCleanupBeforeAddHook(distDir, true, testLogger, [])(git);
+
+      expect(git.rm).toHaveBeenCalledWith(['.nojekyll', 'stale.html']);
+    });
+  });
 });

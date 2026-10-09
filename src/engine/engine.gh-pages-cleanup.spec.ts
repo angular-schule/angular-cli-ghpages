@@ -153,6 +153,62 @@ describe('end-to-end cleanup regression (issue #204, real git)', () => {
     expect(tree).not.toContain('stale.html');
   }, 30_000);
 
+  it('keeps .nojekyll and CNAME on a redeploy', async () => {
+    const deploy = () => engine.run(
+      distDir,
+      {
+        repo: bareRepoPath,
+        branch: 'gh-pages',
+        dotfiles: true,
+        notfound: false,
+        nojekyll: true,
+        cname: 'example.org',
+        name: 'Test',
+        email: 'test@test.com',
+        message: 'test deploy'
+      },
+      new logging.NullLogger()
+    );
+
+    await deploy();
+    await fs.writeFile(path.join(distDir, 'index.html'), '<html>second deploy</html>\n');
+    await deploy();
+
+    const tree = git('ls-tree -r gh-pages --name-only', { cwd: bareRepoPath })
+      .split('\n')
+      .filter(Boolean)
+      .sort();
+
+    expect(tree).toEqual(['.nojekyll', 'CNAME', 'index.html']);
+    expect(git('show gh-pages:CNAME', { cwd: bareRepoPath })).toBe('example.org');
+  }, 30_000);
+
+  it('removes a leftover .nojekyll when nojekyll is disabled', async () => {
+    const deploy = (nojekyll: boolean) => engine.run(
+      distDir,
+      {
+        repo: bareRepoPath,
+        branch: 'gh-pages',
+        dotfiles: true,
+        notfound: false,
+        nojekyll,
+        name: 'Test',
+        email: 'test@test.com',
+        message: 'test deploy'
+      },
+      new logging.NullLogger()
+    );
+
+    await deploy(true);
+    await deploy(false);
+
+    const tree = git('ls-tree -r gh-pages --name-only', { cwd: bareRepoPath })
+      .split('\n')
+      .filter(Boolean);
+
+    expect(tree).toEqual(['index.html']);
+  }, 30_000);
+
   it('baseline: without our hook, gh-pages alone leaks dotfiles and submodule gitlinks (demonstrates the upstream bug)', async () => {
     // Call gh-pages.publish() directly — no engine.run(), no beforeAdd hook.
     // This is exactly what angular-cli-ghpages v3 did before our fix.

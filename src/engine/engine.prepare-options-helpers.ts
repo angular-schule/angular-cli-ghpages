@@ -346,6 +346,10 @@ export async function collectDistFiles(
  * indexed (`git ls-files -z`), diff against the set of files in our dist, and
  * `git rm` the leftovers. `git rm` correctly handles submodule gitlinks too.
  *
+ * `generatedFiles` lists files that gh-pages itself writes into the clone
+ * (`.nojekyll`, `CNAME`). They never exist in dist, so they are kept explicitly;
+ * otherwise a redeploy would remove the `.nojekyll` that gh-pages just created.
+ *
  * Upstream fix: tschaub/gh-pages#612 (merged 2025-08-09, unreleased as of
  * gh-pages@6.3.0). When a release containing that PR lands, this hook becomes
  * redundant and can be removed.
@@ -353,13 +357,14 @@ export async function collectDistFiles(
 export function createCleanupBeforeAddHook(
   distDir: string,
   dotfiles: boolean,
-  logger: logging.LoggerApi
+  logger: logging.LoggerApi,
+  generatedFiles: string[]
 ): (git: GhPagesGit) => Promise<void> {
   return async (git) => {
     const distFiles = await collectDistFiles(distDir, dotfiles);
     await git.exec('ls-files', '-z');
     const tracked = (git.output || '').split('\0').filter(Boolean);
-    const toRemove = tracked.filter((f) => !distFiles.has(f));
+    const toRemove = tracked.filter((f) => !distFiles.has(f) && !generatedFiles.includes(f));
     if (toRemove.length === 0) {
       return;
     }

@@ -49,7 +49,7 @@ export async function run(
 
   await checkIfDistFolderExists(dir);
   await createNotFoundFile(dir, prepared, logger);
-  // Note: CNAME and .nojekyll files are now created by gh-pages v6+ via options
+  // gh-pages writes CNAME and .nojekyll into its clone (cname/nojekyll options)
   await publishViaGhPages(ghpages, dir, prepared, logger);
 
   if (!prepared.dryRun) {
@@ -150,8 +150,21 @@ async function createNotFoundFile(
   }
 }
 
-// CNAME and .nojekyll files are now handled by gh-pages v6+ via the cname/nojekyll options
-// Previously we created these files ourselves before publishing, but gh-pages PR #533 added native support
+/**
+ * Files that gh-pages writes into its clone (not into dist) for the given options.
+ * gh-pages' own remove step already unstages CNAME before rewriting it; listing it
+ * here keeps the cleanup hook correct independently of that detail.
+ */
+function generatedFiles(options: PreparedOptions): string[] {
+  const files: string[] = [];
+  if (options.nojekyll) {
+    files.push('.nojekyll');
+  }
+  if (options.cname) {
+    files.push('CNAME');
+  }
+  return files;
+}
 
 async function publishViaGhPages(
   ghPages: GHPages,
@@ -206,7 +219,7 @@ async function publishViaGhPages(
     // Workaround for gh-pages#612 (unreleased in v6.3.0): clean up leftover
     // gh-pages branch files (dotfiles, submodule gitlinks) that the broken
     // remove step misses. Skipped when the user opts into additive mode.
-    beforeAdd: options.add ? undefined : createCleanupBeforeAddHook(dir, options.dotfiles, logger)
+    beforeAdd: options.add ? undefined : createCleanupBeforeAddHook(dir, options.dotfiles, logger, generatedFiles(options))
   };
 
   // gh-pages@6 silently absorbs errors via its internal .then(_, onRejected)

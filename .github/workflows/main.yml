@@ -86,9 +86,11 @@ jobs:
           npm link angular-cli-ghpages
           npx ng add angular-cli-ghpages
           npx ng deploy
-          npx ng deploy --message="second deploy"
+          echo second > dist/test-app-18/browser/second.txt
+          npx ng deploy --no-build --message="second deploy"
           cd /tmp/remote-18.git && git branch | grep gh-pages
-          git ls-tree --name-only gh-pages | grep -x .nojekyll
+          test "$(git rev-list --count gh-pages)" = 2
+          git cat-file -e gh-pages:.nojekyll
           echo "Angular 18: build + deploy successful"
 
       - name: Test Angular 19
@@ -101,9 +103,11 @@ jobs:
           npm link angular-cli-ghpages
           npx ng add angular-cli-ghpages
           npx ng deploy
-          npx ng deploy --message="second deploy"
+          echo second > dist/test-app-19/browser/second.txt
+          npx ng deploy --no-build --message="second deploy"
           cd /tmp/remote-19.git && git branch | grep gh-pages
-          git ls-tree --name-only gh-pages | grep -x .nojekyll
+          test "$(git rev-list --count gh-pages)" = 2
+          git cat-file -e gh-pages:.nojekyll
           echo "Angular 19: build + deploy successful"
 
       - name: Test Angular 20
@@ -116,9 +120,11 @@ jobs:
           npm link angular-cli-ghpages
           npx ng add angular-cli-ghpages
           npx ng deploy
-          npx ng deploy --message="second deploy"
+          echo second > dist/test-app-20/browser/second.txt
+          npx ng deploy --no-build --message="second deploy"
           cd /tmp/remote-20.git && git branch | grep gh-pages
-          git ls-tree --name-only gh-pages | grep -x .nojekyll
+          test "$(git rev-list --count gh-pages)" = 2
+          git cat-file -e gh-pages:.nojekyll
           echo "Angular 20: build + deploy successful"
 
       - name: Test Angular 21
@@ -131,9 +137,11 @@ jobs:
           npm link angular-cli-ghpages
           npx ng add angular-cli-ghpages
           npx ng deploy
-          npx ng deploy --message="second deploy"
+          echo second > dist/test-app-21/browser/second.txt
+          npx ng deploy --no-build --message="second deploy"
           cd /tmp/remote-21.git && git branch | grep gh-pages
-          git ls-tree --name-only gh-pages | grep -x .nojekyll
+          test "$(git rev-list --count gh-pages)" = 2
+          git cat-file -e gh-pages:.nojekyll
           echo "Angular 21: build + deploy successful"
 
       - name: Test Angular 22
@@ -146,7 +154,9 @@ jobs:
           npm link angular-cli-ghpages
           npx ng add angular-cli-ghpages
           npx ng deploy
-          npx ng deploy --message="second deploy"
+          echo second > dist/test-app-22/browser/second.txt
+          npx ng deploy --no-build --message="second deploy"
           cd /tmp/remote-22.git && git branch | grep gh-pages
-          git ls-tree --name-only gh-pages | grep -x .nojekyll
+          test "$(git rev-list --count gh-pages)" = 2
+          git cat-file -e gh-pages:.nojekyll
           echo "Angular 22: build + deploy successful"

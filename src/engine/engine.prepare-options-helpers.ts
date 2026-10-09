@@ -358,7 +358,7 @@ export function createCleanupBeforeAddHook(
   distDir: string,
   dotfiles: boolean,
   logger: logging.LoggerApi,
-  generatedFiles: string[] = []
+  generatedFiles: string[]
 ): (git: GhPagesGit) => Promise<void> {
   return async (git) => {
     const distFiles = await collectDistFiles(distDir, dotfiles);

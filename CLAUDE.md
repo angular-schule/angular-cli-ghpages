@@ -4,7 +4,7 @@ This file provides guidance when working with code in this repository.
 
 ## Overview
 
-`angular-cli-ghpages` is an Angular CLI builder/schematic that deploys Angular applications to GitHub Pages, Cloudflare Pages, or any Git repository. It wraps the `gh-pages` npm package and integrates with Angular CLI's deployment infrastructure via `ng deploy`.
+`angular-cli-ghpages` is an Angular CLI builder/schematic that deploys Angular applications to GitHub Pages, Cloudflare Pages, or any Git repository. It publishes via `src/gh-pages-fork/`, a minimal TypeScript fork of the `gh-pages` npm package, and integrates with Angular CLI's deployment infrastructure via `ng deploy`.
 
 ## Development Commands
 
@@ -106,8 +106,12 @@ npm dist-tag add angular-cli-ghpages@X.X.X-rc.X next
    - Uses `commander` for CLI parsing
 
 4. **Core Engine** (`src/engine/`):
-   - `engine.ts` - Core deployment logic (wraps gh-pages)
+   - `engine.ts` - Core deployment logic (publishes via gh-pages-fork)
    - `defaults.ts` - Default configuration values
+
+5. **gh-pages fork** (`src/gh-pages-fork/`):
+   - Minimal TypeScript fork of `gh-pages`, internal use only (see its `README.md`)
+   - Same file structure and function names as upstream (`lib/index.ts`, `lib/git.ts`, `lib/util.ts`)
 
 ### Deployment Flow
 
@@ -121,10 +125,14 @@ actions.ts (deploy function)
   │   Uses BuilderContext.scheduleTarget()
   └─→ engine.run()
       ├─→ Prepare options (tokens, CI env vars)
-      ├─→ Create .nojekyll file (bypasses Jekyll on GitHub)
-      ├─→ Create 404.html (copy of index.html for SPAs)
-      ├─→ Create CNAME file (if custom domain)
-      └─→ Publish via gh-pages package
+      ├─→ Clean the cache (every deploy starts from a fresh clone)
+      ├─→ Create 404.html in dist (copy of index.html for SPAs)
+      └─→ gh-pages-fork publish()
+          ├─→ Clone the target branch (or create it as an orphan branch)
+          ├─→ Remove the branch content (skipped with --add)
+          ├─→ Write .nojekyll (bypasses Jekyll on GitHub) and CNAME (if custom domain)
+          ├─→ Copy dist, git add, commit (only if something changed)
+          └─→ Push
 ```
 
 ### Build Target Resolution

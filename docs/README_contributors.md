@@ -13,8 +13,7 @@
   - [Programmatic Usage](#programmatic-usage)
     - [Available Types](#available-types)
     - [Advanced: Angular Builder Integration](#advanced-angular-builder-integration)
-  - [Dependency on gh-pages Internal API](#dependency-on-gh-pages-internal-api)
-    - [Remote URL Discovery](#remote-url-discovery)
+  - [gh-pages fork](#gh-pages-fork)
   - [Supporting a new Angular version](#supporting-a-new-angular-version)
   - [Keeping track of all the forks](#keeping-track-of-all-the-forks)
 
@@ -252,7 +251,7 @@ The package exports these TypeScript types for programmatic usage:
 - `Schema` - Complete options interface
 - `PreparedOptions` - Internal options after processing
 - `DeployUser` - User credentials type
-- `GHPages` - gh-pages library wrapper interface
+- `GHPages`, `PublishOptions` - deprecated, describe the API of the gh-pages npm package
 - `defaults` - Default configuration object
 
 ### Advanced: Angular Builder Integration
@@ -268,26 +267,9 @@ const result = await angularDeploy(context, builderConfig, 'your-project-name');
 
 **Note:** The CLI (`ng deploy`) remains the primary and recommended way to use this tool. Programmatic usage is considered advanced/experimental and may change between versions.
 
-## Dependency on gh-pages Internal API
+## gh-pages fork
 
-### Remote URL Discovery
-
-The `getRemoteUrl` function in `src/engine/engine.prepare-options-helpers.ts` calls into `gh-pages/lib/git`, which is an **internal API** not documented in gh-pages' public interface. This dependency carries upgrade risk.
-
-**What we depend on:**
-- `new Git(process.cwd(), options.git).getRemoteUrl(options.remote)` from `gh-pages/lib/git`
-- The exact error message format when remote doesn't exist or not in a git repository
-
-**Upgrade process for gh-pages v6+:**
-
-1. Check test failures in `src/engine/engine.prepare-options-helpers.spec.ts` first, specifically the `getRemoteUrl` test block
-2. If those tests fail, it likely indicates a breaking change in gh-pages' internal Git API
-3. Options:
-   - If `gh-pages/lib/git` still exists with same interface: update our error message assertions
-   - If the internal API changed significantly: implement our own git remote discovery using `child_process.execSync('git config --get remote.{remote}.url')`
-   - If gh-pages added a public API for this: switch to the public API
-
-**Current baseline:** Tests are pinned to gh-pages v6.3.0 behavior and error messages.
+Publishing (clone the target branch, replace its content, commit, push) lives in [`src/gh-pages-fork/`](../src/gh-pages-fork/README.md), a minimal TypeScript fork of the [gh-pages](https://github.com/tschaub/gh-pages) npm package. It exists solely for angular-cli-ghpages and keeps the upstream file structure and function names, so upstream changes can be compared and ported file by file. Its README lists the upstream base commit, what was kept and what was removed.
 
 ## Compatibility principle
 

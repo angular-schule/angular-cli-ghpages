@@ -119,7 +119,7 @@ Output the version number. Please provide the version number on any bug report!
 - Default: URL of the origin remote of the current dir (assumes a git repository)
 - Example: `npx angular-cli-ghpages --repo=https://GH_TOKEN@github.com/<username>/<repositoryname>.git`
 
-By default, **gh-pages** assumes that the current working directory is a git repository,
+By default, **angular-cli-ghpages** assumes that the current working directory is a git repository,
 and that you want to push changes to the `origin` remote.
 If instead, your files are not in a git repository, or if you want to push to another repository,
 you can provide the repository URL in the `repo` option.
@@ -130,7 +130,7 @@ you can provide the repository URL in the `repo` option.
 - Default: `origin`
 - Example: `npx angular-cli-ghpages --remote=github`
 
-By default, **gh-pages** assumes that the current working directory is a git repository,
+By default, **angular-cli-ghpages** assumes that the current working directory is a git repository,
 and that you want to push changes to the `origin` remote.
 If you want to push to another remote, you can provide the remote name in the `remote` option.
 
@@ -216,7 +216,6 @@ A CNAME file will be created enabling you to use a custom domain. [More informat
 
 If is set to `true`, it will only add, and never remove existing files.
 By default, existing files in the target branch are removed before adding the ones.
-[More information](https://www.npmjs.com/package/gh-pages#optionsadd).
 
 #### --no-notfound <a name="no-notfound"></a>
 

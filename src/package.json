@@ -1,21 +1,21 @@
 {
   "name": "angular-cli-ghpages",
-  "version": "3.1.0",
+  "version": "3.1.1",
   "description": "Deploy your Angular app to GitHub Pages or Cloudflare Pages directly from the Angular CLI (ng deploy)",
   "main": "index.js",
   "types": "index.d.ts",
   "engines": {
     "node": ">=18.19.1",
-    "npm": ">=10.0.0"
+    "npm": ">=9.0.0"
   },
   "bin": {
     "angular-cli-ghpages": "angular-cli-ghpages",
     "ngh": "angular-cli-ghpages"
   },
   "scripts": {
-    "prebuild": "rimraf dist && json2ts deploy/schema.json > deploy/schema.d.ts",
+    "prebuild": "node scripts/prebuild.js",
     "build": "tsc -p tsconfig.build.json",
-    "postbuild": "copyfiles builders.json collection.json ng-add-schema.json package.json angular-cli-ghpages deploy/schema.json dist && copyfiles ../README.md dist/README.md && copyfiles commander-fork/index.js dist",
+    "postbuild": "node scripts/postbuild.js",
     "test": "vitest run"
   },
   "schematics": "./collection.json",
@@ -59,15 +59,13 @@
   },
   "homepage": "https://github.com/angular-schule/angular-cli-ghpages/#readme",
   "devDependencies": {
-    "@angular-devkit/architect": "~0.1800.0",
-    "@angular-devkit/core": "~18.0.0",
-    "@angular-devkit/schematics": "~18.0.0",
-    "@types/node": "^24.0.0",
-    "copyfiles": "^2.4.1",
-    "json-schema-to-typescript": "^13.1.2",
-    "rimraf": "^5.0.5",
+    "@angular-devkit/architect": "~0.2202.2",
+    "@angular-devkit/core": "~22.2.2",
+    "@angular-devkit/schematics": "~22.2.2",
+    "@types/node": "^26.6.4",
+    "json-schema-to-typescript": "^16.0.0",
     "typescript": "~7.0.2",
-    "vitest": "^3.2.1"
+    "vitest": "^5.0.3"
   },
   "dependencies": {
     "@angular-devkit/architect": ">=0.1800.0 <0.2300.0",

@@ -171,6 +171,8 @@ The engine appends CI metadata to commit messages when running on:
 
 ## Important Conventions
 
+0. **Maximum compatibility for end users**: One release of angular-cli-ghpages must work for as many users as possible, including old Angular versions (enterprises often run very old ones). Keep the supported Angular range, the runtime `dependencies` ranges, the `@angular/cli` peer range and `engines.node` as wide as possible. Never narrow them as a side effect; drop an old Angular version only when keeping it actually costs logic or workarounds. `devDependencies` are free to change, since they never reach users.
+
 1. **No Server-Side Rendering**: GitHub Pages only supports static files. SSR/Universal build targets are not supported.
 
 2. **404.html Handling**:

@@ -289,6 +289,16 @@ The `getRemoteUrl` function in `src/engine/engine.prepare-options-helpers.ts` ca
 
 **Current baseline:** Tests are pinned to gh-pages v6.3.0 behavior and error messages.
 
+## Compatibility principle
+
+One release of angular-cli-ghpages should work for as many end users as possible, including projects on old Angular versions — enterprises often run Angular versions that are several years old. That's why everything that reaches users stays as wide as possible:
+
+- the supported Angular range (peer `@angular/cli`)
+- the runtime `dependencies` ranges (`@angular-devkit/*`)
+- `engines.node`
+
+None of these get narrowed as a side effect of a refactoring or an upgrade. `devDependencies` don't reach users, so they can be upgraded freely, as long as CI still runs against every supported Angular major.
+
 ## Supporting a new Angular version
 
 When a new major Angular version ships, add support with a **minimal, non-breaking bump** — extend the upper bound and keep the existing majors. Only drop an old version when keeping it actually costs logic or workarounds. Bloated tests alone aren't enough: a broken build for late-upgrading (e.g. enterprise) projects costs more goodwill than the version costs us.
@@ -300,7 +310,7 @@ Checklist (example: adding Angular 22):
    - `@angular-devkit/architect`: `<0.2200.0` → `<0.2300.0` (the devkit minor is `0.NN00.0`)
    - `@angular-devkit/core` & `@angular-devkit/schematics`: `<22.0.0` → `<23.0.0`
    - peer `@angular/cli`: `<22.0.0` → `<23.0.0`
-   - leave `devDependencies` pinned at the floor (Angular 18) so the build keeps verifying against the minimum supported version
+   - `devDependencies` can be upgraded freely; the `Test Angular NN` steps in CI run against every supported major, including the oldest
    - bump `version` (minor for additive support), and `engines.node` only if the floor actually moved (keep a wide `>=` bound)
 3. **`README.md`** – update the "supports Angular X to Y" line.
 4. **`.github/workflows/main.yml`** – add a `Test Angular NN` step (copy the previous one).

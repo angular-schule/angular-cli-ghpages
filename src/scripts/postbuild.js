@@ -16,6 +16,8 @@ const files = [
 for (const file of files) {
   copy(file, path.join('dist', file));
 }
+
+// README.md lives in the repository root, outside src/
 copy('../README.md', 'dist/README.md');
 
 function copy(from, to) {

@@ -85,24 +85,28 @@ export class Git {
 
   /**
    * Clone a branch of a repo into the given (empty or missing) dir.
-   * Falls back to a full clone of the default branch when the branch doesn't exist yet.
+   *
+   * When the branch doesn't exist yet, the default branch is cloned without a
+   * checkout instead (only the remote is needed to create the new branch):
+   * shallow first, then in full for servers without shallow clone support.
    *
    * The returned instance never operates on a repository above `dir`
    * (GIT_CEILING_DIRECTORIES), even if `dir` loses its .git directory.
    */
   static async clone(repo: string, dir: string, branch: string, options: CloneOptions, args: string[] = []): Promise<Git> {
     const env = { GIT_CEILING_DIRECTORIES: path.dirname(path.resolve(dir)) };
+    const clone = (...cloneArgs: string[]) =>
+      spawn(options.git, [...args, 'clone', repo, dir, '--origin', options.remote, ...cloneArgs], { env });
+    const depth = String(options.depth);
+
     try {
-      await spawn(options.git, [
-        ...args,
-        'clone', repo, dir,
-        '--branch', branch,
-        '--single-branch',
-        '--origin', options.remote,
-        '--depth', String(options.depth)
-      ], { env });
+      await clone('--branch', branch, '--single-branch', '--depth', depth);
     } catch {
-      await spawn(options.git, [...args, 'clone', repo, dir, '--origin', options.remote], { env });
+      try {
+        await clone('--no-checkout', '--depth', depth);
+      } catch {
+        await clone('--no-checkout');
+      }
     }
     return new Git(dir, options.git, args, env);
   }

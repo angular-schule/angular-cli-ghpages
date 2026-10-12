@@ -72,6 +72,21 @@ export function getCacheDir(cwd = process.cwd()): string {
 }
 
 /**
+ * Create a fresh directory for a temporary clone below getCacheDir().
+ * Falls back to the os temp directory when the cache directory isn't writable
+ * (e.g. a read-only node_modules).
+ */
+async function createCloneDir(): Promise<string> {
+  try {
+    const cacheDir = getCacheDir();
+    await fs.mkdir(cacheDir, { recursive: true });
+    return await fs.mkdtemp(path.join(cacheDir, 'clone-'));
+  } catch {
+    return fs.mkdtemp(path.join(os.tmpdir(), 'angular-cli-ghpages-clone-'));
+  }
+}
+
+/**
  * The repository to publish to: `options.repo`, or the URL of `options.remote`
  * of the git repository in the current working directory.
  */
@@ -119,9 +134,7 @@ export async function publish(basePath: string, config: PublishOptions, log: Log
   const user = options.user ?? await getUser(process.cwd(), options.git);
   const repoUrl = await getRepo(options);
 
-  const cacheDir = getCacheDir();
-  await fs.mkdir(cacheDir, { recursive: true });
-  const clone = await fs.mkdtemp(path.join(cacheDir, 'clone-'));
+  const clone = await createCloneDir();
 
   try {
     // Credentials in the URL must not end up in a credential helper's store

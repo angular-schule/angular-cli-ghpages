@@ -1,4 +1,5 @@
 import {logging} from '@angular-devkit/core';
+import {constants as fsConstants} from 'fs';
 import * as fs from 'fs/promises';
 import * as path from 'path';
 
@@ -109,8 +110,13 @@ async function createNotFoundFile(
   const indexHtml = path.join(dir, 'index.html');
   const notFoundFile = path.join(dir, '404.html');
 
+  if (await pathExists(notFoundFile)) {
+    logger.info('404.html already exists in the dist folder and is kept.');
+    return;
+  }
+
   try {
-    await fs.copyFile(indexHtml, notFoundFile);
+    await fs.copyFile(indexHtml, notFoundFile, fsConstants.COPYFILE_EXCL);
     logger.info('404.html file created');
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
@@ -126,16 +132,13 @@ async function publishViaGhPages(
   logger: logging.LoggerApi
 ) {
   if (options.dryRun) {
-    // Note: options.repo may contain auth tokens. This is acceptable because:
-    // 1. CI environments (GitHub Actions, etc.) automatically mask secrets in logs
-    // 2. Dry-run is typically used for debugging, where seeing the full URL helps
-    // 3. Local dry-runs don't persist logs
+    // options.repo may contain an injected token, so its credentials are hidden
     logger.info(
       `Dry-run / SKIPPED: publishing folder '${dir}' with the following options: ` +
       JSON.stringify(
         {
           dir,
-          repo: options.repo || 'current working directory (which must be a git repo in this case) will be used to commit & push',
+          repo: options.repo ? ghpages.redact(options.repo) : 'current working directory (which must be a git repo in this case) will be used to commit & push',
           remote: options.remote,
           message: options.message,
           branch: options.branch,

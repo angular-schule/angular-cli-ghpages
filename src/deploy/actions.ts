@@ -86,6 +86,9 @@ export default async function deploy(
         `Expected string or {base, browser} object.`
       );
     }
+
+    // outputPath is relative to the workspace root, not to the current working directory
+    dir = path.resolve(context.workspaceRoot, dir);
   }
 
   await engine.run(

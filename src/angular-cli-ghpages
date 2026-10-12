@@ -100,11 +100,14 @@ var consoleLogger = {
 // --no-notfound becomes notfound: false
 // --no-nojekyll becomes nojekyll: false
 
-// console.log('*** dotfiles', commander.dotfiles)
-// console.log('*** notfound', commander.notfound)
-// console.log('*** nojekyll', commander.nojekyll)
+if (commander.args.length > 0) {
+  consoleLogger.error('❌ Unexpected argument(s): ' + commander.args.join(' '));
+  consoleLogger.error('   Use --dir=<dir> to choose the directory to deploy.');
+  process.exit(1);
+}
 
-var dir = path.join(process.cwd(), commander.dir);
+// absolute paths (also Windows drive paths) stay as they are
+var dir = path.resolve(process.cwd(), commander.dir);
 
 engine.run(dir, commander, consoleLogger).catch(function (error) {
   consoleLogger.error('❌ An error occurred when trying to deploy:');

@@ -67,13 +67,22 @@ export const ngAdd = (options: NgAddOptions) => async (
     );
   }
 
-  project.targets.add({
-    name: 'deploy',
-    builder: 'angular-cli-ghpages:deploy',
-    options: {}
-  });
-
-  workspaces.writeWorkspace(workspace, host);
+  const existingDeployTarget = project.targets.get('deploy');
+  if (existingDeployTarget?.builder === 'angular-cli-ghpages:deploy') {
+    context.logger.info(`The project "${options.project}" already has a deploy target for angular-cli-ghpages.`);
+  } else if (existingDeployTarget) {
+    throw new SchematicsException(
+      `The project "${options.project}" already has a deploy target with the builder "${existingDeployTarget.builder}". ` +
+      `Remove it from angular.json to use angular-cli-ghpages.`
+    );
+  } else {
+    project.targets.add({
+      name: 'deploy',
+      builder: 'angular-cli-ghpages:deploy',
+      options: {}
+    });
+    await workspaces.writeWorkspace(workspace, host);
+  }
 
   // Show next steps
   context.logger.info('');

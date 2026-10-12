@@ -21,6 +21,11 @@
  * - .opts() - get parsed options
  * - Property access (e.g., program.dir)
  * - Basic --help output
+ *
+ * Fixes on top of commander v3.0.2 (marked FORK FIX 1/3 to 3/3 below):
+ * 1. Tightened negate detection for --no- flags
+ * 2. Short-only and custom version flags
+ * 3. Boolean flags accept "=true" / "=false"
  */
 
 /**
@@ -67,7 +72,7 @@ function Option(flags, description) {
   this.flags = flags;
   this.required = flags.indexOf('<') >= 0;
   this.optional = flags.indexOf('[') >= 0;
-  // FORK FIX 1/2: Tightened negate detection to avoid false positives
+  // FORK FIX 1/3: Tightened negate detection to avoid false positives
   // Original: this.negate = flags.indexOf('-no-') !== -1;
   // Problem: Would match '-no-' anywhere, e.g., '--enable-notifications' would incorrectly match
   // Fix: Only match '--no-' at word boundaries (start of string or after delimiter)
@@ -334,7 +339,22 @@ Command.prototype.normalize = function(args) {
         });
       }
     } else if (/^--/.test(arg) && ~(index = arg.indexOf('='))) {
-      ret.push(arg.slice(0, index), arg.slice(index + 1));
+      // FORK FIX 3/3: Boolean flags accept "=true" / "=false"
+      // Original: "--add=false" was split into "--add" plus a positional "false",
+      //           so the flag was set although the user asked for the opposite.
+      // Fix: "=true" sets the flag, "=false" leaves it unset, any other value is an error.
+      opt = this.optionFor(arg.slice(0, index));
+      if (opt && !opt.required && !opt.optional) {
+        var value = arg.slice(index + 1);
+        if (value === 'true') {
+          ret.push(arg.slice(0, index));
+        } else if (value !== 'false') {
+          console.error("error: option '%s' doesn't take a value (use '%s' or '%s=false')", opt.flags, arg.slice(0, index), arg.slice(0, index));
+          process.exit(1);
+        }
+      } else {
+        ret.push(arg.slice(0, index), arg.slice(index + 1));
+      }
     } else {
       ret.push(arg);
     }
@@ -506,7 +526,7 @@ Command.prototype.version = function(str, flags, description) {
   flags = flags || '-V, --version';
   description = description || 'output the version number';
   var versionOption = new Option(flags, description);
-  // FORK FIX 2/2: Support short-only and custom version flags properly
+  // FORK FIX 2/3: Support short-only and custom version flags properly
   // Original: this._versionOptionName = versionOption.long.substr(2) || 'version';
   // Problem: .substr(2) on '-v' gives empty string, falls back to 'version',
   //          but event is 'option:v' (or 'option:-v'), so listener never fires.

@@ -67,10 +67,12 @@ export function handleUserCredentials(
 }
 
 /**
- * Warn if deprecated parameters are used
+ * Warn if deprecated parameters are used: `noSilent` from ng deploy (the schema
+ * has no default, so it is only set when passed), `silent: false` from the
+ * standalone CLI's `--no-silent` flag.
  */
-export function warnDeprecatedParameters(origOptions: Schema, logger: logging.LoggerApi): void {
-  if (origOptions.noSilent !== undefined) {
+export function warnDeprecatedParameters(origOptions: Schema & { silent?: boolean }, logger: logging.LoggerApi): void {
+  if (origOptions.noSilent !== undefined || origOptions.silent === false) {
     logger.warn(
       'The --no-silent parameter is deprecated and no longer needed. ' +
       'Verbose logging is now always enabled. This parameter will be ignored.'
@@ -113,7 +115,9 @@ export function appendCIMetadata(options: PreparedOptions): void {
   if (process.env.GITHUB_ACTIONS) {
     options.message +=
       '\n\n' +
-      'Triggered by commit: https://github.com/' +
+      'Triggered by commit: ' +
+      (process.env.GITHUB_SERVER_URL || 'https://github.com') +
+      '/' +
       (process.env.GITHUB_REPOSITORY || '') +
       '/commit/' +
       (process.env.GITHUB_SHA || '') +
@@ -134,17 +138,14 @@ export function appendCIMetadata(options: PreparedOptions): void {
  * Also handles legacy GH_TOKEN placeholder replacement for backwards compatibility.
  */
 export async function injectTokenIntoRepoUrl(options: PreparedOptions): Promise<void> {
-  // NEW in 0.6.2: always discover remote URL (if not set)
-  // this allows us to inject tokens from environment even if `--repo` is not set manually
+  // Discover the remote URL when --repo isn't set, so tokens from the environment
+  // are injected into it as well
   if (!options.repo) {
-    options.repo = await getRemoteUrl(options);
+    options.repo = await getRepo({ git: options.git, remote: options.remote });
   }
 
-  // for backwards compatibility only,
-  // in the past --repo=https://GH_TOKEN@github.com/<username>/<repositoryname>.git was advised
-  //
-  // this replacement was also used to inject other tokens into the URL,
-  // so it should only be removed with the next major version
+  // --repo=https://GH_TOKEN@github.com/<username>/<repositoryname>.git gets the token
+  // in place of the placeholder; CI configurations use this to inject other tokens, too
   if (
     process.env.GH_TOKEN &&
     options.repo &&
@@ -172,15 +173,4 @@ export async function injectTokenIntoRepoUrl(options: PreparedOptions): Promise<
       );
     }
   }
-}
-
-/**
- * Get the URL of `options.remote` from the git repository in the current working directory.
- *
- * process.cwd() is the directory from which ng deploy was invoked, i.e. the project root.
- *
- * Exported for testing - internal use only
- */
-export async function getRemoteUrl(options: Schema & { git?: string; remote?: string }): Promise<string> {
-  return getRepo({ git: options.git, remote: options.remote });
 }

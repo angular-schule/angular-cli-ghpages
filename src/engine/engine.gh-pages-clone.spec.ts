@@ -8,12 +8,12 @@
  *   deploys never share a clone
  */
 
-import { execSync } from 'child_process';
 import * as fs from 'fs/promises';
 import * as os from 'os';
 import * as path from 'path';
 
 import * as ghPages from '../gh-pages-fork/lib';
+import { createBareRepo } from '../test-helpers/git';
 
 describe('gh-pages-fork temporary clone', () => {
   let tempDir: string;
@@ -33,8 +33,7 @@ describe('gh-pages-fork temporary clone', () => {
     await fs.mkdir(basePath);
     await fs.writeFile(path.join(basePath, 'index.html'), '<html>test</html>');
 
-    bareRepoPath = path.join(tempDir, 'bare-repo.git');
-    execSync(`git init --bare "${bareRepoPath}"`, { stdio: 'pipe' });
+    bareRepoPath = createBareRepo(path.join(tempDir, 'bare-repo.git'));
   });
 
   afterEach(async () => {

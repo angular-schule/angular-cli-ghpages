@@ -8,15 +8,13 @@
  * Approach: Mock child_process and gh-pages-fork/lib/util (copy, getUser), use real filesystem
  */
 
-import { ChildProcess } from 'child_process';
-
+import { createMockChildProcess } from '../test-helpers/git';
 import * as engine from './engine';
 import { logging } from '@angular-devkit/core';
 
 const path = require('path');
 const fs = require('fs/promises');
 const os = require('os');
-const { EventEmitter } = require('events');
 
 // Mock utils.pathExists so engine.run() passes the dist folder check
 vi.mock('../utils', async () => {
@@ -43,14 +41,6 @@ let spawnCalls: SpawnCall[] = [];
 
 // Track current test context for deterministic mock behavior
 let currentTestContext: TestContext = {};
-
-// Mock child process with what gh-pages-fork lib/git.ts uses: stdout/stderr 'data', 'close'
-function createMockChildProcess(): Partial<ChildProcess> {
-  const child: Partial<ChildProcess> = new EventEmitter();
-  child.stdout = new EventEmitter() as unknown as ChildProcess['stdout'];
-  child.stderr = new EventEmitter() as unknown as ChildProcess['stderr'];
-  return child;
-}
 
 /**
  * Whitelist of git subcommands that publish() may run.
@@ -89,7 +79,31 @@ vi.mock('../gh-pages-fork/lib/util', async () => ({
   getUser: mockGetUser
 }));
 
-// Default implementation; tests that need other responses override it, beforeEach restores it
+interface SpawnResult {
+  code?: number;
+  output?: string;
+  stderr?: string;
+}
+
+// Per-test override: return a result to replace the default response for a git call
+let spawnOverride: ((args: string[]) => SpawnResult | undefined) | undefined;
+
+function defaultResult(args: string[]): SpawnResult {
+  // git config --get remote.X.url returns the repo URL of the current test
+  if (args[0] === 'config' && args[1] === '--get' && args[2]?.startsWith('remote.')) {
+    return { output: currentTestContext.repo || '' };
+  }
+  // the branch exists on the remote
+  if (args[0] === 'ls-remote') {
+    return { output: 'refs/heads/gh-pages' };
+  }
+  // exit code 1: there are changes to commit
+  if (args[0] === 'diff-index') {
+    return { code: 1 };
+  }
+  return {};
+}
+
 function defaultSpawn(cmd: string, args: string[] | undefined, opts: unknown) {
   const capturedArgs = args || [];
   spawnCalls.push({ cmd, args: capturedArgs, options: opts });
@@ -100,34 +114,18 @@ function defaultSpawn(cmd: string, args: string[] | undefined, opts: unknown) {
     throw new Error(`Unexpected git command: ${subcommand}. Add to whitelist if intentional.`);
   }
 
-  const mockChild = createMockChildProcess();
-
-  // Simulate appropriate response based on git command
+  const result = spawnOverride?.(capturedArgs) ?? defaultResult(capturedArgs);
+  const child = createMockChildProcess();
   setImmediate(() => {
-    let output = '';
-
-    // git config --get remote.X.url should return the repo URL
-    if (cmd === 'git' && capturedArgs[0] === 'config' && capturedArgs[1] === '--get' &&
-        capturedArgs[2] && capturedArgs[2].startsWith('remote.')) {
-      // Use tracked repo URL for deterministic behavior
-      output = currentTestContext.repo || '';
+    if (result.stderr) {
+      child.stderr!.emit('data', Buffer.from(result.stderr));
     }
-    // ls-remote should return something for branch existence check
-    else if (cmd === 'git' && capturedArgs[0] === 'ls-remote') {
-      output = 'refs/heads/gh-pages';
+    if (result.output) {
+      child.stdout!.emit('data', Buffer.from(result.output));
     }
-    // diff-index for checking if commit needed (exit 1 means changes exist)
-    else if (cmd === 'git' && capturedArgs[0] === 'diff-index') {
-      // Return exit code 1 to indicate changes exist
-      mockChild.emit!('close', 1);
-      return;
-    }
-
-    mockChild.stdout!.emit('data', Buffer.from(output));
-    mockChild.emit!('close', 0);
+    child.emit('close', result.code ?? 0);
   });
-
-  return mockChild;
+  return child;
 }
 
 import * as ghPages from '../gh-pages-fork/lib';
@@ -178,6 +176,7 @@ describe('gh-pages-fork publish() - behavioral snapshot (gh-pages v6.3.0 behavio
     currentTestContext = {};
     mockSpawn.mockReset();
     mockSpawn.mockImplementation(defaultSpawn);
+    spawnOverride = undefined;
 
     // An injected token would make the repo URL differ from currentTestContext.repo
     originalEnv = { ...process.env };
@@ -735,63 +734,17 @@ describe('gh-pages-fork publish() - behavioral snapshot (gh-pages v6.3.0 behavio
    * - Documents expected error recovery behavior
    */
   describe('Error scenarios', () => {
-    it('should retry git clone without branch/depth options on failure', async () => {
+    it('should retry git clone without the branch on failure', async () => {
       const repo = 'https://github.com/test/clone-failure-test.git';
       currentTestContext.repo = repo;
       const branch = 'new-branch';
       const options = { repo, branch, message: 'Deploy' };
 
-      // Reset mock to implement failure behavior
-      mockSpawn.mockClear();
-
-      let cloneAttempts = 0;
-      mockSpawn.mockImplementation((cmd: string, args: string[] | undefined, opts: unknown) => {
-        const capturedArgs = args || [];
-        spawnCalls.push({ cmd, args: capturedArgs, options: opts });
-
-        // Validate git commands are expected
-        if (cmd === 'git' && capturedArgs[0]) {
-          if (!EXPECTED_GIT_COMMANDS.includes(capturedArgs[0])) {
-            throw new Error(`Unexpected git command: ${capturedArgs[0]}`);
-          }
-        }
-
-        const mockChild = createMockChildProcess();
-
-        setImmediate(() => {
-          // First clone attempt with --branch and --depth should FAIL
-          if (cmd === 'git' && capturedArgs[0] === 'clone' && cloneAttempts === 0) {
-            cloneAttempts++;
-            mockChild.stderr!.emit('data', Buffer.from('fatal: Remote branch new-branch not found'));
-            mockChild.emit!('close', 128); // Git error code
-            return;
-          }
-
-          // Second clone attempt without --branch/--depth should SUCCEED
-          if (cmd === 'git' && capturedArgs[0] === 'clone' && cloneAttempts === 1) {
-            cloneAttempts++;
-            mockChild.stdout!.emit('data', Buffer.from(''));
-            mockChild.emit!('close', 0);
-            return;
-          }
-
-          // All other commands succeed normally
-          let output = '';
-          if (cmd === 'git' && capturedArgs[0] === 'config' && capturedArgs[1] === '--get') {
-            output = repo;
-          } else if (cmd === 'git' && capturedArgs[0] === 'ls-remote') {
-            output = 'refs/heads/gh-pages';
-          } else if (cmd === 'git' && capturedArgs[0] === 'diff-index') {
-            mockChild.emit!('close', 1);
-            return;
-          }
-
-          mockChild.stdout!.emit('data', Buffer.from(output));
-          mockChild.emit!('close', 0);
-        });
-
-        return mockChild;
-      });
+      // The clone of the branch fails, the fallback clone of the default branch succeeds
+      spawnOverride = (args) =>
+        args[0] === 'clone' && args.includes('--branch')
+          ? { code: 128, stderr: 'fatal: Remote branch new-branch not found' }
+          : undefined;
 
       await ghPages.publish(basePath, options);
 
@@ -807,9 +760,9 @@ describe('gh-pages-fork publish() - behavioral snapshot (gh-pages v6.3.0 behavio
       expect(cloneCalls[0].args).toContain(branch);
       expect(cloneCalls[0].args).toContain('--depth');
 
-      // Second attempt: WITHOUT --branch and --depth (fallback)
+      // Second attempt: the default branch, without a checkout (the new branch starts empty)
       expect(cloneCalls[1].args).not.toContain('--branch');
-      expect(cloneCalls[1].args).not.toContain('--depth');
+      expect(cloneCalls[1].args).toContain('--no-checkout');
       expect(cloneCalls[1].args).toContain(repo);
     });
 
@@ -818,41 +771,8 @@ describe('gh-pages-fork publish() - behavioral snapshot (gh-pages v6.3.0 behavio
       currentTestContext.repo = repo;
       const options = { repo, message: 'Deploy' };
 
-      // Reset mock to implement no-changes behavior
-      mockSpawn.mockClear();
-      spawnCalls = [];
-
-      mockSpawn.mockImplementation((cmd: string, args: string[] | undefined, opts: unknown) => {
-        const capturedArgs = args || [];
-        spawnCalls.push({ cmd, args: capturedArgs, options: opts });
-
-        if (cmd === 'git' && capturedArgs[0]) {
-          if (!EXPECTED_GIT_COMMANDS.includes(capturedArgs[0])) {
-            throw new Error(`Unexpected git command: ${capturedArgs[0]}`);
-          }
-        }
-
-        const mockChild = createMockChildProcess();
-
-        setImmediate(() => {
-          let output = '';
-
-          if (cmd === 'git' && capturedArgs[0] === 'config' && capturedArgs[1] === '--get') {
-            output = repo;
-          } else if (cmd === 'git' && capturedArgs[0] === 'ls-remote') {
-            output = 'refs/heads/gh-pages';
-          } else if (cmd === 'git' && capturedArgs[0] === 'diff-index') {
-            // Return 0 = no changes (opposite of our normal mock)
-            mockChild.emit!('close', 0);
-            return;
-          }
-
-          mockChild.stdout!.emit('data', Buffer.from(output));
-          mockChild.emit!('close', 0);
-        });
-
-        return mockChild;
-      });
+      // exit code 0: no changes (opposite of the default)
+      spawnOverride = (args) => args[0] === 'diff-index' ? { code: 0 } : undefined;
 
       await ghPages.publish(basePath, options);
 
@@ -876,42 +796,6 @@ describe('gh-pages-fork publish() - behavioral snapshot (gh-pages v6.3.0 behavio
       currentTestContext.repo = repo;
       const options = { repo, message: 'Deploy' };
       // DON'T pass user option - publish() will call getUser()
-
-      // Reset mock to normal behavior (previous test modified it)
-      mockSpawn.mockClear();
-      spawnCalls = [];
-
-      mockSpawn.mockImplementation((cmd: string, args: string[] | undefined, opts: unknown) => {
-        const capturedArgs = args || [];
-        spawnCalls.push({ cmd, args: capturedArgs, options: opts });
-
-        if (cmd === 'git' && capturedArgs[0]) {
-          if (!EXPECTED_GIT_COMMANDS.includes(capturedArgs[0])) {
-            throw new Error(`Unexpected git command: ${capturedArgs[0]}`);
-          }
-        }
-
-        const mockChild = createMockChildProcess();
-
-        setImmediate(() => {
-          let output = '';
-
-          if (cmd === 'git' && capturedArgs[0] === 'config' && capturedArgs[1] === '--get' &&
-              capturedArgs[2] && capturedArgs[2].startsWith('remote.')) {
-            output = currentTestContext.repo || '';
-          } else if (cmd === 'git' && capturedArgs[0] === 'ls-remote') {
-            output = 'refs/heads/gh-pages';
-          } else if (cmd === 'git' && capturedArgs[0] === 'diff-index') {
-            mockChild.emit!('close', 1);
-            return;
-          }
-
-          mockChild.stdout!.emit('data', Buffer.from(output));
-          mockChild.emit!('close', 0);
-        });
-
-        return mockChild;
-      });
 
       await ghPages.publish(basePath, options);
 
@@ -943,18 +827,9 @@ describe('gh-pages-fork publish() - behavioral snapshot (gh-pages v6.3.0 behavio
    */
   describe('auth-failure regression (issue #205)', () => {
     it('engine.run() should reject when git clone fails with fatal: Authentication failed', async () => {
-      mockSpawn.mockImplementation((cmd: string, args: string[] | undefined) => {
-        const capturedArgs = args || [];
-        spawnCalls.push({ cmd, args: capturedArgs, options: undefined });
-        const child = createMockChildProcess();
-        setImmediate(() => {
-          child.stderr!.emit(
-            'data',
-            Buffer.from("fatal: Authentication failed for 'https://github.com/owner/repo.git'")
-          );
-          child.emit!('close', 128);
-        });
-        return child;
+      spawnOverride = () => ({
+        code: 128,
+        stderr: "fatal: Authentication failed for 'https://github.com/owner/repo.git'"
       });
 
       const options = {

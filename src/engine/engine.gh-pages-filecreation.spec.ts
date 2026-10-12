@@ -18,10 +18,10 @@
 import * as path from 'path';
 import * as fs from 'fs/promises';
 import * as os from 'os';
-import { execSync } from 'child_process';
 
 
 import * as ghPages from '../gh-pages-fork/lib';
+import { createBareRepo, git, seedBranch } from '../test-helpers/git';
 
 describe('gh-pages-fork CNAME/.nojekyll file creation (REAL filesystem)', () => {
   let tempDir: string;
@@ -43,22 +43,9 @@ describe('gh-pages-fork CNAME/.nojekyll file creation (REAL filesystem)', () => 
     await fs.mkdir(basePath, { recursive: true });
     await fs.writeFile(path.join(basePath, 'index.html'), '<html>test</html>');
 
-    // Create a local bare git repository that gh-pages can clone from
-    bareRepoPath = path.join(tempDir, 'bare-repo.git');
-    execSync(`git init --bare "${bareRepoPath}"`, { stdio: 'pipe' });
-
-    // Initialize the gh-pages branch in the bare repo with an initial commit
-    const initWorkDir = path.join(tempDir, 'init-work');
-    await fs.mkdir(initWorkDir, { recursive: true });
-    execSync(`git init "${initWorkDir}"`, { stdio: 'pipe' });
-    execSync(`git -C "${initWorkDir}" config user.email "test@test.com"`, { stdio: 'pipe' });
-    execSync(`git -C "${initWorkDir}" config user.name "Test"`, { stdio: 'pipe' });
-    await fs.writeFile(path.join(initWorkDir, 'README.md'), 'init');
-    execSync(`git -C "${initWorkDir}" add .`, { stdio: 'pipe' });
-    execSync(`git -C "${initWorkDir}" commit -m "init"`, { stdio: 'pipe' });
-    execSync(`git -C "${initWorkDir}" branch gh-pages`, { stdio: 'pipe' });
-    execSync(`git -C "${initWorkDir}" remote add origin "${bareRepoPath}"`, { stdio: 'pipe' });
-    execSync(`git -C "${initWorkDir}" push -u origin gh-pages`, { stdio: 'pipe' });
+    // Local bare repository with an existing gh-pages branch
+    bareRepoPath = createBareRepo(path.join(tempDir, 'bare-repo.git'));
+    await seedBranch(bareRepoPath, path.join(tempDir, 'init-work'), 'gh-pages', { 'README.md': 'init' });
   });
 
   afterEach(async () => {
@@ -72,7 +59,7 @@ describe('gh-pages-fork CNAME/.nojekyll file creation (REAL filesystem)', () => 
    */
   function readPublished(file: string): string | null {
     try {
-      return execSync(`git --git-dir="${bareRepoPath}" show gh-pages:${file}`, { stdio: 'pipe' }).toString();
+      return git(bareRepoPath, 'show', `gh-pages:${file}`);
     } catch {
       return null;
     }

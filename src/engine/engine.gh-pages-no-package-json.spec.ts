@@ -17,17 +17,11 @@
 import * as path from 'path';
 import * as fs from 'fs/promises';
 import * as os from 'os';
-import { execSync } from 'child_process';
 
 import { logging } from '@angular-devkit/core';
 
+import { createBareRepo, seedBranch, tree } from '../test-helpers/git';
 import * as engine from './engine';
-
-function git(args: string, cwd: string): string {
-  return execSync(`git -C "${cwd}" ${args}`, { stdio: ['pipe', 'pipe', 'pipe'] })
-    .toString()
-    .trim();
-}
 
 describe('engine.run() in a directory with no package.json (issue #203)', () => {
   let originalCwd: string;
@@ -55,20 +49,8 @@ describe('engine.run() in a directory with no package.json (issue #203)', () => 
     await fs.writeFile(path.join(distDir, 'index.html'), '<html>fresh</html>\n');
 
     // Bare repo + seed a gh-pages branch, so clone + checkout run the existing-branch path.
-    bareRepoPath = path.join(workDir, 'bare.git');
-    execSync(`git init --bare "${bareRepoPath}"`, { stdio: 'pipe' });
-
-    const seedDir = path.join(workDir, 'seed');
-    await fs.mkdir(seedDir, { recursive: true });
-    execSync(`git init "${seedDir}"`, { stdio: 'pipe' });
-    git('config user.email "seed@test.com"', seedDir);
-    git('config user.name "Seed"', seedDir);
-    git('checkout -b gh-pages', seedDir);
-    await fs.writeFile(path.join(seedDir, 'old.html'), '<html>old</html>');
-    git('add .', seedDir);
-    git('commit -m "seed"', seedDir);
-    git(`remote add origin "${bareRepoPath}"`, seedDir);
-    git('push origin gh-pages', seedDir);
+    bareRepoPath = createBareRepo(path.join(workDir, 'bare.git'));
+    await seedBranch(bareRepoPath, path.join(workDir, 'seed'), 'gh-pages', { 'old.html': '<html>old</html>' });
   });
 
   afterEach(async () => {
@@ -102,11 +84,7 @@ describe('engine.run() in a directory with no package.json (issue #203)', () => 
     );
 
     // Positive proof that the deploy actually landed:
-    const tree = git('ls-tree -r gh-pages --name-only', bareRepoPath)
-      .split('\n')
-      .filter(Boolean)
-      .sort();
-    expect(tree).toEqual(['index.html']);
+    expect(tree(bareRepoPath)).toEqual(['index.html']);
 
     // The clone went to the tmpdir fallback
     const cloning = messages.find((message) => message.startsWith('Cloning '));

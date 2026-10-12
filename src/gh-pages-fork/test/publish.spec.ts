@@ -2,26 +2,14 @@
  * publish() against real git repositories (local bare repos as remotes).
  */
 
-import { execFileSync } from 'child_process';
 import * as fs from 'fs/promises';
 import * as os from 'os';
 import * as path from 'path';
 
+import { commitCount, createBareRepo, git, seedBranch, tree } from '../../test-helpers/git';
 import { getCacheDir, publish, PublishOptions } from '../lib';
 
 const user = { name: 'Deploy Bot', email: 'bot@example.org' };
-
-function git(cwd: string, ...args: string[]): string {
-  return execFileSync('git', args, { cwd, stdio: ['pipe', 'pipe', 'pipe'] }).toString().trim();
-}
-
-function tree(remote: string, branch = 'gh-pages'): string[] {
-  return git(remote, 'ls-tree', '-r', '--name-only', branch).split('\n').filter(Boolean).sort();
-}
-
-function commitCount(remote: string, branch = 'gh-pages'): number {
-  return Number(git(remote, 'rev-list', '--count', branch));
-}
 
 describe('gh-pages-fork publish()', () => {
   let tempDir: string;
@@ -38,8 +26,7 @@ describe('gh-pages-fork publish()', () => {
     tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'gh-pages-fork-'));
     process.env.CACHE_DIR = path.join(tempDir, 'cache');
 
-    remote = path.join(tempDir, 'remote.git');
-    git(tempDir, 'init', '--bare', remote);
+    remote = createBareRepo(path.join(tempDir, 'remote.git'));
 
     dist = path.join(tempDir, 'dist');
     await fs.mkdir(path.join(dist, 'assets'), { recursive: true });
@@ -53,20 +40,12 @@ describe('gh-pages-fork publish()', () => {
     await fs.rm(tempDir, { recursive: true, force: true });
   });
 
-  async function seedBranch(): Promise<void> {
-    const seed = path.join(tempDir, 'seed');
-    git(tempDir, 'init', '-b', 'gh-pages', seed);
-    git(seed, 'config', 'user.name', 'Seed');
-    git(seed, 'config', 'user.email', 'seed@example.org');
-    await fs.mkdir(path.join(seed, '.github', 'workflows'), { recursive: true });
-    await fs.writeFile(path.join(seed, '.github', 'workflows', 'deploy.yml'), 'name: deploy');
-    await fs.writeFile(path.join(seed, '.gitignore'), 'node_modules');
-    await fs.writeFile(path.join(seed, 'stale.html'), 'stale');
-    git(seed, 'add', '.');
-    git(seed, 'commit', '-m', 'seed');
-    git(seed, 'update-index', '--add', '--cacheinfo', `160000,${git(seed, 'rev-parse', 'HEAD')},build`);
-    git(seed, 'commit', '-m', 'gitlink');
-    git(seed, 'push', remote, 'gh-pages');
+  function seedGhPagesBranch(): Promise<void> {
+    return seedBranch(remote, path.join(tempDir, 'seed'), 'gh-pages', {
+      '.github/workflows/deploy.yml': 'name: deploy',
+      '.gitignore': 'node_modules',
+      'stale.html': 'stale'
+    }, ['build']);
   }
 
   it('creates the branch on the first deploy', async () => {
@@ -77,7 +56,7 @@ describe('gh-pages-fork publish()', () => {
   });
 
   it('replaces the whole branch content, including dotfiles and submodule gitlinks', async () => {
-    await seedBranch();
+    await seedGhPagesBranch();
 
     await deploy();
 
@@ -104,7 +83,7 @@ describe('gh-pages-fork publish()', () => {
   });
 
   it('keeps existing files with add', async () => {
-    await seedBranch();
+    await seedGhPagesBranch();
 
     await deploy({ add: true });
 
@@ -186,16 +165,9 @@ describe('gh-pages-fork publish()', () => {
   });
 
   it('removes a submodule gitlink that sorts before .gitmodules', async () => {
-    const seed = path.join(tempDir, 'seed-gitmodules');
-    git(tempDir, 'init', '-b', 'gh-pages', seed);
-    git(seed, 'config', 'user.name', 'Seed');
-    git(seed, 'config', 'user.email', 'seed@example.org');
-    await fs.writeFile(path.join(seed, '.gitmodules'), '[submodule "shared"]\n\tpath = .github/actions/shared\n\turl = https://example.invalid/shared.git\n');
-    git(seed, 'add', '.');
-    git(seed, 'commit', '-m', 'seed');
-    git(seed, 'update-index', '--add', '--cacheinfo', `160000,${git(seed, 'rev-parse', 'HEAD')},.github/actions/shared`);
-    git(seed, 'commit', '-m', 'gitlink');
-    git(seed, 'push', remote, 'gh-pages');
+    await seedBranch(remote, path.join(tempDir, 'seed-gitmodules'), 'gh-pages', {
+      '.gitmodules': '[submodule "shared"]\n\tpath = .github/actions/shared\n\turl = https://example.invalid/shared.git\n'
+    }, ['.github/actions/shared']);
 
     await deploy();
 
@@ -203,14 +175,7 @@ describe('gh-pages-fork publish()', () => {
   });
 
   it('never publishes the default branch on the first deploy with add', async () => {
-    const source = path.join(tempDir, 'source');
-    git(tempDir, 'init', '-b', 'main', source);
-    git(source, 'config', 'user.name', 'Dev');
-    git(source, 'config', 'user.email', 'dev@example.org');
-    await fs.writeFile(path.join(source, 'environment.ts'), 'apiKey=secret');
-    git(source, 'add', '.');
-    git(source, 'commit', '-m', 'source');
-    git(source, 'push', remote, 'main');
+    await seedBranch(remote, path.join(tempDir, 'source'), 'main', { 'environment.ts': 'apiKey=secret' });
 
     await deploy({ add: true });
 
@@ -295,5 +260,23 @@ describe('gh-pages-fork publish()', () => {
     }
 
     expect(git(remote, 'log', '-1', '--format=%an <%ae>', 'gh-pages')).toBe('Local User <local@example.org>');
+  });
+
+  it('clones into the os temp directory when the cache directory is not writable', async () => {
+    const readOnly = path.join(tempDir, 'read-only');
+    await fs.mkdir(readOnly, { mode: 0o500 });
+    process.env.CACHE_DIR = readOnly;
+    const messages: string[] = [];
+
+    try {
+      await deploy({}, (message) => messages.push(message));
+    } finally {
+      await fs.chmod(readOnly, 0o700);
+    }
+
+    const cloneDir = messages.find((message) => message.startsWith('Cloning '))!.split(' into ')[1];
+    expect(path.dirname(cloneDir)).toBe(os.tmpdir());
+    expect(path.basename(cloneDir)).toMatch(/^angular-cli-ghpages-clone-/);
+    expect(tree(remote)).toEqual(['assets/app.js', 'index.html']);
   });
 });

@@ -202,7 +202,8 @@ The engine appends CI metadata to commit messages when running on:
 
 ## Testing
 
-- Uses Vitest (`npm test`), tests in `*.spec.ts` files
+- Uses Vitest (`npm test`, also type-checks all sources including specs), tests in `*.spec.ts` files
+- Shared helpers for specs that run real git or mock child processes: `src/test-helpers/git.ts` (not part of the package)
 - Requires git clone with `origin` remote (see `test-prerequisites.spec.ts`)
 - All tests preserve/restore `process.env` using `originalEnv` pattern
 - **No test counts in documentation** - they become stale quickly and are bragging

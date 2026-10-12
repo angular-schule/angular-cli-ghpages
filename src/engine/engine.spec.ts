@@ -13,15 +13,6 @@ vi.mock('../utils', async () => {
 
 import { pathExists } from '../utils';
 
-vi.mock('../gh-pages-fork/lib', async () => {
-  const actual = await vi.importActual<typeof import('../gh-pages-fork/lib')>('../gh-pages-fork/lib');
-  return {
-    ...actual,
-    publish: vi.fn()
-  };
-});
-
-import * as ghpages from '../gh-pages-fork/lib';
 
 describe('engine', () => {
   describe('prepareOptions', () => {
@@ -261,53 +252,6 @@ describe('engine', () => {
       await engine.prepareOptions(options, testLogger);
 
       expect(warnSpy).not.toHaveBeenCalledWith(expect.stringContaining('no-silent'));
-    });
-  });
-
-  describe('run - publish error handling', () => {
-    const logger = new logging.NullLogger();
-    const testDir = '/test/dist';
-    const options = { dotfiles: true, notfound: true, nojekyll: true };
-
-    beforeEach(() => {
-      vi.mocked(pathExists).mockResolvedValue(true);
-    });
-
-    afterEach(() => {
-      vi.mocked(pathExists).mockReset();
-      vi.mocked(ghpages.publish).mockReset();
-    });
-
-    it('should reject with the error of publish()', async () => {
-      const publishError = new Error('Git push failed: permission denied');
-      vi.mocked(ghpages.publish).mockRejectedValue(publishError);
-
-      await expect(engine.run(testDir, options, logger)).rejects.toBe(publishError);
-    });
-
-    it('should resolve when publish() resolves', async () => {
-      vi.mocked(ghpages.publish).mockResolvedValue(undefined);
-
-      await expect(engine.run(testDir, options, logger)).resolves.toBeUndefined();
-    });
-
-    it('should not publish during dry-run', async () => {
-      await engine.run(testDir, { ...options, dryRun: true }, logger);
-
-      expect(ghpages.publish).not.toHaveBeenCalled();
-    });
-
-    it('should forward publish() log messages to the logger', async () => {
-      const testLogger = new logging.Logger('test');
-      const infoSpy = vi.spyOn(testLogger, 'info');
-      const message = 'Cloning https://github.com/test/repo.git into /cache';
-      vi.mocked(ghpages.publish).mockImplementation(async (_dir, _options, log) => {
-        log?.(message);
-      });
-
-      await engine.run(testDir, options, testLogger);
-
-      expect(infoSpy).toHaveBeenCalledWith(message);
     });
   });
 });

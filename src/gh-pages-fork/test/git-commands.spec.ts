@@ -3,7 +3,6 @@
  * child_process is mocked; every command succeeds unless configured otherwise.
  */
 
-import { EventEmitter } from 'events';
 import * as fs from 'fs/promises';
 import * as os from 'os';
 import * as path from 'path';
@@ -12,6 +11,7 @@ const { mockSpawn } = vi.hoisted(() => ({ mockSpawn: vi.fn() }));
 
 vi.mock('child_process', () => ({ spawn: mockSpawn }));
 
+import { createMockChildProcess } from '../../test-helpers/git';
 import { publish } from '../lib';
 
 interface FakeResult {
@@ -47,13 +47,10 @@ describe('gh-pages-fork git commands', () => {
       calls.push(`${cmd} ${command}`);
       envs.push(options.env);
       const result = Object.entries(results).find(([key]) => command.startsWith(key))?.[1] ?? {};
-      const child = Object.assign(new EventEmitter(), {
-        stdout: new EventEmitter(),
-        stderr: new EventEmitter()
-      });
+      const child = createMockChildProcess();
       setImmediate(() => {
         if (result.output) {
-          child.stdout.emit('data', Buffer.from(result.output));
+          child.stdout!.emit('data', Buffer.from(result.output));
         }
         child.emit('close', result.code ?? 0);
       });
@@ -83,7 +80,7 @@ describe('gh-pages-fork git commands', () => {
 
     const cloneDir = cloneDirOf(calls[0]);
     expect(calls).toEqual([
-      `git clone ${repo} ${cloneDir} --branch gh-pages --single-branch --origin origin --depth 1`,
+      `git clone ${repo} ${cloneDir} --origin origin --branch gh-pages --single-branch --depth 1`,
       'git ls-remote --exit-code . origin/gh-pages',
       'git checkout gh-pages',
       'git clean -f -d',
@@ -115,14 +112,37 @@ describe('gh-pages-fork git commands', () => {
 
     const cloneDir = cloneDirOf(calls[0]);
     expect(calls.slice(0, 7)).toEqual([
-      `git clone ${repo} ${cloneDir} --branch gh-pages --single-branch --origin origin --depth 1`,
-      `git clone ${repo} ${cloneDir} --origin origin`,
+      `git clone ${repo} ${cloneDir} --origin origin --branch gh-pages --single-branch --depth 1`,
+      `git clone ${repo} ${cloneDir} --origin origin --no-checkout --depth 1`,
       'git ls-remote --exit-code . origin/gh-pages',
       'git checkout --orphan gh-pages',
       // the orphan branch starts empty (the cloned default branch's files are removed)
       'git rm --ignore-unmatch -r -f -- .gitmodules',
       'git rm --ignore-unmatch -r -f -- .',
       'git rm --ignore-unmatch -r -f -- .gitmodules'
+    ]);
+  });
+
+  it('falls back to a full clone when the server rejects a shallow clone', async () => {
+    results['ls-remote'] = { code: 2 };
+    mockSpawn.mockImplementation(((defaultImplementation) =>
+      (cmd: string, args: string[], options: { cwd: string; env: NodeJS.ProcessEnv }) => {
+        if (args[0] === 'clone' && args.includes('--depth')) {
+          calls.push(`${cmd} ${args.join(' ')}`);
+          const child = createMockChildProcess();
+          setImmediate(() => child.emit('close', 128));
+          return child;
+        }
+        return defaultImplementation(cmd, args, options);
+      })(mockSpawn.getMockImplementation()!));
+
+    await publish(dist, { repo, user: { name: 'Bot', email: 'bot@example.org' } });
+
+    const cloneDir = cloneDirOf(calls[0]);
+    expect(calls.slice(0, 3)).toEqual([
+      `git clone ${repo} ${cloneDir} --origin origin --branch gh-pages --single-branch --depth 1`,
+      `git clone ${repo} ${cloneDir} --origin origin --no-checkout --depth 1`,
+      `git clone ${repo} ${cloneDir} --origin origin --no-checkout`
     ]);
   });
 

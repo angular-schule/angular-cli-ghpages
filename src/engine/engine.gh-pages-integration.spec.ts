@@ -475,6 +475,19 @@ describe('engine - gh-pages-fork integration', () => {
       );
     });
 
+    it('should forward publish() log messages to the logger', async () => {
+      const testLogger = new logging.Logger('test');
+      const infoSpy = vi.spyOn(testLogger, 'info');
+      const message = 'Cloning https://github.com/test/repo.git into /cache';
+      ghpagesPublishSpy.mockImplementation(async (_dir, _options, log) => {
+        log?.(message);
+      });
+
+      await engine.run('/test/dist', { dotfiles: true, notfound: true, nojekyll: true }, testLogger);
+
+      expect(infoSpy).toHaveBeenCalledWith(message);
+    });
+
     it('should resolve when publish() resolves', async () => {
       ghpagesPublishSpy.mockResolvedValue(undefined);
 

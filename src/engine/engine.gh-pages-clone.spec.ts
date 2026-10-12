@@ -67,4 +67,20 @@ describe('gh-pages-fork temporary clone', () => {
 
     expect(await fs.readdir(cacheDir)).toEqual([]);
   });
+
+  it('should remove stale clones and clones of older versions, but keep recent clones', async () => {
+    await fs.mkdir(cacheDir, { recursive: true });
+    const stale = path.join(cacheDir, 'clone-stale');
+    const recent = path.join(cacheDir, 'clone-recent');
+    const legacy = path.join(cacheDir, 'https!x-access-token!secret@github.com!owner!repo.git');
+    for (const dir of [stale, recent, legacy]) {
+      await fs.mkdir(dir);
+    }
+    const sevenHoursAgo = new Date(Date.now() - 7 * 60 * 60 * 1000);
+    await fs.utimes(stale, sevenHoursAgo, sevenHoursAgo);
+
+    await ghPages.publish(basePath, { repo: bareRepoPath, user });
+
+    expect(await fs.readdir(cacheDir)).toEqual(['clone-recent']);
+  });
 });

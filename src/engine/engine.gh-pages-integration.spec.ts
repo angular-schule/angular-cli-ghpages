@@ -377,6 +377,18 @@ describe('engine - gh-pages-fork integration', () => {
         expect.stringContaining(testDir)
       );
     });
+
+    it('should hide an injected token in the dry-run output', async () => {
+      process.env.GH_TOKEN = 'secret-token';
+      const testLogger = new logging.Logger('test');
+      const infoSpy = vi.spyOn(testLogger, 'info');
+
+      await engine.run('/test/dist', { dryRun: true, repo: 'https://github.com/test/repo.git' }, testLogger);
+
+      const output = infoSpy.mock.calls.map(([message]) => message).join('\n');
+      expect(output).toContain('"repo": "https://***@github.com/test/repo.git"');
+      expect(output).not.toContain('secret-token');
+    });
   });
 
   describe('options transformation verification', () => {
@@ -497,6 +509,15 @@ describe('engine - gh-pages-fork integration', () => {
       await expect(
         engine.run(testDir, options, logger)
       ).resolves.toBeUndefined();
+    });
+
+    it('should preserve the exact error through rejection', async () => {
+      const detailedError = new Error('Remote rejected the push: pre-receive hook declined (refs/heads/gh-pages)');
+      ghpagesPublishSpy.mockRejectedValue(detailedError);
+
+      await expect(
+        engine.run('/test/dist', { dotfiles: true, notfound: true, nojekyll: true }, logger)
+      ).rejects.toBe(detailedError);
     });
 
     it('should reject when publish() rejects', async () => {

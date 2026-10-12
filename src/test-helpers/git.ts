@@ -7,6 +7,7 @@ import { ChildProcess, execFileSync } from 'child_process';
 import { EventEmitter } from 'events';
 import * as fs from 'fs/promises';
 import * as path from 'path';
+import { pathToFileURL } from 'url';
 
 /**
  * Run git in `cwd` and return its trimmed stdout.
@@ -27,11 +28,19 @@ export function commitCount(repo: string, branch = 'gh-pages'): number {
 }
 
 /**
- * Create a bare repository that serves as the remote.
+ * Create a bare repository that serves as the remote (default branch: main).
  */
 export function createBareRepo(dir: string): string {
-  git(path.dirname(dir), 'init', '--bare', dir);
+  git(path.dirname(dir), 'init', '--bare', '--initial-branch=main', dir);
   return dir;
+}
+
+/**
+ * file:// URL of a local repository: unlike a plain path, git honors --depth
+ * for it, so clones in tests are really shallow.
+ */
+export function fileUrl(repo: string): string {
+  return pathToFileURL(repo).href;
 }
 
 /**

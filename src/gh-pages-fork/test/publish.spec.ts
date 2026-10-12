@@ -6,7 +6,7 @@ import * as fs from 'fs/promises';
 import * as os from 'os';
 import * as path from 'path';
 
-import { commitCount, createBareRepo, git, seedBranch, tree } from '../../test-helpers/git';
+import { commitCount, createBareRepo, fileUrl, git, seedBranch, tree } from '../../test-helpers/git';
 import { getCacheDir, publish, PublishOptions } from '../lib';
 
 const user = { name: 'Deploy Bot', email: 'bot@example.org' };
@@ -19,7 +19,8 @@ describe('gh-pages-fork publish()', () => {
 
   // dotfiles/nojekyll off by default here, so the expected trees only show what a test enables
   function deploy(options: PublishOptions = {}, log?: (message: string) => void) {
-    return publish(dist, { repo: remote, user, message: 'deploy', dotfiles: false, nojekyll: false, ...options }, log);
+    // file:// URL: git honors --depth only for real URLs, so clones are really shallow
+    return publish(dist, { repo: fileUrl(remote), user, message: 'deploy', dotfiles: false, nojekyll: false, ...options }, log);
   }
 
   beforeEach(async () => {
@@ -155,13 +156,14 @@ describe('gh-pages-fork publish()', () => {
 
   it('hides credentials of the repository URL in log messages', async () => {
     const messages: string[] = [];
-    const repoWithToken = 'https://x-access-token:secret123@example.invalid/user/repo.git';
+    // port 9 on localhost refuses the connection immediately, no network needed
+    const repoWithToken = 'https://x-access-token:secret123@127.0.0.1:9/user/repo.git';
 
     await expect(
       publish(dist, { repo: repoWithToken, user }, (message) => messages.push(message))
     ).rejects.toThrow();
 
-    expect(messages[0].split(' into ')[0]).toBe('Cloning https://***@example.invalid/user/repo.git');
+    expect(messages[0].split(' into ')[0]).toBe('Cloning https://***@127.0.0.1:9/user/repo.git');
     expect(messages.join('\n')).not.toContain('secret123');
   });
 
@@ -263,7 +265,8 @@ describe('gh-pages-fork publish()', () => {
     expect(git(remote, 'log', '-1', '--format=%an <%ae>', 'gh-pages')).toBe('Local User <local@example.org>');
   });
 
-  it('clones into the os temp directory when the cache directory is not writable', async () => {
+  // chmod has no effect for root (Docker CI) and on Windows
+  it.skipIf(process.platform === 'win32' || process.getuid?.() === 0)('clones into the os temp directory when the cache directory is not writable', async () => {
     const readOnly = path.join(tempDir, 'read-only');
     await fs.mkdir(readOnly, { mode: 0o500 });
     process.env.CACHE_DIR = readOnly;
@@ -279,5 +282,103 @@ describe('gh-pages-fork publish()', () => {
     expect(path.dirname(cloneDir)).toBe(os.tmpdir());
     expect(path.basename(cloneDir)).toMatch(/^angular-cli-ghpages-clone-/);
     expect(tree(remote)).toEqual(['assets/app.js', 'index.html']);
+  });
+
+  it('copies more files than the copy concurrency', async () => {
+    const files = Array.from({ length: 40 }, (_, i) => `chunk-${String(i).padStart(2, '0')}.js`);
+    for (const file of files) {
+      await fs.writeFile(path.join(dist, 'assets', file), file);
+    }
+
+    await deploy();
+
+    expect(tree(remote)).toEqual([...files.map((file) => 'assets/' + file), 'assets/app.js', 'index.html'].sort());
+  });
+
+  it('includes nested dotfiles and dot-directories unless dotfiles is off', async () => {
+    await fs.mkdir(path.join(dist, '.well-known'));
+    await fs.writeFile(path.join(dist, '.well-known', 'security.txt'), 'Contact: mailto:security@example.org');
+    await fs.writeFile(path.join(dist, 'assets', '.gitkeep'), '');
+
+    await deploy({ dotfiles: true });
+    expect(tree(remote)).toEqual(['.htaccess', '.well-known/security.txt', 'assets/.gitkeep', 'assets/app.js', 'index.html']);
+
+    await deploy({ dotfiles: false });
+    expect(tree(remote)).toEqual(['assets/app.js', 'index.html']);
+  });
+
+  it('publishes to a non-default remote of the current repository', async () => {
+    const app = path.join(tempDir, 'app');
+    git(tempDir, 'init', app);
+    git(app, 'remote', 'add', 'upstream', fileUrl(remote));
+    const cwd = process.cwd();
+    process.chdir(app);
+
+    try {
+      await publish(dist, { remote: 'upstream', user, message: 'deploy', dotfiles: false, nojekyll: false });
+      await publish(dist, { remote: 'upstream', user, message: 'redeploy', dotfiles: true, nojekyll: false });
+    } finally {
+      process.chdir(cwd);
+    }
+
+    expect(tree(remote)).toEqual(['.htaccess', 'assets/app.js', 'index.html']);
+    expect(commitCount(remote)).toBe(2);
+  });
+
+  it('keeps the history when the shallow clone fails once', async () => {
+    await deploy();
+    const firstCommit = git(remote, 'rev-parse', 'gh-pages');
+    const flakyGit = path.join(tempDir, 'flaky-git');
+    const flag = path.join(tempDir, 'failed-once');
+    await fs.writeFile(flakyGit, [
+      '#!/bin/sh',
+      `for arg in "$@"; do if [ "$arg" = "--depth" ] && [ ! -f "${flag}" ]; then touch "${flag}"; echo "error: RPC failed; HTTP 503" >&2; exit 128; fi; done`,
+      'exec git "$@"',
+      ''
+    ].join('\n'));
+    await fs.chmod(flakyGit, 0o755);
+    await fs.writeFile(path.join(dist, 'index.html'), '<h1>v2</h1>');
+
+    await deploy({ git: flakyGit });
+
+    expect(git(remote, 'rev-parse', 'gh-pages~1')).toBe(firstCommit);
+  });
+
+  it('rejects when basePath is not a directory', async () => {
+    const file = path.join(dist, 'index.html');
+
+    await expect(publish(file, { repo: fileUrl(remote), user })).rejects.toThrow('The "base" option must be an existing directory');
+  });
+
+  it('commits with the git user from the environment when the project has none', async () => {
+    const app = path.join(tempDir, 'no-user');
+    git(tempDir, 'init', app);
+    const cwd = process.cwd();
+    process.chdir(app);
+    process.env.GIT_AUTHOR_NAME = process.env.GIT_COMMITTER_NAME = 'Env User';
+    process.env.GIT_AUTHOR_EMAIL = process.env.GIT_COMMITTER_EMAIL = 'env@example.org';
+
+    try {
+      await publish(dist, { repo: fileUrl(remote), message: 'deploy', nojekyll: false });
+    } finally {
+      process.chdir(cwd);
+    }
+
+    expect(git(remote, 'log', '-1', '--format=%an <%ae>', 'gh-pages')).toBe('Env User <env@example.org>');
+  });
+
+  it('publishes files that match the global gitignore of the user', async () => {
+    const ignoreFile = path.join(tempDir, 'global-ignore');
+    await fs.writeFile(ignoreFile, '*.map\n.htaccess\n');
+    await fs.writeFile(process.env.GIT_CONFIG_GLOBAL!, `[core]\n\texcludesFile = ${ignoreFile}\n`);
+    await fs.writeFile(path.join(dist, 'assets', 'app.js.map'), '{}');
+
+    try {
+      await deploy({ dotfiles: true });
+    } finally {
+      await fs.writeFile(process.env.GIT_CONFIG_GLOBAL!, '');
+    }
+
+    expect(tree(remote)).toEqual(['.htaccess', 'assets/app.js', 'assets/app.js.map', 'index.html']);
   });
 });

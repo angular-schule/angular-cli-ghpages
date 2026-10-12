@@ -2,7 +2,7 @@ import * as fs from 'fs/promises';
 import * as os from 'os';
 import * as path from 'path';
 
-import { getCacheDir } from '../lib';
+import { getCacheDir, redact } from '../lib';
 
 describe('gh-pages-fork getCacheDir()', () => {
   let tempDir: string;
@@ -57,5 +57,21 @@ describe('gh-pages-fork getCacheDir()', () => {
     await fs.writeFile(path.join(tempDir, 'package.json'), '{}');
 
     expect(getCacheDir(tempDir)).toBe(path.join(tempDir, 'node_modules', '.cache', 'gh-pages'));
+  });
+});
+
+describe('gh-pages-fork redact()', () => {
+  it('hides a token and a password', () => {
+    expect(redact('https://x-access-token:secret@github.com/o/r.git')).toBe('https://***@github.com/o/r.git');
+  });
+
+  it('hides a username-only userinfo (it may be a token)', () => {
+    expect(redact('https://ghp_token@github.com/o/r.git')).toBe('https://***@github.com/o/r.git');
+  });
+
+  it('keeps URLs without credentials, scp-like addresses and local paths', () => {
+    for (const repo of ['https://github.com/o/r.git', 'git@github.com:o/r.git', '/srv/git/r.git', '../r.git']) {
+      expect(redact(repo)).toBe(repo);
+    }
   });
 });

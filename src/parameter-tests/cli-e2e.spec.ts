@@ -1,6 +1,9 @@
 import path from 'path';
 import fs from 'fs';
-import { execSync } from 'child_process';
+import os from 'os';
+import { execSync, spawnSync } from 'child_process';
+
+import { createBareRepo, tree } from '../test-helpers/git';
 
 /**
  * END-TO-END CLI TESTS
@@ -35,12 +38,28 @@ function runCli(args: string): string {
 
   const program = path.resolve(__dirname, '../dist/angular-cli-ghpages');
   // Clear CI environment variables to ensure consistent test behavior across environments
+  return execSync(`node ${program} --dry-run ${args}`, { env: cliEnv() }).toString();
+}
+
+// No CI metadata, no injected token: consistent test behavior across environments
+function cliEnv(): NodeJS.ProcessEnv {
   const env = { ...process.env };
   delete env.TRAVIS;
   delete env.CIRCLECI;
   delete env.GITHUB_ACTIONS;
+  delete env.GH_TOKEN;
+  delete env.PERSONAL_TOKEN;
+  delete env.GITHUB_TOKEN;
+  return env;
+}
 
-  return execSync(`node ${program} --dry-run ${args}`, { env }).toString();
+/**
+ * Run the CLI without --dry-run; returns exit code and combined output.
+ */
+function runCliRaw(args: string[], cwd: string): { status: number | null; output: string } {
+  const program = path.resolve(__dirname, '../dist/angular-cli-ghpages');
+  const result = spawnSync('node', [program, ...args], { cwd, env: cliEnv() });
+  return { status: result.status, output: result.stdout.toString() + result.stderr.toString() };
 }
 
 function parseJsonFromCliOutput(output: string): DryRunOutput {
@@ -385,6 +404,78 @@ describe('CLI End-to-End Tests', () => {
       const json = parseJsonFromCliOutput(output);
 
       expect(json.cname).toBe(expectedMessage);
+    });
+  });
+
+  describe('Argument validation', () => {
+    it('should reject positional arguments', () => {
+      const result = runCliRaw(['dist/my-app/browser', '--dry-run'], path.resolve(__dirname, '..'));
+
+      expect(result.status).toBe(1);
+      expect(result.output).toContain('Unexpected argument(s): dist/my-app/browser');
+    });
+
+    it('should treat --add=false as add disabled', () => {
+      const output = runCli('--add=false');
+      const json = parseJsonFromCliOutput(output);
+
+      expect(json.add).toBe('existing files will be removed from the branch before adding the new ones');
+    });
+
+    it('should treat --add=true as add enabled', () => {
+      const output = runCli('--add=true');
+      const json = parseJsonFromCliOutput(output);
+
+      expect(json.add).toBe('all files will be added to the branch. Existing files will not be removed');
+    });
+
+    it('should accept an absolute --dir', () => {
+      // an existing absolute path, resolved independently of the cwd
+      const dir = path.resolve(__dirname, '..', 'dist');
+      const output = execSync(`node ${path.join(dir, 'angular-cli-ghpages')} --dry-run --dir=${dir} --repo=https://github.com/test/repo.git`, { cwd: os.tmpdir(), env: cliEnv() }).toString();
+      const json = parseJsonFromCliOutput(output);
+
+      expect(json.dir).toBe(dir);
+    });
+  });
+
+  describe('Real deploy', () => {
+    let tempDir: string;
+
+    beforeEach(() => {
+      tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'cli-e2e-'));
+    });
+
+    afterEach(() => {
+      fs.rmSync(tempDir, { recursive: true, force: true });
+    });
+
+    it('should publish the directory to the repository', () => {
+      const remote = createBareRepo(path.join(tempDir, 'remote.git'));
+      const dist = path.join(tempDir, 'dist');
+      fs.mkdirSync(dist);
+      fs.writeFileSync(path.join(dist, 'index.html'), '<h1>cli</h1>');
+
+      const result = runCliRaw(
+        [`--dir=${dist}`, `--repo=${remote}`, '--name=CLI Bot', '--email=cli@example.org', '--cname=example.org'],
+        tempDir
+      );
+
+      expect(result.output).toContain('Successfully published via angular-cli-ghpages!');
+      expect(result.status).toBe(0);
+      expect(tree(remote)).toEqual(['.nojekyll', '404.html', 'CNAME', 'index.html']);
+    });
+
+    it('should exit with 1 when the deploy fails', () => {
+      const dist = path.join(tempDir, 'dist');
+      fs.mkdirSync(dist);
+      fs.writeFileSync(path.join(dist, 'index.html'), '<h1>cli</h1>');
+
+      const result = runCliRaw([`--dir=${dist}`, `--repo=${path.join(tempDir, 'missing.git')}`], tempDir);
+
+      expect(result.status).toBe(1);
+      expect(result.output).toContain('An error occurred when trying to deploy');
+      expect(result.output).not.toContain('Successfully published');
     });
   });
 });

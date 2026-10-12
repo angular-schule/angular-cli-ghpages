@@ -102,7 +102,6 @@ describe('engine', () => {
       );
     });
 
-    // NEW in 0.6.2: always discover remote URL (if not set)
     /**
      * Environment assumptions for this test:
      * - Tests must be run from a git clone of angular-schule/angular-cli-ghpages
@@ -111,8 +110,7 @@ describe('engine', () => {
      *
      * If run from a bare copy of files (no .git), this test will fail by design.
      */
-    // this allows us to inject tokens from environment even if --repo is not set manually
-    // it uses gh-pages lib directly for this
+    // the remote url is discovered, so tokens from the environment get injected even without --repo
     it('should discover the remote url, if no --repo is set', async () => {
       const options = {};
       const finalOptions = await engine.prepareOptions(options, logger);

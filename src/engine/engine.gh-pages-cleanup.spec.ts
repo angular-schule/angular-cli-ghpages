@@ -2,7 +2,7 @@
  * End-to-end integration test for issue #204 — REAL git, REAL gh-pages-fork, REAL filesystem.
  *
  * No mocks. This test proves that a deploy produces a clean gh-pages commit
- * when the branch previously contained dotfiles and submodule gitlinks.
+ * when the branch contains dotfiles and submodule gitlinks before the deploy.
  *
  * Flow:
  *   1. Create a local bare git repo (serves as "remote").

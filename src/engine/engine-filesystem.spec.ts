@@ -120,6 +120,17 @@ describe('engine - real filesystem tests', () => {
       expect(exists).toBe(false);
     });
 
+    it('should keep an existing 404.html', async () => {
+      const notFoundContent = '<html><body>Custom 404</body></html>';
+      await fs.writeFile(path.join(testDir, 'index.html'), '<html><body>Index</body></html>');
+      await fs.writeFile(path.join(testDir, '404.html'), notFoundContent);
+
+      await engine.run(testDir, { notfound: true, nojekyll: false, dotfiles: true }, logger);
+
+      expect(await fs.readFile(path.join(testDir, '404.html'), 'utf-8')).toBe(notFoundContent);
+      expect(loggerInfoSpy).toHaveBeenCalledWith('404.html already exists in the dist folder and is kept.');
+    });
+
     it('should NOT create 404.html when dry-run is true', async () => {
       const indexPath = path.join(testDir, 'index.html');
       await fs.writeFile(indexPath, '<html><body>Test</body></html>');
@@ -205,7 +216,7 @@ describe('engine - real filesystem tests', () => {
       expect(capturedOptions.cname).toBe(testDomain);
       expect(capturedOptions.nojekyll).toBe(true);
 
-      // Verify 404.html is still created by us (not delegated to publish())
+      // 404.html is created by the engine in dist, not by publish()
       const notFoundPath = path.join(testDir, '404.html');
       expect(await pathExists(notFoundPath)).toBe(true);
     });

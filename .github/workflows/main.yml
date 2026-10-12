@@ -34,6 +34,42 @@ jobs:
           path: src/dist
           retention-days: 1
 
+  # Install the built package fresh (like `npx angular-cli-ghpages` in a
+  # non-Angular project) on every Node.js version that engines allows and
+  # deploy with the standalone CLI to a local bare repository.
+  test-node-versions:
+    needs: build-and-test
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node-version: ['18.19.1', '20', '22', '24']
+
+    steps:
+      - uses: actions/setup-node@v7
+        with:
+          node-version: ${{ matrix.node-version }}
+
+      - name: Download build artifact
+        uses: actions/download-artifact@v8
+        with:
+          name: dist
+          path: dist
+
+      - name: Install the package
+        run: |
+          (cd dist && npm pack --pack-destination /tmp)
+          mkdir /tmp/site && cd /tmp/site
+          npm init -y > /dev/null
+          npm install --no-fund --no-audit /tmp/angular-cli-ghpages-*.tgz
+
+      - name: Deploy with the standalone CLI
+        run: |
+          cd /tmp/site
+          git init --bare --initial-branch=main /tmp/remote.git
+          mkdir public && echo '<h1>site</h1>' > public/index.html
+          node node_modules/angular-cli-ghpages/angular-cli-ghpages --dir=public --repo=/tmp/remote.git --name="CI Bot" --email="ci@test.local"
+          git --git-dir=/tmp/remote.git ls-tree --name-only gh-pages | sort | tr '\n' ' ' | grep -x '.nojekyll 404.html index.html '
+
   # Test ng add and ng deploy across multiple Angular versions (sequentially)
   # This catches breaking changes in angular.json structure
   # Each test creates its own git repo and deploys locally to verify the full flow

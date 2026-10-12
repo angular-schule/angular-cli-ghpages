@@ -1,11 +1,12 @@
 /**
  * Tests for angular-cli-ghpages fork-specific fixes and features
  *
- * This file contains tests for the 2 intentional improvements we made
+ * This file contains tests for the 3 intentional improvements we made
  * to commander v3.0.2 for angular-cli-ghpages:
  *
- * FIX 1/2: Tightened negate detection regex
- * FIX 2/2: Support for short-only and custom version flags
+ * FIX 1/3: Tightened negate detection regex
+ * FIX 2/3: Support for short-only and custom version flags
+ * FIX 3/3: Boolean flags accept "=true" / "=false"
  *
  * These tests do NOT exist in the original commander v3.0.2.
  */
@@ -234,3 +235,54 @@ describe('Fork Fix 2: Version short-only and custom flags', () => {
 });
 
 export {};
+
+describe('Fork Fix 3: Boolean flags with a value', () => {
+  let exitSpy: MockInstance;
+  let errorSpy: MockInstance;
+
+  beforeEach(() => {
+    exitSpy = vi.spyOn(process, 'exit').mockImplementation(() => {
+      throw new Error('process.exit');
+    });
+    errorSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+  });
+
+  afterEach(() => {
+    exitSpy.mockRestore();
+    errorSpy.mockRestore();
+  });
+
+  function parse(...args: string[]) {
+    const program = new commander.Command();
+    program
+      .option('-a, --add', 'add')
+      .option('--no-dotfiles', 'no dotfiles')
+      .option('-d, --dir <dir>', 'dir');
+    program.parse(['node', 'test', ...args]);
+    return program;
+  }
+
+  it('sets the flag for =true', () => {
+    expect(parse('--add=true').add).toBe(true);
+  });
+
+  it('leaves the flag unset for =false', () => {
+    const program = parse('--add=false');
+    expect(program.add).toBeUndefined();
+    expect(program.args).toEqual([]);
+  });
+
+  it('handles negated flags', () => {
+    expect(parse('--no-dotfiles=true').dotfiles).toBe(false);
+    expect(parse('--no-dotfiles=false').dotfiles).toBe(true);
+  });
+
+  it('rejects other values', () => {
+    expect(() => parse('--add=yes')).toThrow('process.exit');
+    expect(errorSpy.mock.calls[0][0]).toContain("doesn't take a value");
+  });
+
+  it('keeps splitting options with an argument', () => {
+    expect(parse('--dir=dist/app').dir).toBe('dist/app');
+  });
+});

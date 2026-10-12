@@ -53,6 +53,32 @@ describe('ng-add', () => {
     });
   });
 
+  describe('existing deploy target', () => {
+    it('keeps an existing angular-cli-ghpages deploy target when run again', async () => {
+      const tree = Tree.empty();
+      tree.create('angular.json', JSON.stringify(generateAngularJson()));
+      const first = await ngAdd({ project: PROJECT_NAME })(tree, mockContext);
+      const angularJson = first.read('angular.json')!.toString();
+
+      const second = await ngAdd({ project: PROJECT_NAME })(first, mockContext);
+
+      expect(second.read('angular.json')!.toString()).toBe(angularJson);
+      expect(mockLogger.info).toHaveBeenCalledWith(`The project "${PROJECT_NAME}" already has a deploy target for angular-cli-ghpages.`);
+    });
+
+    it('refuses to replace a deploy target of another builder', async () => {
+      const angularJson = generateAngularJson();
+      (angularJson.projects[PROJECT_NAME].architect as Record<string, unknown>).deploy = { builder: '@angular/fire:deploy' };
+      const tree = Tree.empty();
+      tree.create('angular.json', JSON.stringify(angularJson));
+
+      await expect(ngAdd({ project: PROJECT_NAME })(tree, mockContext)).rejects.toThrow(
+        `The project "${PROJECT_NAME}" already has a deploy target with the builder "@angular/fire:deploy". ` +
+        'Remove it from angular.json to use angular-cli-ghpages.'
+      );
+    });
+  });
+
   describe('project selection', () => {
 
     it('should select the first project if there is only one', async () => {

@@ -12,6 +12,7 @@ import { logging } from '@angular-devkit/core';
 import { MockInstance } from 'vitest';
 
 import * as helpers from './engine.prepare-options-helpers';
+import { getRepo } from '../gh-pages-fork/lib';
 import { Schema } from '../deploy/schema';
 
 describe('prepareOptions helpers - intensive tests', () => {
@@ -238,6 +239,21 @@ describe('prepareOptions helpers - intensive tests', () => {
       expect(warnSpy).toHaveBeenCalledWith(expectedWarning);
     });
 
+    it('should warn for --no-silent of the standalone CLI (silent: false)', () => {
+      const origOptions = { silent: false };
+      const expectedWarning = 'The --no-silent parameter is deprecated and no longer needed. Verbose logging is now always enabled. This parameter will be ignored.';
+
+      helpers.warnDeprecatedParameters(origOptions, testLogger);
+
+      expect(warnSpy).toHaveBeenCalledWith(expectedWarning);
+    });
+
+    it('should NOT warn for the standalone CLI default (silent: true)', () => {
+      helpers.warnDeprecatedParameters({ silent: true }, testLogger);
+
+      expect(warnSpy).not.toHaveBeenCalled();
+    });
+
     it('should NOT warn when noSilent is undefined', () => {
       const origOptions: Schema = {};
 
@@ -317,6 +333,30 @@ describe('prepareOptions helpers - intensive tests', () => {
         'Deploy to gh-pages\n\n' +
         'Triggered by commit: https://github.com/angular-schule/angular-cli-ghpages/commit/1234567890abcdef\n' +
         'GitHub Actions build: https://github.com/angular-schule/angular-cli-ghpages/actions/runs/9876543210';
+
+      expect(options.message).toBe(expectedMessage);
+    });
+
+    it('should use GITHUB_SERVER_URL for both links (GitHub Enterprise Server)', () => {
+      process.env.GITHUB_ACTIONS = 'true';
+      process.env.GITHUB_SERVER_URL = 'https://ghes.example.com';
+      process.env.GITHUB_REPOSITORY = 'org/repo';
+      process.env.GITHUB_SHA = 'abc123';
+      process.env.GITHUB_RUN_ID = '42';
+
+      const options: helpers.PreparedOptions = {
+        message: baseMessage,
+        dotfiles: true,
+        notfound: true,
+        nojekyll: true
+      };
+
+      helpers.appendCIMetadata(options);
+
+      const expectedMessage =
+        'Deploy to gh-pages\n\n' +
+        'Triggered by commit: https://ghes.example.com/org/repo/commit/abc123\n' +
+        'GitHub Actions build: https://ghes.example.com/org/repo/actions/runs/42';
 
       expect(options.message).toBe(expectedMessage);
     });
@@ -520,7 +560,7 @@ describe('prepareOptions helpers - intensive tests', () => {
 
   });
 
-  describe('getRemoteUrl', () => {
+  describe('remote URL discovery (gh-pages-fork getRepo)', () => {
     /**
      * Environment assumptions for this test:
      * - Tests must be run from a git clone of angular-schule/angular-cli-ghpages
@@ -537,12 +577,12 @@ describe('prepareOptions helpers - intensive tests', () => {
       const { execSync } = require('child_process');
       const expectedUrl = execSync('git config --get remote.origin.url', { encoding: 'utf8' }).trim();
 
-      // Verify getRemoteUrl returns the same value
-      const result = await helpers.getRemoteUrl(options);
+      // Verify getRepo returns the same value
+      const result = await getRepo(options);
       expect(result).toBe(expectedUrl);
 
       // Verify consistency across multiple calls
-      const result2 = await helpers.getRemoteUrl(options);
+      const result2 = await getRepo(options);
       expect(result2).toBe(expectedUrl);
       expect(result).toBe(result2);
     });
@@ -552,7 +592,7 @@ describe('prepareOptions helpers - intensive tests', () => {
         remote: 'nonexistent-remote-12345' // Remote that definitely doesn't exist
       };
 
-      await expect(helpers.getRemoteUrl(options))
+      await expect(getRepo(options))
         .rejects
         .toThrow('Failed to get remote.nonexistent-remote-12345.url (task must either be run in a git repository with a configured nonexistent-remote-12345 remote or must be configured with the "repo" option).');
     });
@@ -568,7 +608,7 @@ describe('prepareOptions helpers - intensive tests', () => {
         const options = { remote: 'origin' };
 
         // Same error for both "not in a git repo" and "remote doesn't exist"
-        await expect(helpers.getRemoteUrl(options))
+        await expect(getRepo(options))
           .rejects
           .toThrow('Failed to get remote.origin.url (task must either be run in a git repository with a configured origin remote or must be configured with the "repo" option).');
       } finally {

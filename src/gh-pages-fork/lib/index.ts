@@ -23,6 +23,7 @@ export interface PublishOptions {
   add?: boolean;
   dotfiles?: boolean;
   nojekyll?: boolean;
+  notfound?: boolean;
   cname?: string;
   user?: User;
 }
@@ -41,7 +42,8 @@ export const defaults = {
   branch: 'gh-pages',
   remote: 'origin',
   message: 'Auto-generated commit',
-  nojekyll: true
+  nojekyll: true,
+  notfound: true
 };
 
 /** Prefix of temporary clones in the os temp directory */
@@ -198,7 +200,8 @@ export function redact(repo: string): string {
  * Publish the files in `basePath` to a branch of a git repository.
  *
  * Prepares the branch in a fresh temporary directory without checking out its
- * files, writes the files from `basePath` (plus .nojekyll and CNAME), stages
+ * files, writes the files from `basePath` (plus .nojekyll, CNAME and a 404.html
+ * copy of index.html), stages
  * them as the complete new content of the branch (with `add`: on top of the
  * existing files), commits and pushes. The temporary clone is removed when
  * publish() finishes; a token in the repository URL is only passed on the
@@ -246,6 +249,16 @@ export async function publish(basePath: string, config: PublishOptions, log: Log
     if (options.cname) {
       log(`Creating CNAME for ${options.cname}`);
       await fs.writeFile(path.join(git.cwd, 'CNAME'), options.cname);
+    }
+
+    // 404.html for SPA routing on GitHub Pages; a 404.html of basePath overwrites it below
+    if (options.notfound) {
+      if (files.includes('index.html')) {
+        await fs.copyFile(path.join(basePath, 'index.html'), path.join(git.cwd, '404.html'));
+        log(files.includes('404.html') ? '404.html of the directory is kept' : '404.html file created');
+      } else {
+        log('index.html could not be copied to 404.html. Proceeding without it.');
+      }
     }
 
     log('Copying files');

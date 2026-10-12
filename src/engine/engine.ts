@@ -1,7 +1,4 @@
 import {logging} from '@angular-devkit/core';
-import {constants as fsConstants} from 'fs';
-import * as fs from 'fs/promises';
-import * as path from 'path';
 
 import {Schema} from '../deploy/schema';
 import * as ghpages from '../gh-pages-fork/lib';
@@ -24,7 +21,6 @@ export async function run(
   const prepared = await prepareOptions(options, logger);
 
   await checkIfDistFolderExists(dir);
-  await createNotFoundFile(dir, prepared, logger);
   await publishViaGhPages(dir, prepared, logger);
 
   if (!prepared.dryRun) {
@@ -87,45 +83,6 @@ async function checkIfDistFolderExists(dir: string) {
   }
 }
 
-async function createNotFoundFile(
-  dir: string,
-  options: {
-    notfound: boolean,
-    dryRun?: boolean
-  },
-  logger: logging.LoggerApi
-) {
-  if (!options.notfound) {
-    return;
-  }
-
-  if (options.dryRun) {
-    logger.info('Dry-run / SKIPPED: copying of index.html to 404.html');
-    return;
-  }
-
-  // Note:
-  // There is no guarantee that there will be an index.html file,
-  // as we may may specify a custom index file or a different folder is going to be deployed.
-  const indexHtml = path.join(dir, 'index.html');
-  const notFoundFile = path.join(dir, '404.html');
-
-  if (await pathExists(notFoundFile)) {
-    logger.info('404.html already exists in the dist folder and is kept.');
-    return;
-  }
-
-  try {
-    await fs.copyFile(indexHtml, notFoundFile, fsConstants.COPYFILE_EXCL);
-    logger.info('404.html file created');
-  } catch (err) {
-    const message = err instanceof Error ? err.message : String(err);
-    logger.info('index.html could not be copied to 404.html. Proceeding without it.');
-    logger.debug('Diagnostic info: ' + message);
-    return;
-  }
-}
-
 async function publishViaGhPages(
   dir: string,
   options: PreparedOptions,
@@ -133,6 +90,9 @@ async function publishViaGhPages(
 ) {
   if (options.dryRun) {
     // options.repo may contain an injected token, so its credentials are hidden
+    if (options.notfound) {
+      logger.info('Dry-run / SKIPPED: copying of index.html to 404.html');
+    }
     logger.info(
       `Dry-run / SKIPPED: publishing folder '${dir}' with the following options: ` +
       JSON.stringify(
@@ -171,7 +131,8 @@ async function publishViaGhPages(
       dotfiles: options.dotfiles,
       user: options.user,
       cname: options.cname,
-      nojekyll: options.nojekyll
+      nojekyll: options.nojekyll,
+      notfound: options.notfound
     },
     (message) => logger.info(message)
   );

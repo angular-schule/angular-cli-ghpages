@@ -6,11 +6,13 @@
  */
 
 import * as cp from 'child_process';
+import * as fs from 'fs/promises';
 import * as path from 'path';
 
 /**
  * Error for a git process that didn't exit with code 0.
- * `message` holds the combined stderr/stdout output of the process.
+ * `message` holds the combined stderr/stdout output of the process
+ * (plus the signal, if the process was killed).
  */
 export class ProcessError extends Error {
   constructor(
@@ -24,6 +26,7 @@ export class ProcessError extends Error {
 
 export interface SpawnOptions {
   cwd?: string;
+  /** Complete environment of the process (default: process.env) */
   env?: NodeJS.ProcessEnv;
 }
 
@@ -36,7 +39,7 @@ export function spawn(exe: string, args: string[], options: SpawnOptions = {}): 
   return new Promise((resolve, reject) => {
     const child = cp.spawn(exe, args, {
       cwd: options.cwd || process.cwd(),
-      env: options.env ? { ...process.env, ...options.env } : process.env
+      env: options.env ?? process.env
     });
     const stdout: string[] = [];
     const output: string[] = [];
@@ -49,12 +52,35 @@ export function spawn(exe: string, args: string[], options: SpawnOptions = {}): 
     child.on('close', (code: number | null, signal: NodeJS.Signals | null) => {
       if (code === 0) {
         resolve(stdout.join(''));
-      } else {
-        const reason = signal ? 'Process killed by ' + signal : 'Process failed: ' + code;
-        reject(new ProcessError(code, output.join('') || reason));
+        return;
       }
+      const message = [output.join('').trim(), signal ? 'Process killed by ' + signal : ''].filter(Boolean).join('\n');
+      reject(new ProcessError(code, message || 'Process failed: ' + code));
     });
   });
+}
+
+/**
+ * Variables that point git at a repository. A deploy started by git itself
+ * (hooks, `!` aliases, worktrees) inherits them; commands for the clone must
+ * never act on that repository.
+ */
+const REPOSITORY_VARIABLES = [
+  'GIT_DIR', 'GIT_WORK_TREE', 'GIT_IMPLICIT_WORK_TREE', 'GIT_INDEX_FILE',
+  'GIT_OBJECT_DIRECTORY', 'GIT_ALTERNATE_OBJECT_DIRECTORIES', 'GIT_COMMON_DIR',
+  'GIT_GRAFT_FILE', 'GIT_NO_REPLACE_OBJECTS', 'GIT_REPLACE_REF_BASE',
+  'GIT_PREFIX', 'GIT_SHALLOW_FILE'
+];
+
+/**
+ * process.env without the repository variables, plus `extra`.
+ */
+function isolatedEnv(extra: NodeJS.ProcessEnv = {}): NodeJS.ProcessEnv {
+  const env = { ...process.env };
+  for (const name of REPOSITORY_VARIABLES) {
+    delete env[name];
+  }
+  return { ...env, ...extra };
 }
 
 export interface CloneOptions {
@@ -74,41 +100,73 @@ export class Git {
    * @param cwd Repository directory
    * @param cmd Git executable
    * @param args Arguments placed before every git subcommand (e.g. `-c key=value`)
-   * @param env Additional environment variables for every git process
+   * @param env Complete environment of every git process (default: process.env)
+   * @param isNewBranch The branch doesn't exist on the remote yet (set by Git.clone)
    */
   constructor(
     public readonly cwd: string,
     public readonly cmd = 'git',
     private readonly args: string[] = [],
-    private readonly env?: NodeJS.ProcessEnv
+    private readonly env?: NodeJS.ProcessEnv,
+    public readonly isNewBranch = false
   ) {}
 
   /**
-   * Clone a branch of a repo into the given (empty or missing) dir.
+   * Whether `branch` exists in the repository `repo`.
+   * Rejects for every other failure (authentication, network, missing repository).
+   */
+  static async branchExists(repo: string, branch: string, cmd: string, args: string[] = []): Promise<boolean> {
+    try {
+      await spawn(cmd, [...args, 'ls-remote', '--exit-code', '--heads', repo, 'refs/heads/' + branch], { env: isolatedEnv() });
+      return true;
+    } catch (error) {
+      if (error instanceof ProcessError && error.code === 2) {
+        return false;
+      }
+      throw error;
+    }
+  }
+
+  /**
+   * Prepare a repository for `branch` of `repo` in the given empty dir,
+   * without checking out any files (the index starts empty):
+   * - existing branch: clone only that branch (shallow, then in full for
+   *   servers without shallow clone support)
+   * - new branch: an empty repository with `repo` as remote and HEAD on the unborn branch
    *
-   * When the branch doesn't exist yet, the default branch is cloned without a
-   * checkout instead (only the remote is needed to create the new branch):
-   * shallow first, then in full for servers without shallow clone support.
-   *
-   * The returned instance never operates on a repository above `dir`
-   * (GIT_CEILING_DIRECTORIES), even if `dir` loses its .git directory.
+   * The returned instance always operates on `dir`: GIT_DIR and GIT_WORK_TREE
+   * point to it, inherited repository variables are removed, and
+   * safe.directory covers it.
    */
   static async clone(repo: string, dir: string, branch: string, options: CloneOptions, args: string[] = []): Promise<Git> {
-    const env = { GIT_CEILING_DIRECTORIES: path.dirname(path.resolve(dir)) };
-    const clone = (...cloneArgs: string[]) =>
-      spawn(options.git, [...args, 'clone', repo, dir, '--origin', options.remote, ...cloneArgs], { env });
-    const depth = String(options.depth);
+    const exists = await Git.branchExists(repo, branch, options.git, args);
+    const run = (...gitArgs: string[]) => spawn(options.git, [...args, ...gitArgs], { env: isolatedEnv() });
 
-    try {
-      await clone('--branch', branch, '--single-branch', '--depth', depth);
-    } catch {
+    if (exists) {
+      const clone = ['clone', repo, dir, '--origin', options.remote, '--branch', branch, '--single-branch', '--no-checkout'];
       try {
-        await clone('--no-checkout', '--depth', depth);
+        await run(...clone, '--depth', String(options.depth));
       } catch {
-        await clone('--no-checkout');
+        await fs.rm(dir, { recursive: true, force: true });
+        await fs.mkdir(dir, { recursive: true });
+        await run(...clone);
       }
+    } else {
+      await run('init', dir);
     }
-    return new Git(dir, options.git, args, env);
+
+    const git = new Git(
+      dir,
+      options.git,
+      [...args, '-c', 'safe.directory=' + dir],
+      isolatedEnv({ GIT_DIR: path.join(dir, '.git'), GIT_WORK_TREE: dir }),
+      !exists
+    );
+    if (!exists) {
+      await git.exec('remote', 'add', options.remote, repo);
+      await git.exec('symbolic-ref', 'HEAD', 'refs/heads/' + branch);
+    }
+    return git;
   }
 
   /**
@@ -120,77 +178,35 @@ export class Git {
   }
 
   /**
-   * Clean up unversioned files.
+   * Fill the index with the tree of HEAD (the clone has no checkout), so that
+   * a commit keeps the existing files of the branch.
    */
-  clean(): Promise<this> {
-    return this.exec('clean', '-f', '-d');
+  keepExistingFiles(): Promise<this> {
+    return this.exec('read-tree', 'HEAD');
   }
 
   /**
-   * Hard reset to remote/branch.
+   * Stage all files of the working tree, including files that match ignore rules
+   * (the user's global gitignore or a .gitignore in dist must not drop files).
+   * With `keepRemoved`, files missing from the working tree stay in the index.
    */
-  reset(remote: string, branch: string): Promise<this> {
-    return this.exec('reset', '--hard', remote + '/' + branch);
+  addAll(keepRemoved: boolean): Promise<this> {
+    return this.exec('add', '--force', keepRemoved ? '--ignore-removal' : '--all', '--', '.');
   }
 
   /**
-   * Checkout a branch. A branch that doesn't exist on the remote is created as
-   * an empty orphan branch (the files of the cloned default branch are removed).
-   */
-  async checkout(remote: string, branch: string): Promise<this> {
-    const treeish = remote + '/' + branch;
-    try {
-      await this.exec('ls-remote', '--exit-code', '.', treeish);
-    } catch (error) {
-      if (error instanceof ProcessError && error.code === 2) {
-        await this.exec('checkout', '--orphan', branch);
-        return this.removeAll();
-      }
-      throw error;
-    }
-
-    await this.exec('checkout', branch);
-    await this.clean();
-    return this.reset(remote, branch);
-  }
-
-  /**
-   * Remove files from the index and the working tree.
-   */
-  rm(files: string[]): Promise<this> {
-    return this.exec('rm', '--ignore-unmatch', '-r', '-f', '--', ...files);
-  }
-
-  /**
-   * Remove all tracked files, including dotfiles and submodule gitlinks.
-   * `.gitmodules` goes first: `git rm` reads it to update submodule entries and
-   * fails when it is already gone while a gitlink sorting before it remains.
-   */
-  async removeAll(): Promise<this> {
-    await this.rm(['.gitmodules']);
-    return this.rm(['.']);
-  }
-
-  /**
-   * Add files.
-   */
-  add(files: string[]): Promise<this> {
-    return this.exec('add', ...files);
-  }
-
-  /**
-   * Commit (if there are any changes).
+   * Commit (if there are any changes). Hooks of the user don't apply to deploy commits.
    */
   async commit(message: string): Promise<this> {
     try {
       return await this.exec('diff-index', '--quiet', 'HEAD');
     } catch {
-      return this.exec('commit', '-m', message);
+      return this.exec('commit', '--no-verify', '-m', message);
     }
   }
 
   /**
-   * Push a branch.
+   * Push a branch to a remote name or URL.
    */
   push(remote: string, branch: string): Promise<this> {
     return this.exec('push', '--tags', remote, branch);
@@ -207,6 +223,10 @@ export class Git {
     } catch (error) {
       if (!(error instanceof ProcessError)) {
         throw error;
+      }
+      // exit code 1: the key is not set; anything else is a real git error
+      if (error.code !== 1) {
+        throw new Error('Failed to get remote.' + remote + '.url: ' + error.message);
       }
     }
     if (!repo) {

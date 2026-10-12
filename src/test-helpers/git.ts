@@ -73,3 +73,56 @@ export function createMockChildProcess(): ChildProcess {
     stderr: new EventEmitter()
   }) as unknown as ChildProcess;
 }
+
+/**
+ * Git subcommand of an argument list, skipping leading `-c key=value` pairs.
+ */
+export function gitSubcommand(args: string[]): string | undefined {
+  return withoutConfigArgs(args)[0];
+}
+
+/**
+ * Arguments after the leading `-c key=value` pairs.
+ */
+export function withoutConfigArgs(args: string[]): string[] {
+  let i = 0;
+  while (args[i] === '-c') {
+    i += 2;
+  }
+  return args.slice(i);
+}
+
+export interface SpawnCall {
+  cmd: string;
+  args: string[];
+  options: { cwd?: string; env?: NodeJS.ProcessEnv };
+}
+
+export interface FakeResult {
+  code?: number;
+  output?: string;
+  stderr?: string;
+}
+
+/**
+ * Implementation for a mocked child_process.spawn: records every call in
+ * `calls` and answers with `respond(call)` (default: exit code 0, no output).
+ */
+export function fakeSpawn(calls: SpawnCall[], respond: (call: SpawnCall) => FakeResult | undefined) {
+  return (cmd: string, args: string[] = [], options: SpawnCall['options'] = {}): ChildProcess => {
+    const call = { cmd, args, options };
+    calls.push(call);
+    const result = respond(call) ?? {};
+    const child = createMockChildProcess();
+    setImmediate(() => {
+      if (result.stderr) {
+        child.stderr!.emit('data', Buffer.from(result.stderr));
+      }
+      if (result.output) {
+        child.stdout!.emit('data', Buffer.from(result.output));
+      }
+      child.emit('close', result.code ?? 0, null);
+    });
+    return child;
+  };
+}

@@ -86,9 +86,10 @@ describe('engine.run() in a directory with no package.json (issue #203)', () => 
     // Positive proof that the deploy actually landed:
     expect(tree(bareRepoPath)).toEqual(['index.html']);
 
-    // The clone went to the tmpdir fallback
+    // The clone went to a private directory in the os temp dir
     const cloning = messages.find((message) => message.startsWith('Cloning '));
     const cloneDir = cloning!.split(' into ')[1];
-    expect(path.dirname(cloneDir)).toBe(path.join(os.tmpdir(), 'angular-cli-ghpages-cache', 'gh-pages'));
+    expect(path.dirname(cloneDir)).toBe(os.tmpdir());
+    expect(path.basename(cloneDir)).toMatch(/^angular-cli-ghpages-clone-/);
   }, 30_000);
 });

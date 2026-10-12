@@ -17,8 +17,9 @@ describe('gh-pages-fork publish()', () => {
   let dist: string;
   let originalEnv: NodeJS.ProcessEnv;
 
+  // dotfiles/nojekyll off by default here, so the expected trees only show what a test enables
   function deploy(options: PublishOptions = {}, log?: (message: string) => void) {
-    return publish(dist, { repo: remote, user, message: 'deploy', ...options }, log);
+    return publish(dist, { repo: remote, user, message: 'deploy', dotfiles: false, nojekyll: false, ...options }, log);
   }
 
   beforeEach(async () => {
@@ -204,7 +205,7 @@ describe('gh-pages-fork publish()', () => {
     process.chdir(tempDir);
 
     try {
-      await publish(dist, { repo: './remote.git', user, message: 'deploy' });
+      await publish(dist, { repo: './remote.git', user, message: 'deploy', dotfiles: false, nojekyll: false });
     } finally {
       process.chdir(cwd);
     }
@@ -219,17 +220,17 @@ describe('gh-pages-fork publish()', () => {
 
     await Promise.all([
       deploy({ branch: 'pages-a' }),
-      publish(other, { repo: remote, user, branch: 'pages-b', message: 'deploy' })
+      publish(other, { repo: remote, user, branch: 'pages-b', message: 'deploy', nojekyll: false })
     ]);
 
     expect(tree(remote, 'pages-a')).toEqual(['assets/app.js', 'index.html']);
     expect(tree(remote, 'pages-b')).toEqual(['other.html']);
-    expect(await fs.readdir(getCacheDir())).toEqual([]);
+    expect(await fs.readdir(getCacheDir()!)).toEqual([]);
   });
 
   it('rejects when git is killed by a signal', async () => {
     const fakeGit = path.join(tempDir, 'fake-git');
-    await fs.writeFile(fakeGit, `#!/bin/sh\nif [ "$1" = "push" ]; then kill -9 $$; fi\nexec git "$@"\n`);
+    await fs.writeFile(fakeGit, `#!/bin/sh\nfor arg in "$@"; do [ "$arg" = "push" ] && kill -9 $$; done\nexec git "$@"\n`);
     await fs.chmod(fakeGit, 0o755);
 
     await expect(deploy({ git: fakeGit })).rejects.toThrow('Process killed by SIGKILL');

@@ -47,10 +47,10 @@ describe('gh-pages-fork getCacheDir()', () => {
     expect(getCacheDir()).toBe(path.join(tempDir, 'node_modules', '.cache', 'gh-pages'));
   });
 
-  it('falls back to the os temp directory without a package.json (issue #203)', () => {
+  it('returns undefined without $CACHE_DIR and package.json (issue #203: clones go to the os temp dir)', () => {
     process.chdir(tempDir);
 
-    expect(getCacheDir()).toBe(path.join(os.tmpdir(), 'angular-cli-ghpages-cache', 'gh-pages'));
+    expect(getCacheDir()).toBeUndefined();
   });
 
   it('resolves relative to the given directory', async () => {

@@ -27,7 +27,7 @@ describe('gh-pages-fork temporary clone', () => {
     originalEnv = { ...process.env };
     tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'gh-pages-clone-test-'));
     process.env.CACHE_DIR = path.join(tempDir, 'cache');
-    cacheDir = ghPages.getCacheDir();
+    cacheDir = ghPages.getCacheDir()!;
 
     basePath = path.join(tempDir, 'dist');
     await fs.mkdir(basePath);

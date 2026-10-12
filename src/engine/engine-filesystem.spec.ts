@@ -2,12 +2,11 @@
  * Real filesystem integration tests for file creation
  *
  * These tests use actual temporary directories to verify that:
- * - 404.html is copied from index.html (handled by angular-cli-ghpages)
- * - Dry-run mode prevents file creation
- * - Error handling works as expected
+ * - the engine never modifies the dist folder
+ * - dry-run mode prevents file creation
  *
- * CNAME and .nojekyll are written by the publish step of gh-pages-fork;
- * the "publish options" tests below verify that the options reach it.
+ * 404.html, CNAME and .nojekyll are written by the publish step of
+ * gh-pages-fork; the tests below verify that the options reach it.
  */
 
 import { logging } from '@angular-devkit/core';
@@ -53,100 +52,36 @@ describe('engine - real filesystem tests', () => {
     loggerInfoSpy.mockRestore();
   });
 
-  describe('404.html file creation', () => {
-    it('should create 404.html as exact copy of index.html when notfound is true', async () => {
-      // First create an index.html file
-      const indexPath = path.join(testDir, 'index.html');
-      const indexContent = '<!DOCTYPE html><html><head><title>Test</title></head><body><h1>Test App</h1></body></html>';
-      await fs.writeFile(indexPath, indexContent);
-
-
-      const options = {
-        notfound: true,
-        nojekyll: false,
-        dotfiles: true
-      };
-
-      await engine.run(testDir, options, logger);
-
-      const notFoundPath = path.join(testDir, '404.html');
-      const exists = await pathExists(notFoundPath);
-      expect(exists).toBe(true);
-
-      const notFoundContent = await fs.readFile(notFoundPath, 'utf-8');
-      expect(notFoundContent).toBe(indexContent);
-    });
-
-    it('should NOT create 404.html when notfound is false', async () => {
-      const indexPath = path.join(testDir, 'index.html');
-      await fs.writeFile(indexPath, '<html><body>Test</body></html>');
-
-
-      const options = {
-        notfound: false,
-        nojekyll: false,
-        dotfiles: true
-      };
-
-      await engine.run(testDir, options, logger);
-
-      const notFoundPath = path.join(testDir, '404.html');
-      const exists = await pathExists(notFoundPath);
-      expect(exists).toBe(false);
-    });
-
-    it('should gracefully continue when index.html does not exist (not throw error)', async () => {
-      // No index.html created - directory is empty
-
-
-      const options = {
-        notfound: true,
-        nojekyll: false,
-        dotfiles: true
-      };
-
-      // Should NOT throw - this is the critical test for graceful handling
-      await expect(
-        engine.run(testDir, options, logger)
-      ).resolves.toBeUndefined();
-
-      // Should log a warning message
-      expect(loggerInfoSpy).toHaveBeenCalledWith(
-        'index.html could not be copied to 404.html. Proceeding without it.'
-      );
-
-      const notFoundPath = path.join(testDir, '404.html');
-      const exists = await pathExists(notFoundPath);
-      expect(exists).toBe(false);
-    });
-
-    it('should keep an existing 404.html', async () => {
-      const notFoundContent = '<html><body>Custom 404</body></html>';
-      await fs.writeFile(path.join(testDir, 'index.html'), '<html><body>Index</body></html>');
-      await fs.writeFile(path.join(testDir, '404.html'), notFoundContent);
+  /**
+   * publish() writes 404.html (a copy of index.html) into its clone; the
+   * engine only passes the notfound option and never modifies dist.
+   */
+  describe('404.html', () => {
+    it('should pass notfound to publish() and leave dist untouched', async () => {
+      await fs.writeFile(path.join(testDir, 'index.html'), '<html><body>Test</body></html>');
 
       await engine.run(testDir, { notfound: true, nojekyll: false, dotfiles: true }, logger);
 
-      expect(await fs.readFile(path.join(testDir, '404.html'), 'utf-8')).toBe(notFoundContent);
-      expect(loggerInfoSpy).toHaveBeenCalledWith('404.html already exists in the dist folder and is kept.');
+      expect(vi.mocked(ghpages.publish).mock.calls[0][1].notfound).toBe(true);
+      expect(await fs.readdir(testDir)).toEqual(['index.html']);
+    });
+
+    it('should pass notfound: false to publish()', async () => {
+      await fs.writeFile(path.join(testDir, 'index.html'), '<html><body>Test</body></html>');
+
+      await engine.run(testDir, { notfound: false, nojekyll: false, dotfiles: true }, logger);
+
+      expect(vi.mocked(ghpages.publish).mock.calls[0][1].notfound).toBe(false);
     });
 
     it('should NOT create 404.html when dry-run is true', async () => {
-      const indexPath = path.join(testDir, 'index.html');
-      await fs.writeFile(indexPath, '<html><body>Test</body></html>');
+      await fs.writeFile(path.join(testDir, 'index.html'), '<html><body>Test</body></html>');
 
-      const options = {
-        notfound: true,
-        nojekyll: false,
-        dotfiles: true,
-        dryRun: true
-      };
+      await engine.run(testDir, { notfound: true, nojekyll: false, dotfiles: true, dryRun: true }, logger);
 
-      await engine.run(testDir, options, logger);
-
-      const notFoundPath = path.join(testDir, '404.html');
-      const exists = await pathExists(notFoundPath);
-      expect(exists).toBe(false);
+      expect(await pathExists(path.join(testDir, '404.html'))).toBe(false);
+      expect(ghpages.publish).not.toHaveBeenCalled();
+      expect(loggerInfoSpy).toHaveBeenCalledWith('Dry-run / SKIPPED: copying of index.html to 404.html');
     });
   });
 
@@ -200,7 +135,6 @@ describe('engine - real filesystem tests', () => {
       const indexPath = path.join(testDir, 'index.html');
       await fs.writeFile(indexPath, '<html>test</html>');
 
-
       const testDomain = 'test.example.com';
       const options = {
         cname: testDomain,
@@ -215,10 +149,7 @@ describe('engine - real filesystem tests', () => {
       const capturedOptions = vi.mocked(ghpages.publish).mock.calls[0][1];
       expect(capturedOptions.cname).toBe(testDomain);
       expect(capturedOptions.nojekyll).toBe(true);
-
-      // 404.html is created by the engine in dist, not by publish()
-      const notFoundPath = path.join(testDir, '404.html');
-      expect(await pathExists(notFoundPath)).toBe(true);
+      expect(capturedOptions.notfound).toBe(true);
     });
 
     it('should NOT pass cname when not provided (undefined)', async () => {

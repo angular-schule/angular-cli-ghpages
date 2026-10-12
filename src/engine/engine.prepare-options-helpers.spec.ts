@@ -17,13 +17,11 @@ import { Schema } from '../deploy/schema';
 
 describe('prepareOptions helpers - intensive tests', () => {
   let testLogger: logging.Logger;
-  let infoSpy: MockInstance;
   let warnSpy: MockInstance;
   const originalEnv = process.env;
 
   beforeEach(() => {
     testLogger = new logging.Logger('test');
-    infoSpy = vi.spyOn(testLogger, 'info');
     warnSpy = vi.spyOn(testLogger, 'warn');
     // Create fresh copy of environment for each test
     // This preserves PATH, HOME, etc. needed by git
@@ -50,7 +48,6 @@ describe('prepareOptions helpers - intensive tests', () => {
   });
 
   afterEach(() => {
-    infoSpy.mockRestore();
     warnSpy.mockRestore();
   });
 

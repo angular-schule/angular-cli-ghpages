@@ -42,8 +42,9 @@ Follow the instructions for [checking and updating the Angular CLI version](#ang
 This builder requires the method `getTargetOptions()` from the Angular DevKit which was introduced [here](https://github.com/angular/angular-cli/pull/13825/files).
 
 **Version compatibility:**
-- **v3.x:** Supports Angular 18 and higher (current version)
-- **v2.x:** Supported Angular 18 (previous major version)
+- **v4.x:** Supports Angular 18 and higher (current version)
+- **v3.x:** Supported Angular 18 to 22 (previous major version)
+- **v2.x:** Supported Angular 18
 - **v1.x:** Supported Angular 9-17 (deprecated)
 
 Execute the next three steps to update your test project to the latest Angular version.
@@ -214,12 +215,11 @@ npm dist-tag add angular-cli-ghpages@X.X.X-rc.X next
 For advanced use cases, `angular-cli-ghpages` can be used programmatically in Node.js scripts:
 
 ```typescript
-import { deployToGHPages, defaults, Schema } from 'angular-cli-ghpages';
+import { logging } from '@angular-devkit/core';
+import { deployToGHPages, Schema } from 'angular-cli-ghpages';
 
-// Deploy with custom options
+// Options not set here fall back to the defaults (exported as `defaults`)
 const options: Schema = {
-  ...defaults,
-  dir: 'dist/my-app/browser',
   repo: 'https://github.com/user/repo.git',
   message: 'Custom deploy message',
   branch: 'gh-pages',
@@ -227,14 +227,8 @@ const options: Schema = {
   email: 'bot@example.com'
 };
 
-// Simple logger implementation
-const logger = {
-  info: (msg: string) => console.log(msg),
-  warn: (msg: string) => console.warn(msg),
-  error: (msg: string) => console.error(msg),
-  debug: (msg: string) => console.debug(msg),
-  fatal: (msg: string) => console.error(msg)
-};
+const logger = new logging.Logger('deploy');
+logger.subscribe((entry) => console.log(entry.message));
 
 try {
   await deployToGHPages('dist/my-app/browser', options, logger);
@@ -258,10 +252,13 @@ The package exports these TypeScript types for programmatic usage:
 For custom Angular builders:
 
 ```typescript
-import { angularDeploy } from 'angular-cli-ghpages';
+import { BuilderContext } from '@angular-devkit/architect';
+import { angularDeploy, deployToGHPages, Schema } from 'angular-cli-ghpages';
 
-// Inside your custom builder
-const result = await angularDeploy(context, builderConfig, 'your-project-name');
+// Inside your custom builder: build the target, then deploy its output
+async function deploy(context: BuilderContext, options: Schema) {
+  await angularDeploy({ run: deployToGHPages }, context, { name: 'my-app:build:production' }, options);
+}
 ```
 
 **Note:** The CLI (`ng deploy`) remains the primary and recommended way to use this tool. Programmatic usage is considered advanced/experimental and may change between versions.
@@ -308,3 +305,7 @@ To stay in sync with the stuff the Angular team is doing, you might want to keep
 
 - [builder.ts](https://github.com/angular/angularfire/blob/master/src/schematics/deploy/builder.ts)
 - [actions.ts](https://github.com/angular/angularfire/blob/master/src/schematics/deploy/actions.ts)
+
+`src/gh-pages-fork` follows [tschaub/gh-pages](https://github.com/tschaub/gh-pages). npm audit and Dependabot can't report problems in forked code, so watch the upstream repository (releases, security advisories, `lib/`) and port relevant fixes file by file (see `src/gh-pages-fork/README.md`).
+
+`src/commander-fork` is a frozen subset of [commander v3.0.2](https://github.com/tj/commander.js), see `src/commander-fork/README.md`.

@@ -20,7 +20,7 @@ describe('gh-pages-fork publish()', () => {
   // dotfiles/nojekyll off by default here, so the expected trees only show what a test enables
   function deploy(options: PublishOptions = {}, log?: (message: string) => void) {
     // file:// URL: git honors --depth only for real URLs, so clones are really shallow
-    return publish(dist, { repo: fileUrl(remote), user, message: 'deploy', dotfiles: false, nojekyll: false, ...options }, log);
+    return publish(dist, { repo: fileUrl(remote), user, message: 'deploy', dotfiles: false, nojekyll: false, notfound: false, ...options }, log);
   }
 
   beforeEach(async () => {
@@ -79,7 +79,7 @@ describe('gh-pages-fork publish()', () => {
 
   it('removes .nojekyll when nojekyll is disabled', async () => {
     await deploy({ nojekyll: true });
-    await deploy({ nojekyll: false });
+    await deploy({ nojekyll: false, notfound: false });
 
     expect(tree(remote)).toEqual(['assets/app.js', 'index.html']);
   });
@@ -207,7 +207,7 @@ describe('gh-pages-fork publish()', () => {
     process.chdir(tempDir);
 
     try {
-      await publish(dist, { repo: './remote.git', user, message: 'deploy', dotfiles: false, nojekyll: false });
+      await publish(dist, { repo: './remote.git', user, message: 'deploy', dotfiles: false, nojekyll: false, notfound: false });
     } finally {
       process.chdir(cwd);
     }
@@ -222,7 +222,7 @@ describe('gh-pages-fork publish()', () => {
 
     await Promise.all([
       deploy({ branch: 'pages-a' }),
-      publish(other, { repo: remote, user, branch: 'pages-b', message: 'deploy', nojekyll: false })
+      publish(other, { repo: remote, user, branch: 'pages-b', message: 'deploy', nojekyll: false, notfound: false })
     ]);
 
     expect(tree(remote, 'pages-a')).toEqual(['assets/app.js', 'index.html']);
@@ -315,8 +315,8 @@ describe('gh-pages-fork publish()', () => {
     process.chdir(app);
 
     try {
-      await publish(dist, { remote: 'upstream', user, message: 'deploy', dotfiles: false, nojekyll: false });
-      await publish(dist, { remote: 'upstream', user, message: 'redeploy', dotfiles: true, nojekyll: false });
+      await publish(dist, { remote: 'upstream', user, message: 'deploy', dotfiles: false, nojekyll: false, notfound: false });
+      await publish(dist, { remote: 'upstream', user, message: 'redeploy', dotfiles: true, nojekyll: false, notfound: false });
     } finally {
       process.chdir(cwd);
     }
@@ -359,7 +359,7 @@ describe('gh-pages-fork publish()', () => {
     process.env.GIT_AUTHOR_EMAIL = process.env.GIT_COMMITTER_EMAIL = 'env@example.org';
 
     try {
-      await publish(dist, { repo: fileUrl(remote), message: 'deploy', nojekyll: false });
+      await publish(dist, { repo: fileUrl(remote), message: 'deploy', nojekyll: false, notfound: false });
     } finally {
       process.chdir(cwd);
     }
@@ -380,5 +380,47 @@ describe('gh-pages-fork publish()', () => {
     }
 
     expect(tree(remote)).toEqual(['.htaccess', 'assets/app.js', 'assets/app.js.map', 'index.html']);
+  });
+
+  describe('404.html', () => {
+    it('publishes a copy of index.html as 404.html without touching dist', async () => {
+      await deploy({ notfound: true });
+
+      expect(tree(remote)).toEqual(['404.html', 'assets/app.js', 'index.html']);
+      expect(git(remote, 'show', 'gh-pages:404.html')).toBe(git(remote, 'show', 'gh-pages:index.html'));
+      expect((await fs.readdir(dist)).sort()).toEqual(['.htaccess', 'assets', 'index.html']);
+    });
+
+    it('keeps a 404.html of the directory', async () => {
+      await fs.writeFile(path.join(dist, '404.html'), 'custom not found page');
+
+      await deploy({ notfound: true });
+
+      expect(git(remote, 'show', 'gh-pages:404.html')).toBe('custom not found page');
+    });
+
+    it('follows index.html on every deploy', async () => {
+      await deploy({ notfound: true });
+      await fs.writeFile(path.join(dist, 'index.html'), '<h1>v2</h1>');
+      await deploy({ notfound: true });
+
+      expect(git(remote, 'show', 'gh-pages:404.html')).toBe('<h1>v2</h1>');
+    });
+
+    it('creates no 404.html without index.html and still deploys', async () => {
+      const messages: string[] = [];
+      await fs.rm(path.join(dist, 'index.html'));
+
+      await deploy({ notfound: true }, (message) => messages.push(message));
+
+      expect(tree(remote)).toEqual(['assets/app.js']);
+      expect(messages).toContain('index.html could not be copied to 404.html. Proceeding without it.');
+    });
+
+    it('creates no 404.html with notfound: false', async () => {
+      await deploy({ notfound: false });
+
+      expect(tree(remote)).toEqual(['assets/app.js', 'index.html']);
+    });
   });
 });

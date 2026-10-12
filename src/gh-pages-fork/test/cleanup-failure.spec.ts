@@ -52,7 +52,7 @@ describe('gh-pages-fork publish() with a failing cleanup', () => {
   it('resolves after a successful push and logs the cleanup error', async () => {
     const messages: string[] = [];
 
-    await publish(dist, { repo: fileUrl(remote), user, nojekyll: false }, (message) => messages.push(message));
+    await publish(dist, { repo: fileUrl(remote), user, nojekyll: false, notfound: false }, (message) => messages.push(message));
 
     expect(tree(remote)).toEqual(['index.html']);
     expect(messages.at(-1)).toMatch(/^Could not remove the temporary clone .*clone-.*: EBUSY: resource busy or locked/);
@@ -63,6 +63,6 @@ describe('gh-pages-fork publish() with a failing cleanup', () => {
     await fs.writeFile(hook, '#!/bin/sh\necho "rejected by hook" >&2\nexit 1\n');
     await fs.chmod(hook, 0o755);
 
-    await expect(publish(dist, { repo: fileUrl(remote), user, nojekyll: false })).rejects.toThrow('rejected by hook');
+    await expect(publish(dist, { repo: fileUrl(remote), user, nojekyll: false, notfound: false })).rejects.toThrow('rejected by hook');
   });
 });

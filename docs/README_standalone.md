@@ -170,7 +170,8 @@ In this case provide both `name` and `email` string values to identify the commi
 - **optional**
 - Default: `dist`
 
-Directory for all published sources, relative to the current working directory.  
+Directory for all published sources, relative to the current working directory (absolute paths work as well).
+Pass it as an option (`--dir=dist/my-app/browser`); positional arguments are rejected.  
 **Starting with Angular CLI 6, the build artifacts will be put in a subfolder under `dist`.
 Please take a look at the `dist` folder to see whether there is a subfolder with your project's name or not.**
 
@@ -212,10 +213,10 @@ A CNAME file will be created enabling you to use a custom domain. [More informat
 - **optional**
 - Default: `false` (boolean) – The existing files will be removed from the branch you'll be pushing to as expected.
 - Example:
-  - `npx angular-cli-ghpages --add=true`
+  - `npx angular-cli-ghpages --add` (or `--add=true`; `--add=false` keeps the default)
 
 If is set to `true`, it will only add, and never remove existing files.
-By default, existing files in the target branch are removed before adding the ones.
+By default, the published directory replaces the complete content of the target branch.
 
 #### --no-notfound <a name="no-notfound"></a>
 

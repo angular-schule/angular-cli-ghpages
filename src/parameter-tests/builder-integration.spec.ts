@@ -104,9 +104,8 @@ describe('Angular Builder Integration Tests', () => {
       await deploy(engine, context, BUILD_TARGET, options);
 
       expect(capturedOptions.value).not.toBeNull();
-      // notfound is handled by the engine (404.html), NOT passed to publish()
-      // (notfound controls 404.html creation which we do ourselves)
-      expect(capturedOptions.value!.notfound).toBeUndefined();
+      // publish() writes 404.html when notfound is set
+      expect(capturedOptions.value!.notfound).toBe(false);
       expect(capturedOptions.value!.noNotfound).toBeUndefined();
     });
 
@@ -138,10 +137,9 @@ describe('Angular Builder Integration Tests', () => {
 
       expect(capturedOptions.value).not.toBeNull();
       expect(capturedOptions.value!.dotfiles).toBe(false);
-      // nojekyll IS passed to publish()
+      // nojekyll and notfound ARE passed to publish()
       expect(capturedOptions.value!.nojekyll).toBe(false);
-      // notfound is internal (404.html creation by angular-cli-ghpages)
-      expect(capturedOptions.value!.notfound).toBeUndefined();
+      expect(capturedOptions.value!.notfound).toBe(false);
       // negated options should NOT be passed
       expect(capturedOptions.value!.noDotfiles).toBeUndefined();
       expect(capturedOptions.value!.noNotfound).toBeUndefined();
@@ -158,10 +156,9 @@ describe('Angular Builder Integration Tests', () => {
 
       expect(capturedOptions.value).not.toBeNull();
       expect(capturedOptions.value!.dotfiles).toBe(true);
-      // nojekyll IS passed to publish()
+      // nojekyll and notfound ARE passed to publish()
       expect(capturedOptions.value!.nojekyll).toBe(true);
-      // notfound is internal (404.html creation by angular-cli-ghpages)
-      expect(capturedOptions.value!.notfound).toBeUndefined();
+      expect(capturedOptions.value!.notfound).toBe(true);
     });
   });
 
@@ -291,8 +288,8 @@ describe('Angular Builder Integration Tests', () => {
       expect(capturedOptions.value!.cname).toBe(cname);
       expect(capturedOptions.value!.nojekyll).toBe(false);
 
-      // notfound is internal (404.html creation by angular-cli-ghpages)
-      expect(capturedOptions.value!.notfound).toBeUndefined();
+      // publish() writes 404.html when notfound is set
+      expect(capturedOptions.value!.notfound).toBe(false);
 
       // Negated options should NOT be passed
       expect(capturedOptions.value!.noDotfiles).toBeUndefined();

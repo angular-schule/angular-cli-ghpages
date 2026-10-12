@@ -288,19 +288,15 @@ describe('engine - gh-pages-fork integration', () => {
       expect(actualOptions.noNojekyll).toBeUndefined();
     });
 
-    it('should NOT pass internal notfound option to publish()', async () => {
+    it('should pass the notfound option to publish() (it writes 404.html)', async () => {
       const testDir = '/test/dist';
-      const options = {
-        dotfiles: true,
-        notfound: true, // Internal only, used for 404.html creation
-        nojekyll: true
-      };
+      const notfound = true;
+      const options = { dotfiles: true, notfound, nojekyll: true };
 
       await engine.run(testDir, options, logger);
 
       const actualOptions = ghpagesPublishSpy.mock.calls[0][1] as Record<string, unknown>;
-      // notfound stays internal - the engine creates 404.html in dist
-      expect(actualOptions.notfound).toBeUndefined();
+      expect(actualOptions.notfound).toBe(notfound);
     });
 
     it('should pass nojekyll option to publish()', async () => {
@@ -438,7 +434,7 @@ describe('engine - gh-pages-fork integration', () => {
       expect(actualOptions.dotfiles).toBe(true);
     });
 
-    it('should NOT pass transformed noNotfound/notfound to publish()', async () => {
+    it('should pass transformed noNotfound: true as notfound: false to publish()', async () => {
       const testDir = '/test/dist';
       const options = {
         noNotfound: true,
@@ -450,8 +446,7 @@ describe('engine - gh-pages-fork integration', () => {
       await engine.run(testDir, options, logger);
 
       const actualOptions = ghpagesPublishSpy.mock.calls[0][1] as Record<string, unknown>;
-      // notfound stays internal - the engine creates 404.html in dist
-      expect(actualOptions.notfound).toBeUndefined();
+      expect(actualOptions.notfound).toBe(false);
       expect(actualOptions.noNotfound).toBeUndefined();
     });
 

@@ -21,19 +21,19 @@ import { Mock } from 'vitest';
  *
  * WHAT'S REAL vs MOCKED:
  * ✅ REAL: deploy/actions.ts, engine/engine.ts, prepareOptions()
- * ❌ MOCKED: gh-pages-fork publish()/clean() (to capture final options), utils.pathExists
+ * ❌ MOCKED: gh-pages-fork publish() (to capture final options), utils.pathExists
  * This IS a true integration test - we test the full internal code path with external dependencies mocked.
  */
 
 // Captured options from publish()
 const { capturedOptions } = vi.hoisted(() => {
-  const capturedOptions = { value: null as PublishOptions | null };
+  // Record<string, unknown>: tests also assert that internal options are absent
+  const capturedOptions = { value: null as (PublishOptions & Record<string, unknown>) | null };
   return { capturedOptions };
 });
 
 vi.mock('../gh-pages-fork/lib', async () => ({
   ...(await vi.importActual('../gh-pages-fork/lib')),
-  clean: vi.fn(),
   publish: vi.fn()
 }));
 
@@ -67,9 +67,8 @@ describe('Angular Builder Integration Tests', () => {
     capturedOptions.value = null;
     context = createMockContext();
 
-    vi.mocked(ghpages.clean).mockResolvedValue(undefined);
     vi.mocked(ghpages.publish).mockImplementation(async (_dir, options) => {
-      capturedOptions.value = options;
+      capturedOptions.value = { ...options };
     });
   });
 

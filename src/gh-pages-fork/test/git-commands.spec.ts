@@ -22,6 +22,7 @@ interface FakeResult {
 describe('gh-pages-fork git commands', () => {
   const repo = 'https://github.com/user/repo.git';
   let calls: string[];
+  let envs: (NodeJS.ProcessEnv | undefined)[];
   let results: Record<string, FakeResult>;
   let tempDir: string;
   let dist: string;
@@ -36,17 +37,15 @@ describe('gh-pages-fork git commands', () => {
     await fs.writeFile(path.join(dist, 'index.html'), '<h1>test</h1>');
 
     calls = [];
+    envs = [];
     results = {
       'config --get remote.origin.url': { output: repo },
       'diff-index --quiet HEAD': { code: 1 }
     };
-    mockSpawn.mockImplementation((cmd: string, args: string[], options: { cwd: string }) => {
+    mockSpawn.mockImplementation((cmd: string, args: string[], options: { cwd: string; env: NodeJS.ProcessEnv }) => {
       const command = args.join(' ');
       calls.push(`${cmd} ${command}`);
-      if (args[0] === 'clone') {
-        // git clone creates the target directory
-        void fs.mkdir(args[2], { recursive: true });
-      }
+      envs.push(options.env);
       const result = Object.entries(results).find(([key]) => command.startsWith(key))?.[1] ?? {};
       const child = Object.assign(new EventEmitter(), {
         stdout: new EventEmitter(),
@@ -85,13 +84,11 @@ describe('gh-pages-fork git commands', () => {
     const cloneDir = cloneDirOf(calls[0]);
     expect(calls).toEqual([
       `git clone ${repo} ${cloneDir} --branch gh-pages --single-branch --origin origin --depth 1`,
-      'git config --get remote.origin.url',
-      'git clean -f -d',
-      'git fetch origin',
       'git ls-remote --exit-code . origin/gh-pages',
       'git checkout gh-pages',
       'git clean -f -d',
       'git reset --hard origin/gh-pages',
+      'git rm --ignore-unmatch -r -f -- .gitmodules',
       'git rm --ignore-unmatch -r -f -- .',
       'git add .',
       'git config user.email bot@example.org',
@@ -106,7 +103,7 @@ describe('gh-pages-fork git commands', () => {
     results['clone ' + repo] = { code: 128 };
     results['ls-remote'] = { code: 2 };
     const defaultImplementation = mockSpawn.getMockImplementation()!;
-    mockSpawn.mockImplementation((cmd: string, args: string[], options: { cwd: string }) => {
+    mockSpawn.mockImplementation((cmd: string, args: string[], options: { cwd: string; env: NodeJS.ProcessEnv }) => {
       // only the clone with --branch fails, the fallback clone succeeds
       if (args[0] === 'clone' && !args.includes('--branch')) {
         delete results['clone ' + repo];
@@ -120,12 +117,49 @@ describe('gh-pages-fork git commands', () => {
     expect(calls.slice(0, 7)).toEqual([
       `git clone ${repo} ${cloneDir} --branch gh-pages --single-branch --origin origin --depth 1`,
       `git clone ${repo} ${cloneDir} --origin origin`,
-      'git config --get remote.origin.url',
-      'git clean -f -d',
-      'git fetch origin',
       'git ls-remote --exit-code . origin/gh-pages',
-      'git checkout --orphan gh-pages'
+      'git checkout --orphan gh-pages',
+      // the orphan branch starts empty (the cloned default branch's files are removed)
+      'git rm --ignore-unmatch -r -f -- .gitmodules',
+      'git rm --ignore-unmatch -r -f -- .',
+      'git rm --ignore-unmatch -r -f -- .gitmodules'
     ]);
+  });
+
+  it('starts an orphan branch empty even with add', async () => {
+    results['clone ' + repo + ' '] = { code: 128 };
+    results['ls-remote'] = { code: 2 };
+    const defaultImplementation = mockSpawn.getMockImplementation()!;
+    mockSpawn.mockImplementation((cmd: string, args: string[], options: { cwd: string; env: NodeJS.ProcessEnv }) => {
+      if (args[0] === 'clone' && !args.includes('--branch')) {
+        delete results['clone ' + repo + ' '];
+      }
+      return defaultImplementation(cmd, args, options);
+    });
+
+    await publish(dist, { repo, add: true, user: { name: 'Bot', email: 'bot@example.org' } });
+
+    expect(calls.filter((call) => call.startsWith('git rm'))).toEqual([
+      'git rm --ignore-unmatch -r -f -- .gitmodules',
+      'git rm --ignore-unmatch -r -f -- .'
+    ]);
+  });
+
+  it('never lets git operate on a repository above the clone', async () => {
+    await publish(dist, { repo, user: { name: 'Bot', email: 'bot@example.org' } });
+
+    const cloneDir = cloneDirOf(calls[0]);
+    for (const env of envs) {
+      expect(env?.GIT_CEILING_DIRECTORIES).toBe(path.dirname(cloneDir));
+    }
+  });
+
+  it('disables credential helpers for a repository URL with credentials', async () => {
+    const repoWithToken = 'https://x-access-token:secret@github.com/user/repo.git';
+
+    await publish(dist, { repo: repoWithToken, user: { name: 'Bot', email: 'bot@example.org' } });
+
+    expect(calls.every((call) => call.startsWith('git -c credential.helper= '))).toBe(true);
   });
 
   it('skips removing files with add', async () => {

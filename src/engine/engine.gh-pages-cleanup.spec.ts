@@ -24,7 +24,6 @@ import { execSync } from 'child_process';
 import { logging } from '@angular-devkit/core';
 
 import * as engine from './engine';
-import * as ghPages from '../gh-pages-fork/lib';
 
 interface GitOptions {
   readonly cwd: string;
@@ -98,12 +97,10 @@ describe('end-to-end cleanup regression (issue #204, real git)', () => {
 
     await seedGhPagesBranch(path.join(tempDir, 'seed'), bareRepoPath);
 
-    // Each test starts from a clean clone.
-    await ghPages.clean();
+    process.env.CACHE_DIR = path.join(tempDir, 'cache');
   });
 
   afterEach(async () => {
-    await ghPages.clean();
     process.env = originalEnv;
     await fs.rm(tempDir, { recursive: true, force: true });
   });

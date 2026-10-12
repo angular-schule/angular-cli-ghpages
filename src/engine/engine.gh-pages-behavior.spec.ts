@@ -2,8 +2,8 @@
  * Behavioral snapshot tests for gh-pages-fork publish()
  *
  * These tests pin the git commands that publish() executes, in order and with
- * their arguments, to the behavior of gh-pages v6.3.0 that angular-cli-ghpages
- * has always relied on. Any change to the fork that alters this behavior fails here.
+ * their arguments, to the behavior of gh-pages v6.3.0, the base of the fork.
+ * Any change to the fork that alters this behavior fails here.
  *
  * Approach: Mock child_process and gh-pages-fork/lib/util (copy, getUser), use real filesystem
  */
@@ -63,6 +63,15 @@ const EXPECTED_GIT_COMMANDS = [
   'rm', 'add', 'config', 'diff-index', 'commit', 'push'
 ];
 
+// Git subcommand of an argument list, skipping leading `-c key=value` pairs
+function gitSubcommand(args: string[]): string | undefined {
+  let i = 0;
+  while (args[i] === '-c') {
+    i += 2;
+  }
+  return args[i];
+}
+
 const { mockSpawn, mockCopy, mockGetUser } = vi.hoisted(() => {
   const mockCopy = vi.fn(() => Promise.resolve());
   const mockGetUser = vi.fn(() => Promise.resolve(null));
@@ -86,10 +95,9 @@ function defaultSpawn(cmd: string, args: string[] | undefined, opts: unknown) {
   spawnCalls.push({ cmd, args: capturedArgs, options: opts });
 
   // Validate git commands are expected
-  if (cmd === 'git' && capturedArgs[0]) {
-    if (!EXPECTED_GIT_COMMANDS.includes(capturedArgs[0])) {
-      throw new Error(`Unexpected git command: ${capturedArgs[0]}. Add to whitelist if intentional.`);
-    }
+  const subcommand = gitSubcommand(capturedArgs);
+  if (cmd === 'git' && subcommand && !EXPECTED_GIT_COMMANDS.includes(subcommand)) {
+    throw new Error(`Unexpected git command: ${subcommand}. Add to whitelist if intentional.`);
   }
 
   const mockChild = createMockChildProcess();
@@ -136,6 +144,7 @@ async function publishAndHandle(
 describe('gh-pages-fork publish() - behavioral snapshot (gh-pages v6.3.0 behavior)', () => {
   let tempDir: string;
   let basePath: string;
+  let originalEnv: NodeJS.ProcessEnv;
 
   beforeAll(async () => {
     // Create a real temp directory with test files
@@ -156,6 +165,10 @@ describe('gh-pages-fork publish() - behavioral snapshot (gh-pages v6.3.0 behavio
     await fs.rm(tempDir, { recursive: true, force: true });
   });
 
+  afterEach(() => {
+    process.env = originalEnv;
+  });
+
   beforeEach(() => {
     // Note: We DON'T call ghPages.clean() here because it interferes with test isolation
     // Each test uses a unique repo URL which naturally isolates cache directories
@@ -165,6 +178,15 @@ describe('gh-pages-fork publish() - behavioral snapshot (gh-pages v6.3.0 behavio
     currentTestContext = {};
     mockSpawn.mockReset();
     mockSpawn.mockImplementation(defaultSpawn);
+
+    // An injected token would make the repo URL differ from currentTestContext.repo
+    originalEnv = { ...process.env };
+    delete process.env.GH_TOKEN;
+    delete process.env.PERSONAL_TOKEN;
+    delete process.env.GITHUB_TOKEN;
+    delete process.env.TRAVIS;
+    delete process.env.CIRCLECI;
+    delete process.env.GITHUB_ACTIONS;
     mockCopy.mockClear();
     mockGetUser.mockClear();
   });
@@ -248,7 +270,7 @@ describe('gh-pages-fork publish() - behavioral snapshot (gh-pages v6.3.0 behavio
      *
      * What is depth?
      * - `--depth N` limits git clone history to N commits
-     * - gh-pages defaults to depth=1 (only latest commit, optimal for deployments)
+     * - publish() defaults to depth=1 (only latest commit, optimal for deployments)
      * - Smaller depth = faster clones, less disk space, faster CI/CD
      *
      * Why angular-cli-ghpages does NOT expose this option:
@@ -258,7 +280,7 @@ describe('gh-pages-fork publish() - behavioral snapshot (gh-pages v6.3.0 behavio
      * - depth=1 is perfect - no benefit to cloning more history
      *
      * What we're testing:
-     * - That gh-pages uses its default depth=1
+     * - That publish() uses its default depth=1
      * - Exact argument position and value
      * - This ensures optimal performance for all deployments
      */
@@ -267,7 +289,7 @@ describe('gh-pages-fork publish() - behavioral snapshot (gh-pages v6.3.0 behavio
       const branch = 'gh-pages';
       currentTestContext.repo = repo;
 
-      // Don't specify depth - rely on gh-pages default
+      // Don't specify depth - rely on the default
       const options = { repo, branch, message: 'Deploy' };
 
       await publishAndHandle(basePath, options, () => {
@@ -322,15 +344,10 @@ describe('gh-pages-fork publish() - behavioral snapshot (gh-pages v6.3.0 behavio
   /**
    * Git push command
    *
-   * What does angular-cli-ghpages do?
-   * - We DO NOT pass the 'history' option to gh-pages
-   * - gh-pages defaults to history: true (normal push, no --force)
-   * - We rely on this default behavior
-   *
    * What we're testing:
    * - Push command includes correct remote and branch
-   * - Push ALWAYS includes --tags flag (gh-pages behavior)
-   * - NO --force flag (because we don't pass history: false)
+   * - Push ALWAYS includes the --tags flag
+   * - NO --force flag: every deploy adds a commit to the branch history
    */
   describe('Git push command', () => {
     it('should push to correct remote and branch with --tags flag', async () => {
@@ -348,12 +365,11 @@ describe('gh-pages-fork publish() - behavioral snapshot (gh-pages v6.3.0 behavio
         expect(pushCall).toBeDefined();
         expect(pushCall?.args).toContain(remote);
         expect(pushCall?.args).toContain(branch);
-        // gh-pages ALWAYS includes --tags in push (lib/git.js line 189)
         expect(pushCall?.args).toContain('--tags');
       });
     });
 
-    it('should NOT use force push (we rely on gh-pages default history: true)', async () => {
+    it('should NOT use force push', async () => {
       const repo = 'https://github.com/test/no-force-test.git';
       currentTestContext.repo = repo;
       const options = { repo, message: 'Deploy' };
@@ -364,7 +380,6 @@ describe('gh-pages-fork publish() - behavioral snapshot (gh-pages v6.3.0 behavio
         );
 
         expect(pushCall).toBeDefined();
-        // We don't pass history: false, so gh-pages defaults to history: true (no --force)
         expect(pushCall?.args).not.toContain('--force');
       });
     });
@@ -395,7 +410,7 @@ describe('gh-pages-fork publish() - behavioral snapshot (gh-pages v6.3.0 behavio
         // Verify source is our basePath
         expect(source).toBe(basePath);
 
-        // Verify destination is in gh-pages cache
+        // Verify destination is the temporary clone in the cache directory
         expect(destination).toContain('gh-pages');
       });
     });
@@ -412,18 +427,12 @@ describe('gh-pages-fork publish() - behavioral snapshot (gh-pages v6.3.0 behavio
    * - add: false ensures no stale files remain (recommended for most cases)
    * - add: true useful for multi-source deployments or preserving manually added files
    *
-   * Critical behavior from gh-pages source (lib/index.js lines 156-170):
-   * if (options.add) {
-   *   return git;  // SKIP removal logic entirely
-   * }
-   * // Otherwise: execute globby to find files, then git rm if files exist
+   * publish() removes all tracked files after the checkout (`git rm` of
+   * `.gitmodules`, then of `.`), unless `add` is set.
    *
-   * Testing strategy:
-   * - We can't directly test git rm is called because it depends on existing files in cache
-   * - Instead, we test command ORDERING which differs between add: true and add: false
-   * - With add: false, checkout happens BEFORE add (removal step in between, even if no files)
-   * - With add: true, checkout happens BEFORE add (no removal step at all)
-   * - We also verify that add: true NEVER calls git rm (critical)
+   * What we're testing:
+   * - With add: false, the removal runs between checkout and add
+   * - With add: true, git rm is NEVER called on an existing branch
    */
   describe('Git rm command behavior', () => {
     it('should maintain standard command order with add: false (default)', async () => {
@@ -436,17 +445,16 @@ describe('gh-pages-fork publish() - behavioral snapshot (gh-pages v6.3.0 behavio
           .filter(call => call.cmd === 'git')
           .map(call => call.args[0]);
 
-        // Verify standard flow: checkout → (removal logic) → add → commit
+        // Verify standard flow: checkout → removal → add → commit
         const checkoutIndex = gitCommands.indexOf('checkout');
+        const rmIndex = gitCommands.indexOf('rm');
         const addIndex = gitCommands.indexOf('add');
         const commitIndex = gitCommands.indexOf('commit');
 
         expect(checkoutIndex).toBeGreaterThan(-1);
-        expect(addIndex).toBeGreaterThan(checkoutIndex);
+        expect(rmIndex).toBeGreaterThan(checkoutIndex);
+        expect(addIndex).toBeGreaterThan(rmIndex);
         expect(commitIndex).toBeGreaterThan(addIndex);
-
-        // Note: git rm may or may not be called depending on existing files
-        // The important thing is the removal logic is ATTEMPTED (not skipped)
       });
     });
 
@@ -471,18 +479,13 @@ describe('gh-pages-fork publish() - behavioral snapshot (gh-pages v6.3.0 behavio
    * Dotfiles option
    *
    * What does angular-cli-ghpages do?
-   * - We PASS dotfiles option to gh-pages (engine.ts line 242)
+   * - The engine passes the dotfiles option to publish()
    * - Default in angular-cli-ghpages: dotfiles: true (include dotfiles)
    * - User can disable with --no-dotfiles flag
    *
-   * How gh-pages uses it:
-   * - Controls globby pattern matching for files to copy
+   * How publish() uses it (listFiles):
    * - dotfiles: true → includes files starting with '.' (like .htaccess)
    * - dotfiles: false → ignores files starting with '.'
-   *
-   * Why we test this:
-   * - CRITICAL: We expose this option and pass it to gh-pages
-   * - Must verify it affects file selection behavior
    *
    * Test fixture has these files:
    * - index.html (normal file)
@@ -497,7 +500,6 @@ describe('gh-pages-fork publish() - behavioral snapshot (gh-pages v6.3.0 behavio
       const options = { repo, message: 'Deploy', dotfiles: true };
 
       await publishAndHandle(basePath, options, () => {
-        // gh-pages uses globby with { dot: options.dotfiles } (lib/index.js line 90)
         expect(mockCopy).toHaveBeenCalledTimes(1);
 
         const callArgs = mockCopy.mock.calls[0];
@@ -551,23 +553,17 @@ describe('gh-pages-fork publish() - behavioral snapshot (gh-pages v6.3.0 behavio
    * Git executable option
    *
    * What does angular-cli-ghpages do?
-   * - We PASS git option to gh-pages (engine.ts line 240)
-   * - Default: 'git' (relies on PATH)
-   * - gh-pages defaults.git = 'git' (lib/index.js line 29)
-   *
-   * Why we test this:
-   * - We expose this option through defaults.ts
-   * - Must verify the option flows through to gh-pages
+   * - The engine passes the git option to publish()
+   * - Default: 'git' (relies on PATH), see engine/defaults.ts
    *
    * Testing approach:
    * - We pass git: 'git' (our default)
-   * - Verify git commands are executed
-   * - This confirms the option is accepted by gh-pages
+   * - Verify git commands are executed with it
    */
   describe('Git executable option', () => {
     it('should accept git executable option (we pass our default "git")', async () => {
       const repo = 'https://github.com/test/git-exe-test.git';
-      const gitExecutable = 'git'; // Our default from defaults.ts line 15
+      const gitExecutable = 'git'; // Our default from engine/defaults.ts
       currentTestContext.repo = repo;
       const options = { repo, message: 'Deploy', git: gitExecutable };
 
@@ -576,7 +572,6 @@ describe('gh-pages-fork publish() - behavioral snapshot (gh-pages v6.3.0 behavio
         const gitCalls = spawnCalls.filter(call => call.cmd === 'git');
 
         // CRITICAL: Verify git commands were executed
-        // This confirms gh-pages accepted our git option
         expect(gitCalls.length).toBeGreaterThan(0);
 
         // Verify critical commands were executed with the git executable
@@ -630,14 +625,7 @@ describe('gh-pages-fork publish() - behavioral snapshot (gh-pages v6.3.0 behavio
   /**
    * Git tag command - Verify we DON'T use tagging
    *
-   * What does angular-cli-ghpages do?
-   * - We DO NOT pass the 'tag' option to gh-pages
-   * - We DO NOT expose tag option in schema.json
-   * - Therefore, no git tags should ever be created
-   *
-   * Why test this?
-   * - Ensures our deployments don't accidentally create tags
-   * - If gh-pages changes defaults, we'll catch it
+   * publish() has no tag option and must never create tags.
    */
   describe('Git tag command', () => {
     it('should NEVER create git tags (we do not use tag option)', async () => {
@@ -657,66 +645,48 @@ describe('gh-pages-fork publish() - behavioral snapshot (gh-pages v6.3.0 behavio
   });
 
   /**
-   * gh-pages default options we DON'T pass
-   *
-   * These tests verify gh-pages default behavior for options we don't pass.
-   * This ensures we understand what gh-pages is doing on our behalf.
-   *
-   * Options we DON'T pass (gh-pages uses defaults):
-   * - push: true (default) - Always pushes to remote
-   * - dest: '.' (default) - Deploys to root of branch
-   * - src: '**\/*' (default) - Includes all files
-   * - remove: '.' (default) - Removes existing files (unless add: true)
-   * - silent: false (default) - gh-pages logs output (we used to have noSilent but it's DEPRECATED)
-   *
-   * Note on 'silent' option:
-   * - We have 'noSilent' in schema.json but it's DEPRECATED and IGNORED
-   * - We do NOT pass 'silent' to gh-pages
-   * - gh-pages defaults to silent: false (logging enabled)
-   * - This is what we want: verbose logging for deployments
+   * Fixed behavior of publish() (upstream gh-pages has options for these):
+   * - always pushes to the remote
+   * - deploys to the root of the branch
+   * - includes all files of basePath
+   * - removes all existing files (unless add: true)
    */
-  describe('gh-pages default options (we do not pass these)', () => {
-    it('should push to remote (gh-pages default push: true)', async () => {
+  describe('fixed publish behavior', () => {
+    it('should push to remote', async () => {
       const repo = 'https://github.com/test/default-push-test.git';
       currentTestContext.repo = repo;
       const options = { repo, message: 'Deploy' };
-      // We DON'T pass push option, gh-pages defaults to push: true
 
       await publishAndHandle(basePath, options, () => {
         const pushCall = spawnCalls.find(call =>
           call.cmd === 'git' && call.args[0] === 'push'
         );
 
-        // CRITICAL: Push MUST be called (gh-pages default: push: true)
+        // CRITICAL: Push MUST be called
         expect(pushCall).toBeDefined();
       });
     });
 
-    it('should use root destination (gh-pages default dest: ".")', async () => {
+    it('should copy to the root of the branch', async () => {
       const repo = 'https://github.com/test/default-dest-test.git';
       currentTestContext.repo = repo;
       const options = { repo, message: 'Deploy' };
-      // We DON'T pass dest option, gh-pages defaults to dest: '.'
 
       await publishAndHandle(basePath, options, () => {
-        // Copy destination should be at root of cache (not in subdirectory)
+        // Copy destination is the root of the clone (not a subdirectory)
         expect(mockCopy).toHaveBeenCalledTimes(1);
 
         const callArgs = mockCopy.mock.calls[0];
         const [files, source, destination] = callArgs as unknown as [string[], string, string];
 
-        // Destination should be in gh-pages cache, not in a subdirectory
-        expect(destination).toContain('gh-pages');
-        // Should NOT contain additional path segments beyond cache dir
-        // (dest: '.' means deploy to root of branch)
+        expect(path.basename(destination)).toMatch(/^clone-/);
       });
     });
 
-    it('should include all files (gh-pages default src: "**/*")', async () => {
+    it('should include all files', async () => {
       const repo = 'https://github.com/test/default-src-test.git';
       currentTestContext.repo = repo;
       const options = { repo, message: 'Deploy' };
-      // We DON'T pass src option, gh-pages defaults to src: '**/*'
 
       await publishAndHandle(basePath, options, () => {
         expect(mockCopy).toHaveBeenCalledTimes(1);
@@ -724,7 +694,7 @@ describe('gh-pages-fork publish() - behavioral snapshot (gh-pages v6.3.0 behavio
         const callArgs = mockCopy.mock.calls[0];
         const [files] = callArgs as unknown as [string[], string, string];
 
-        // All our test files should be included (src: '**/*' means all files)
+        // All our test files should be included
         expect(files.length).toBe(3);
         expect(files).toContain('index.html');
         expect(files).toContain('main.js');
@@ -732,23 +702,21 @@ describe('gh-pages-fork publish() - behavioral snapshot (gh-pages v6.3.0 behavio
       });
     });
 
-    it('should use default remove pattern (gh-pages default remove: ".")', async () => {
+    it('should remove .gitmodules first, then all tracked files', async () => {
       const repo = 'https://github.com/test/default-remove-test.git';
       currentTestContext.repo = repo;
       const options = { repo, message: 'Deploy', add: false };
-      // We DON'T pass remove option, gh-pages defaults to remove: '.'
-      // With add: false, gh-pages will attempt to remove files matching '.'
 
       await publishAndHandle(basePath, options, () => {
-        // Since it's a fresh clone, there may be no files to remove
-        // But we verify the removal logic is executed (not skipped like with add: true)
-        const gitCommands = spawnCalls
-          .filter(call => call.cmd === 'git')
-          .map(call => call.args[0]);
+        const rmCalls = spawnCalls
+          .filter(call => call.cmd === 'git' && call.args[0] === 'rm')
+          .map(call => call.args.join(' '));
 
-        // Standard flow includes removal logic (even if no files to remove)
-        expect(gitCommands).toContain('checkout');
-        expect(gitCommands).toContain('add');
+        // .gitmodules first: git rm fails when it is gone while a gitlink sorting before it remains
+        expect(rmCalls).toEqual([
+          'rm --ignore-unmatch -r -f -- .gitmodules',
+          'rm --ignore-unmatch -r -f -- .'
+        ]);
       });
     });
   });
@@ -756,7 +724,7 @@ describe('gh-pages-fork publish() - behavioral snapshot (gh-pages v6.3.0 behavio
   /**
    * Error scenarios
    *
-   * gh-pages has robust error handling. We test critical failure paths:
+   * Critical failure paths:
    * 1. Git clone failure and retry (branch doesn't exist)
    * 2. No changes to commit (diff-index returns 0)
    * 3. Git commit when no user configured (uses getUser)
@@ -893,7 +861,7 @@ describe('gh-pages-fork publish() - behavioral snapshot (gh-pages v6.3.0 behavio
       );
 
       // CRITICAL: Commit should NOT be called when no changes
-      // gh-pages uses: git diff-index --quiet HEAD || git commit -m "message"
+      // publish() uses: git diff-index --quiet HEAD || git commit -m "message"
       expect(commitCall).toBeUndefined();
 
       // But push should still be called (even with no new commits)
@@ -907,7 +875,7 @@ describe('gh-pages-fork publish() - behavioral snapshot (gh-pages v6.3.0 behavio
       const repo = 'https://github.com/test/no-user-test.git';
       currentTestContext.repo = repo;
       const options = { repo, message: 'Deploy' };
-      // DON'T pass user option - gh-pages will call getUser()
+      // DON'T pass user option - publish() will call getUser()
 
       // Reset mock to normal behavior (previous test modified it)
       mockSpawn.mockClear();
@@ -957,29 +925,16 @@ describe('gh-pages-fork publish() - behavioral snapshot (gh-pages v6.3.0 behavio
         (call.args[1] === 'user.name' || call.args[1] === 'user.email')
       );
 
-      // When getUser returns null, gh-pages skips git config
+      // When getUser returns null, publish() skips git config
       // (relies on global/local git config)
       expect(configUserCalls.length).toBe(0);
     });
   });
 
   /**
-   * gh-pages v6+ CNAME and .nojekyll file creation
-   *
-   * IMPORTANT: File creation tests are in engine.gh-pages-filecreation.spec.ts
-   * Those tests run WITHOUT mocks to verify actual file creation behavior.
-   *
-   * This mocked test file cannot test actual file creation because:
-   * - We mock child_process.spawn (git commands)
-   * - gh-pages creates files in git.cwd which is set during clone
-   * - Since clone is mocked, the directory structure isn't created
-   *
-   * See engine.gh-pages-filecreation.spec.ts for real file creation tests.
-   */
-
-  /**
-   * gh-pages.clean() behavior is tested in engine.gh-pages-clean.spec.ts
-   * That test uses real filesystem operations without mocks.
+   * CNAME/.nojekyll file creation and the removal of the temporary clone run
+   * against real git in engine.gh-pages-filecreation.spec.ts and
+   * engine.gh-pages-clean.spec.ts.
    */
 
   /**
@@ -1014,8 +969,10 @@ describe('gh-pages-fork publish() - behavioral snapshot (gh-pages v6.3.0 behavio
         engine.run(basePath, options, new logging.NullLogger())
       ).rejects.toThrow('fatal: Authentication failed');
 
-      const cloneCall = spawnCalls.find(c => c.cmd === 'git' && c.args[0] === 'clone');
+      const cloneCall = spawnCalls.find(c => c.cmd === 'git' && gitSubcommand(c.args) === 'clone');
       expect(cloneCall).toBeDefined();
+      // credentials in the URL: no credential helper may store them
+      expect(cloneCall!.args.slice(0, 2)).toEqual(['-c', 'credential.helper=']);
     });
   });
 

@@ -2,9 +2,9 @@ import * as fs from 'fs/promises';
 import * as os from 'os';
 import * as path from 'path';
 
-import { clean, getCacheDir } from '../lib';
+import { getCacheDir } from '../lib';
 
-describe('gh-pages-fork getCacheDir() / clean()', () => {
+describe('gh-pages-fork getCacheDir()', () => {
   let tempDir: string;
   let originalEnv: NodeJS.ProcessEnv;
   let originalCwd: string;
@@ -53,24 +53,9 @@ describe('gh-pages-fork getCacheDir() / clean()', () => {
     expect(getCacheDir()).toBe(path.join(os.tmpdir(), 'angular-cli-ghpages-cache', 'gh-pages'));
   });
 
-  it('names the clone directory after a hash, so tokens never end up on disk', () => {
-    process.env.CACHE_DIR = tempDir;
-    const repo = 'https://x-access-token:secret123@github.com/user/repo.git';
+  it('resolves relative to the given directory', async () => {
+    await fs.writeFile(path.join(tempDir, 'package.json'), '{}');
 
-    const cloneDir = getCacheDir(repo);
-
-    expect(path.dirname(cloneDir)).toBe(path.join(tempDir, 'gh-pages'));
-    expect(cloneDir).not.toContain('secret123');
-    expect(getCacheDir(repo)).toBe(cloneDir);
-  });
-
-  it('clean() removes the cache directory', async () => {
-    process.env.CACHE_DIR = tempDir;
-    const cloneDir = getCacheDir('https://github.com/user/repo.git');
-    await fs.mkdir(cloneDir, { recursive: true });
-
-    await clean();
-
-    await expect(fs.access(path.join(tempDir, 'gh-pages'))).rejects.toThrow();
+    expect(getCacheDir(tempDir)).toBe(path.join(tempDir, 'node_modules', '.cache', 'gh-pages'));
   });
 });

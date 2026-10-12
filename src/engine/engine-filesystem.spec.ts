@@ -24,7 +24,6 @@ vi.mock('../gh-pages-fork/lib', async () => {
   const actual = await vi.importActual<typeof import('../gh-pages-fork/lib')>('../gh-pages-fork/lib');
   return {
     ...actual,
-    clean: vi.fn().mockResolvedValue(undefined),
     publish: vi.fn().mockResolvedValue(undefined)
   };
 });
@@ -43,7 +42,6 @@ describe('engine - real filesystem tests', () => {
 
     // Spy on logger to capture warnings
     loggerInfoSpy = vi.spyOn(logger, 'info');
-    vi.mocked(ghpages.clean).mockClear();
     vi.mocked(ghpages.publish).mockClear();
   });
 
@@ -126,6 +124,33 @@ describe('engine - real filesystem tests', () => {
       const indexPath = path.join(testDir, 'index.html');
       await fs.writeFile(indexPath, '<html><body>Test</body></html>');
 
+      const options = {
+        notfound: true,
+        nojekyll: false,
+        dotfiles: true,
+        dryRun: true
+      };
+
+      await engine.run(testDir, options, logger);
+
+      const notFoundPath = path.join(testDir, '404.html');
+      const exists = await pathExists(notFoundPath);
+      expect(exists).toBe(false);
+    });
+  });
+
+  /**
+   * publish() writes CNAME and .nojekyll into its clone; the engine only
+   * creates 404.html in dist.
+   *
+   * What we're testing:
+   * - Verify we DO pass cname option to publish() when provided
+   * - Verify we DO pass nojekyll option to publish() when enabled
+   */
+  describe('publish options - cname and nojekyll', () => {
+    it('should pass cname option to publish() when provided', async () => {
+      const indexPath = path.join(testDir, 'index.html');
+      await fs.writeFile(indexPath, '<html>test</html>');
 
       const testDomain = 'example.com';
       const options = {

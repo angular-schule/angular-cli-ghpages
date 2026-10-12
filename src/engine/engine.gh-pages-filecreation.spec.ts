@@ -9,7 +9,7 @@
  * Approach:
  * - Create a local bare git repository for each test
  * - publish() clones from and pushes to the local repo (no network required)
- * - Verify files in the clone after publish completes
+ * - Verify the files on the pushed gh-pages branch
  *
  * 404.html is created by the engine in dist; CNAME and .nojekyll are written
  * by publish() into its clone.
@@ -20,7 +20,6 @@ import * as fs from 'fs/promises';
 import * as os from 'os';
 import { execSync } from 'child_process';
 
-import { pathExists } from '../utils';
 
 import * as ghPages from '../gh-pages-fork/lib';
 
@@ -28,13 +27,16 @@ describe('gh-pages-fork CNAME/.nojekyll file creation (REAL filesystem)', () => 
   let tempDir: string;
   let basePath: string;
   let bareRepoPath: string;
+  let originalEnv: NodeJS.ProcessEnv;
 
   // Unique ID to prevent conflicts with parallel test runs
   const testRunId = `${Date.now()}-${Math.random().toString(36).substring(7)}`;
 
   beforeEach(async () => {
-    // Create a unique temp directory for this test
+    // Create a unique temp directory for this test, including the clone cache
+    originalEnv = { ...process.env };
     tempDir = await fs.mkdtemp(path.join(os.tmpdir(), `gh-pages-file-test-${testRunId}-`));
+    process.env.CACHE_DIR = path.join(tempDir, 'cache');
 
     // Create source directory with minimal files
     basePath = path.join(tempDir, 'dist');
@@ -57,25 +59,28 @@ describe('gh-pages-fork CNAME/.nojekyll file creation (REAL filesystem)', () => 
     execSync(`git -C "${initWorkDir}" branch gh-pages`, { stdio: 'pipe' });
     execSync(`git -C "${initWorkDir}" remote add origin "${bareRepoPath}"`, { stdio: 'pipe' });
     execSync(`git -C "${initWorkDir}" push -u origin gh-pages`, { stdio: 'pipe' });
-
-    // Every test starts from a fresh clone
-    await ghPages.clean();
   });
 
   afterEach(async () => {
-    await ghPages.clean();
+    process.env = originalEnv;
     // Cleanup temp directory
     await fs.rm(tempDir, { recursive: true, force: true });
   });
 
-  function getCacheDir(repoPath: string): string {
-    return ghPages.getCacheDir(repoPath);
+  /**
+   * Content of a file on the pushed gh-pages branch, or null if it doesn't exist
+   */
+  function readPublished(file: string): string | null {
+    try {
+      return execSync(`git --git-dir="${bareRepoPath}" show gh-pages:${file}`, { stdio: 'pipe' }).toString();
+    } catch {
+      return null;
+    }
   }
 
   describe('CNAME file creation', () => {
     it('should create CNAME file with exact domain content when cname option is set', async () => {
       const testDomain = 'test-cname.example.com';
-      const cacheDir = getCacheDir(bareRepoPath);
 
       const options = {
         repo: bareRepoPath,
@@ -88,16 +93,10 @@ describe('gh-pages-fork CNAME/.nojekyll file creation (REAL filesystem)', () => 
       await ghPages.publish(basePath, options);
 
       // Verify CNAME file was created by publish()
-      const cnamePath = path.join(cacheDir, 'CNAME');
-      const exists = await pathExists(cnamePath);
-      expect(exists).toBe(true);
-
-      const content = await fs.readFile(cnamePath, 'utf-8');
-      expect(content).toBe(testDomain);
+      expect(readPublished('CNAME')).toBe(testDomain);
     });
 
     it('should NOT create CNAME file when cname option is not provided', async () => {
-      const cacheDir = getCacheDir(bareRepoPath);
 
       const options = {
         repo: bareRepoPath,
@@ -109,15 +108,12 @@ describe('gh-pages-fork CNAME/.nojekyll file creation (REAL filesystem)', () => 
 
       await ghPages.publish(basePath, options);
 
-      const cnamePath = path.join(cacheDir, 'CNAME');
-      const exists = await pathExists(cnamePath);
-      expect(exists).toBe(false);
+      expect(readPublished('CNAME')).toBeNull();
     });
   });
 
   describe('.nojekyll file creation', () => {
     it('should create .nojekyll file when nojekyll option is true', async () => {
-      const cacheDir = getCacheDir(bareRepoPath);
 
       const options = {
         repo: bareRepoPath,
@@ -129,13 +125,10 @@ describe('gh-pages-fork CNAME/.nojekyll file creation (REAL filesystem)', () => 
 
       await ghPages.publish(basePath, options);
 
-      const nojekyllPath = path.join(cacheDir, '.nojekyll');
-      const exists = await pathExists(nojekyllPath);
-      expect(exists).toBe(true);
+      expect(readPublished('.nojekyll')).toBe('');
     });
 
     it('should NOT create .nojekyll file when nojekyll option is false', async () => {
-      const cacheDir = getCacheDir(bareRepoPath);
 
       const options = {
         repo: bareRepoPath,
@@ -147,16 +140,13 @@ describe('gh-pages-fork CNAME/.nojekyll file creation (REAL filesystem)', () => 
 
       await ghPages.publish(basePath, options);
 
-      const nojekyllPath = path.join(cacheDir, '.nojekyll');
-      const exists = await pathExists(nojekyllPath);
-      expect(exists).toBe(false);
+      expect(readPublished('.nojekyll')).toBeNull();
     });
   });
 
   describe('Both CNAME and .nojekyll together', () => {
     it('should create both files when both options are set', async () => {
       const testDomain = 'both-files.example.com';
-      const cacheDir = getCacheDir(bareRepoPath);
 
       const options = {
         repo: bareRepoPath,
@@ -169,14 +159,8 @@ describe('gh-pages-fork CNAME/.nojekyll file creation (REAL filesystem)', () => 
 
       await ghPages.publish(basePath, options);
 
-      // Verify CNAME
-      const cnamePath = path.join(cacheDir, 'CNAME');
-      expect(await pathExists(cnamePath)).toBe(true);
-      expect(await fs.readFile(cnamePath, 'utf-8')).toBe(testDomain);
-
-      // Verify .nojekyll
-      const nojekyllPath = path.join(cacheDir, '.nojekyll');
-      expect(await pathExists(nojekyllPath)).toBe(true);
+      expect(readPublished('CNAME')).toBe(testDomain);
+      expect(readPublished('.nojekyll')).toBe('');
     });
   });
 });

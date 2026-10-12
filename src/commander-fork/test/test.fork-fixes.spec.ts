@@ -25,8 +25,8 @@ describe('Fork Fix 2: Version short-only and custom flags', () => {
 
     beforeEach(() => {
       captured = {out: '', code: null};
-      exitSpy = vi.spyOn(process, 'exit').mockImplementation((c?: number) => {
-        captured.code = c ?? 0;
+      exitSpy = vi.spyOn(process, 'exit').mockImplementation((c?: string | number | null) => {
+        captured.code = Number(c ?? 0);
         return undefined as never;
       });
       writeSpy = vi.spyOn(process.stdout, 'write').mockImplementation((s: string | Uint8Array) => {
@@ -74,8 +74,8 @@ describe('Fork Fix 2: Version short-only and custom flags', () => {
 
     beforeEach(() => {
       exitCode = null;
-      exitSpy = vi.spyOn(process, 'exit').mockImplementation((c?: number) => {
-        exitCode = c ?? 0;
+      exitSpy = vi.spyOn(process, 'exit').mockImplementation((c?: string | number | null) => {
+        exitCode = Number(c ?? 0);
         throw new Error(`exit(${c})`);
       });
       writeSpy = vi.spyOn(process.stdout, 'write').mockImplementation(() => true);
@@ -110,7 +110,7 @@ describe('Fork Fix 2: Version short-only and custom flags', () => {
     let writeSpy: MockInstance;
 
     beforeEach(() => {
-      exitSpy = vi.spyOn(process, 'exit').mockImplementation((code?: number) => {
+      exitSpy = vi.spyOn(process, 'exit').mockImplementation((code?: string | number | null) => {
         return undefined as never;
       });
       writeSpy = vi.spyOn(process.stdout, 'write').mockImplementation(() => true);
@@ -179,7 +179,7 @@ describe('Fork Fix 2: Version short-only and custom flags', () => {
 
     beforeEach(() => {
       errSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
-      exitSpy = vi.spyOn(process, 'exit').mockImplementation((code?: number) => {
+      exitSpy = vi.spyOn(process, 'exit').mockImplementation((code?: string | number | null) => {
         return undefined as never;
       });
     });

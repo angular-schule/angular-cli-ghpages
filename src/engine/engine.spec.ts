@@ -17,7 +17,6 @@ vi.mock('../gh-pages-fork/lib', async () => {
   const actual = await vi.importActual<typeof import('../gh-pages-fork/lib')>('../gh-pages-fork/lib');
   return {
     ...actual,
-    clean: vi.fn(),
     publish: vi.fn()
   };
 });
@@ -272,12 +271,10 @@ describe('engine', () => {
 
     beforeEach(() => {
       vi.mocked(pathExists).mockResolvedValue(true);
-      vi.mocked(ghpages.clean).mockResolvedValue(undefined);
     });
 
     afterEach(() => {
       vi.mocked(pathExists).mockReset();
-      vi.mocked(ghpages.clean).mockReset();
       vi.mocked(ghpages.publish).mockReset();
     });
 
@@ -294,20 +291,9 @@ describe('engine', () => {
       await expect(engine.run(testDir, options, logger)).resolves.toBeUndefined();
     });
 
-    it('should clean the cache before publishing', async () => {
-      const calls: string[] = [];
-      vi.mocked(ghpages.clean).mockImplementation(async () => { calls.push('clean'); });
-      vi.mocked(ghpages.publish).mockImplementation(async () => { calls.push('publish'); });
-
-      await engine.run(testDir, options, logger);
-
-      expect(calls).toEqual(['clean', 'publish']);
-    });
-
-    it('should neither clean nor publish during dry-run', async () => {
+    it('should not publish during dry-run', async () => {
       await engine.run(testDir, { ...options, dryRun: true }, logger);
 
-      expect(ghpages.clean).not.toHaveBeenCalled();
       expect(ghpages.publish).not.toHaveBeenCalled();
     });
 

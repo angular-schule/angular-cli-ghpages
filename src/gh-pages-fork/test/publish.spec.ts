@@ -7,7 +7,7 @@ import * as fs from 'fs/promises';
 import * as os from 'os';
 import * as path from 'path';
 
-import { clean, publish, PublishOptions } from '../lib';
+import { getCacheDir, publish, PublishOptions } from '../lib';
 
 const user = { name: 'Deploy Bot', email: 'bot@example.org' };
 
@@ -49,7 +49,6 @@ describe('gh-pages-fork publish()', () => {
   });
 
   afterEach(async () => {
-    await clean();
     process.env = originalEnv;
     await fs.rm(tempDir, { recursive: true, force: true });
   });
@@ -182,7 +181,119 @@ describe('gh-pages-fork publish()', () => {
       publish(dist, { repo: repoWithToken, user }, (message) => messages.push(message))
     ).rejects.toThrow();
 
-    expect(messages[0]).toContain('https://***@example.invalid/user/repo.git');
+    expect(messages[0].split(' into ')[0]).toBe('Cloning https://***@example.invalid/user/repo.git');
     expect(messages.join('\n')).not.toContain('secret123');
+  });
+
+  it('removes a submodule gitlink that sorts before .gitmodules', async () => {
+    const seed = path.join(tempDir, 'seed-gitmodules');
+    git(tempDir, 'init', '-b', 'gh-pages', seed);
+    git(seed, 'config', 'user.name', 'Seed');
+    git(seed, 'config', 'user.email', 'seed@example.org');
+    await fs.writeFile(path.join(seed, '.gitmodules'), '[submodule "shared"]\n\tpath = .github/actions/shared\n\turl = https://example.invalid/shared.git\n');
+    git(seed, 'add', '.');
+    git(seed, 'commit', '-m', 'seed');
+    git(seed, 'update-index', '--add', '--cacheinfo', `160000,${git(seed, 'rev-parse', 'HEAD')},.github/actions/shared`);
+    git(seed, 'commit', '-m', 'gitlink');
+    git(seed, 'push', remote, 'gh-pages');
+
+    await deploy();
+
+    expect(tree(remote)).toEqual(['assets/app.js', 'index.html']);
+  });
+
+  it('never publishes the default branch on the first deploy with add', async () => {
+    const source = path.join(tempDir, 'source');
+    git(tempDir, 'init', '-b', 'main', source);
+    git(source, 'config', 'user.name', 'Dev');
+    git(source, 'config', 'user.email', 'dev@example.org');
+    await fs.writeFile(path.join(source, 'environment.ts'), 'apiKey=secret');
+    git(source, 'add', '.');
+    git(source, 'commit', '-m', 'source');
+    git(source, 'push', remote, 'main');
+
+    await deploy({ add: true });
+
+    expect(tree(remote)).toEqual(['assets/app.js', 'index.html']);
+  });
+
+  it('skips broken symbolic links and symlink cycles in dist', async () => {
+    await fs.symlink('/does/not/exist', path.join(dist, 'broken.svg'));
+    await fs.symlink('..', path.join(dist, 'assets', 'loop'));
+
+    await deploy();
+
+    expect(tree(remote)).toEqual(['assets/app.js', 'index.html']);
+  });
+
+  it('writes files without the executable bit', async () => {
+    await fs.chmod(path.join(dist, 'assets', 'app.js'), 0o755);
+
+    await deploy();
+
+    expect(git(remote, 'ls-tree', 'gh-pages', 'assets/app.js').split(/\s/)[0]).toBe('100644');
+  });
+
+  it('accepts a relative repository path', async () => {
+    const cwd = process.cwd();
+    process.chdir(tempDir);
+
+    try {
+      await publish(dist, { repo: './remote.git', user, message: 'deploy' });
+    } finally {
+      process.chdir(cwd);
+    }
+
+    expect(tree(remote)).toEqual(['assets/app.js', 'index.html']);
+  });
+
+  it('runs concurrent deploys to different branches without interference', async () => {
+    const other = path.join(tempDir, 'other-dist');
+    await fs.mkdir(other);
+    await fs.writeFile(path.join(other, 'other.html'), 'other');
+
+    await Promise.all([
+      deploy({ branch: 'pages-a' }),
+      publish(other, { repo: remote, user, branch: 'pages-b', message: 'deploy' })
+    ]);
+
+    expect(tree(remote, 'pages-a')).toEqual(['assets/app.js', 'index.html']);
+    expect(tree(remote, 'pages-b')).toEqual(['other.html']);
+    expect(await fs.readdir(getCacheDir())).toEqual([]);
+  });
+
+  it('rejects when git is killed by a signal', async () => {
+    const fakeGit = path.join(tempDir, 'fake-git');
+    await fs.writeFile(fakeGit, `#!/bin/sh\nif [ "$1" = "push" ]; then kill -9 $$; fi\nexec git "$@"\n`);
+    await fs.chmod(fakeGit, 0o755);
+
+    await expect(deploy({ git: fakeGit })).rejects.toThrow('Process killed by SIGKILL');
+  });
+
+  it('reports a missing git executable as such', async () => {
+    const missing = path.join(tempDir, 'no-such-git');
+
+    await expect(publish(dist, { git: missing, user, message: 'deploy' })).rejects.toThrow('ENOENT');
+  });
+
+  it('ignores stderr output of git when reading the remote URL and the user', async () => {
+    const app = path.join(tempDir, 'app');
+    git(tempDir, 'init', app);
+    git(app, 'remote', 'add', 'origin', remote);
+    git(app, 'config', 'user.name', 'Local User');
+    git(app, 'config', 'user.email', 'local@example.org');
+    const noisyGit = path.join(tempDir, 'noisy-git');
+    await fs.writeFile(noisyGit, '#!/bin/sh\necho "trace: noise" >&2\nexec git "$@"\n');
+    await fs.chmod(noisyGit, 0o755);
+    const cwd = process.cwd();
+    process.chdir(app);
+
+    try {
+      await publish(dist, { git: noisyGit, message: 'deploy' });
+    } finally {
+      process.chdir(cwd);
+    }
+
+    expect(git(remote, 'log', '-1', '--format=%an <%ae>', 'gh-pages')).toBe('Local User <local@example.org>');
   });
 });

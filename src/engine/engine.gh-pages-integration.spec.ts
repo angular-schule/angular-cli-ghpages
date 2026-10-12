@@ -2,7 +2,6 @@
  * Integration tests for the interaction with gh-pages-fork
  *
  * These tests verify how engine.ts interacts with gh-pages-fork:
- * - When clean() is called
  * - What arguments are passed to publish()
  * - Which options are passed through vs. filtered out
  * - Dry-run behavior isolation
@@ -36,7 +35,6 @@ vi.mock('../gh-pages-fork/lib/git', async () => {
 
 vi.mock('../gh-pages-fork/lib', async () => ({
   ...(await vi.importActual('../gh-pages-fork/lib')),
-  clean: vi.fn(),
   publish: vi.fn()
 }));
 
@@ -44,13 +42,10 @@ describe('engine - gh-pages-fork integration', () => {
   const logger = new logging.NullLogger();
   const originalEnv = process.env;
 
-  const ghpagesCleanSpy = vi.mocked(ghpages.clean);
   const ghpagesPublishSpy = vi.mocked(ghpages.publish);
 
   beforeEach(() => {
-    ghpagesCleanSpy.mockReset();
     ghpagesPublishSpy.mockReset();
-    ghpagesCleanSpy.mockResolvedValue(undefined);
     ghpagesPublishSpy.mockResolvedValue(undefined);
 
     // Create fresh copy of environment for each test
@@ -70,42 +65,14 @@ describe('engine - gh-pages-fork integration', () => {
     process.env = originalEnv;
   });
 
-  describe('clean() behavior', () => {
-    it('should call clean() before publishing in normal mode', async () => {
+  describe('publish() calls', () => {
+    it('should call publish() exactly once in normal mode', async () => {
       const testDir = '/test/dist';
       const options = { dotfiles: true, notfound: true, nojekyll: true };
 
       await engine.run(testDir, options, logger);
 
-      expect(ghpagesCleanSpy).toHaveBeenCalledTimes(1);
-      expect(ghpagesCleanSpy).toHaveBeenCalledWith();
-    });
-
-    it('should NOT call clean() during dry-run', async () => {
-      const testDir = '/test/dist';
-      const options = {
-        dotfiles: true,
-        notfound: true,
-        nojekyll: true,
-        dryRun: true
-      };
-
-      await engine.run(testDir, options, logger);
-
-      expect(ghpagesCleanSpy).not.toHaveBeenCalled();
-    });
-
-    it('should call clean() before publish() to avoid remote url mismatch', async () => {
-      const testDir = '/test/dist';
-      const options = { dotfiles: true, notfound: true, nojekyll: true };
-
-      await engine.run(testDir, options, logger);
-
-      // Verify clean() was called before publish()
-      const cleanCallOrder = ghpagesCleanSpy.mock.invocationCallOrder[0];
-      const publishCallOrder = ghpagesPublishSpy.mock.invocationCallOrder[0];
-
-      expect(cleanCallOrder).toBeLessThan(publishCallOrder);
+      expect(ghpagesPublishSpy).toHaveBeenCalledTimes(1);
     });
   });
 
@@ -381,20 +348,6 @@ describe('engine - gh-pages-fork integration', () => {
       await engine.run(testDir, options, logger);
 
       expect(ghpagesPublishSpy).not.toHaveBeenCalled();
-    });
-
-    it('should NOT call clean() during dry-run', async () => {
-      const testDir = '/test/dist';
-      const options = {
-        dryRun: true,
-        dotfiles: true,
-        notfound: true,
-        nojekyll: true
-      };
-
-      await engine.run(testDir, options, logger);
-
-      expect(ghpagesCleanSpy).not.toHaveBeenCalled();
     });
 
     it('should log what WOULD be published during dry-run', async () => {

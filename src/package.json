@@ -16,7 +16,7 @@
     "prebuild": "node scripts/prebuild.js",
     "build": "tsc -p tsconfig.build.json",
     "postbuild": "node scripts/postbuild.js",
-    "test": "vitest run"
+    "test": "tsc -p tsconfig.json --noEmit && vitest run"
   },
   "schematics": "./collection.json",
   "builders": "./builders.json",

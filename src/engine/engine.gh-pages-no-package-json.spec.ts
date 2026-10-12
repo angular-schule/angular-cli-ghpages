@@ -22,7 +22,6 @@ import { execSync } from 'child_process';
 import { logging } from '@angular-devkit/core';
 
 import * as engine from './engine';
-import * as ghPages from '../gh-pages-fork/lib';
 
 function git(args: string, cwd: string): string {
   return execSync(`git -C "${cwd}" ${args}`, { stdio: ['pipe', 'pipe', 'pipe'] })
@@ -74,16 +73,18 @@ describe('engine.run() in a directory with no package.json (issue #203)', () => 
 
   afterEach(async () => {
     process.chdir(originalCwd);
-    await ghPages.clean();
     process.env = originalEnv;
     await fs.rm(workDir, { recursive: true, force: true });
   });
 
   it('engine.run() succeeds and actually publishes when no package.json is reachable from cwd', async () => {
-    // Only a real run proves the full chain (prepareOptions → clean() →
-    // publish() → real git clone/push) in a cwd without package.json.
+    // Only a real run proves the full chain (prepareOptions → publish() →
+    // real git clone/push) in a cwd without package.json.
 
     process.chdir(workDir);
+    const logger = new logging.Logger('test');
+    const messages: string[] = [];
+    logger.subscribe((entry) => messages.push(entry.message));
 
     await engine.run(
       distDir,
@@ -97,7 +98,7 @@ describe('engine.run() in a directory with no package.json (issue #203)', () => 
         email: 'test@test.com',
         message: 'test deploy (no package.json)'
       },
-      new logging.NullLogger()
+      logger
     );
 
     // Positive proof that the deploy actually landed:
@@ -108,6 +109,8 @@ describe('engine.run() in a directory with no package.json (issue #203)', () => 
     expect(tree).toEqual(['index.html']);
 
     // The clone went to the tmpdir fallback
-    expect(ghPages.getCacheDir()).toBe(path.join(os.tmpdir(), 'angular-cli-ghpages-cache', 'gh-pages'));
+    const cloning = messages.find((message) => message.startsWith('Cloning '));
+    const cloneDir = cloning!.split(' into ')[1];
+    expect(path.dirname(cloneDir)).toBe(path.join(os.tmpdir(), 'angular-cli-ghpages-cache', 'gh-pages'));
   }, 30_000);
 });

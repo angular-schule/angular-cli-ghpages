@@ -26,7 +26,7 @@ The file structure and function names follow upstream, so upstream changes can b
 
 | Upstream       | Fork           | Contents                                                               |
 | -------------- | -------------- | ---------------------------------------------------------------------- |
-| `lib/index.js` | `lib/index.ts` | `publish()`, `clean()`, `getCacheDir()`, `getRepo()`, `defaults`       |
+| `lib/index.js` | `lib/index.ts` | `publish()`, `getCacheDir()`, `getRepo()`, `defaults`                  |
 | `lib/git.js`   | `lib/git.ts`   | `Git` class, `ProcessError`, `spawn()`                                 |
 | `lib/util.js`  | `lib/util.ts`  | `copy()`, `getUser()`, plus `listFiles()` instead of a glob library  |
 
@@ -35,28 +35,34 @@ The file structure and function names follow upstream, so upstream changes can b
 ### Features Kept ✅
 
 - `publish(basePath, options, log?)` — async, rejects on any error
-- `clean()` and `getCacheDir()`
+- `getCacheDir()` and `getRepo()`
 - Options: `repo`, `branch`, `remote`, `message`, `git`, `depth`, `add`, `dotfiles`, `nojekyll`, `cname`, `user`
-- `Git`: `clone`, `exec`, `clean`, `reset`, `fetch`, `checkout`, `rm`, `add`, `commit`, `push`, `getRemoteUrl`
+- `Git`: `clone`, `exec`, `clean`, `reset`, `checkout`, `rm`, `removeAll`, `add`, `commit`, `push`, `getRemoteUrl`
 
 ### Features Removed ❌
 
-- The `gh-pages` / `gh-pages-clean` CLI
+- The `gh-pages` / `gh-pages-clean` CLI and `clean()`
 - The callback API of `publish()`
 - Options `src`, `remove`, `only`, `dest`, `tag`, `history`, `push`, `silent`, `beforeAdd`
-- `Git`: `init`, `tag`, `deleteRef`
+- `Git`: `init`, `fetch`, `tag`, `deleteRef`
 - All dependencies: `async`, `commander`, `email-addresses`, `filenamify`, `find-cache-dir`, `fs-extra`, `globby`/`tinyglobby`
 
 ## Deviations from Upstream
 
 | Topic             | Upstream                                                        | Fork                                                                                           |
 | ----------------- | --------------------------------------------------------------- | ---------------------------------------------------------------------------------------------- |
-| Logging           | `util.debuglog('gh-pages')`                                     | `log` callback parameter of `publish()`                                                         |
-| Removing files    | glob `remove` pattern, then `git rm` in batches                 | `git rm -r -f --ignore-unmatch -- .` (all tracked files, including dotfiles and submodules)     |
-| File list         | glob `src` pattern via tinyglobby                                | `listFiles()`: all files below `basePath`, follows symlinks, honors `dotfiles`                  |
-| Cache directory   | `find-cache-dir` + `filenamify(repo)`                           | Same lookup (`$CACHE_DIR`, closest `package.json`) plus an os temp dir fallback; clone directory named after a hash of the repo URL, so tokens never end up in a path |
+| Clone             | one cached clone per repository URL, reused across runs, `gh-pages-clean` to reset it | a fresh temporary clone per `publish()` below the cache directory, removed afterwards; concurrent deploys never share a clone, and no token stays in `.git/config` |
+| Cache directory   | `find-cache-dir`                                                | same lookup (`$CACHE_DIR`, closest `package.json`) plus an os temp dir fallback                 |
+| Repository check  | "Remote url mismatch" check against the cached clone            | none (every clone is fresh), so relative repository paths work                                 |
+| Git environment   | inherited                                                        | `GIT_CEILING_DIRECTORIES` for all commands in the clone, so git never falls through to a repository above it; `-c credential.helper=` when the URL carries credentials, so no credential helper stores them |
+| Process results   | resolves on a falsy exit code (also for a process killed by a signal); stdout and stderr in one buffer | rejects unless the exit code is 0 (a killed process rejects); `output` is stdout only, stderr only goes into error messages |
+| Logging           | `util.debuglog('gh-pages')`                                     | `log` callback parameter of `publish()`; credentials in the repository URL are replaced with `***` |
+| Removing files    | glob `remove` pattern, then `git rm` in batches                 | `removeAll()`: `git rm` of `.gitmodules`, then of `.` (all tracked files, including dotfiles and submodule gitlinks) |
+| New branch        | `checkout --orphan` keeps the files of the cloned default branch (they get published with `add`) | the orphan branch starts empty                                                                  |
 | `checkout()`      | `main` only runs `ls-remote` for an existing branch              | `checkout`, `clean -f -d`, `reset --hard remote/branch` (the behavior of v6.3.0)                |
-| Log messages      | full repository URL                                              | credentials in the repository URL are replaced with `***`                                      |
+| File list         | glob `src` pattern via tinyglobby                                | `listFiles()`: all files below `basePath`, follows symlinks, skips broken links and cycles, honors `dotfiles` |
+| Copying           | `fs-extra` copy (keeps the file mode)                            | streams, files created with mode 0666 minus umask (no executable bit, like gh-pages v6.3.0); limited concurrency |
+| `getUser()`       | always runs `git`                                               | uses the configured `git` executable                                                            |
 | Empty `basePath`  | `The pattern in the "src" property didn't match any files.`     | `The directory "<basePath>" doesn't contain any files to publish.`                              |
 
 ## Maintenance

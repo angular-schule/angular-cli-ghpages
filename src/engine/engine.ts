@@ -22,13 +22,6 @@ export async function run(
 ) {
   const prepared = await prepareOptions(options, logger);
 
-  // Every deploy starts from a fresh clone of the target branch
-  if (prepared.dryRun) {
-    logger.info('Dry-run / SKIPPED: cleaning of the cache directory');
-  } else {
-    await ghpages.clean();
-  }
-
   await checkIfDistFolderExists(dir);
   await createNotFoundFile(dir, prepared, logger);
   await publishViaGhPages(dir, prepared, logger);

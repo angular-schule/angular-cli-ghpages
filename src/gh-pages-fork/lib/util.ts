@@ -5,8 +5,10 @@
  * Copyright (c) 2014 Tim Schaub
  */
 
+import { createReadStream, createWriteStream } from 'fs';
 import * as fs from 'fs/promises';
 import * as path from 'path';
+import { pipeline } from 'stream/promises';
 
 import { Git } from './git';
 
@@ -17,53 +19,84 @@ export interface User {
 
 /**
  * List all files below `base` as relative paths with POSIX separators.
- * Symbolic links are followed (their targets get copied).
+ * Symbolic links are followed (their targets get copied); broken links and
+ * links to a directory of the current path (cycles) are skipped.
  * Entries starting with `.` are skipped unless `dotfiles` is set.
  */
 export async function listFiles(base: string, dotfiles: boolean): Promise<string[]> {
   const files: string[] = [];
 
-  async function walk(relDir: string): Promise<void> {
+  async function walk(relDir: string, ancestors: string[]): Promise<void> {
+    const realDir = await fs.realpath(path.join(base, relDir));
+    if (ancestors.includes(realDir)) {
+      return;
+    }
+    ancestors = [...ancestors, realDir];
+
     const entries = await fs.readdir(path.join(base, relDir), { withFileTypes: true });
     for (const entry of entries) {
       if (!dotfiles && entry.name.startsWith('.')) {
         continue;
       }
       const relPath = relDir ? `${relDir}/${entry.name}` : entry.name;
-      const stat = entry.isSymbolicLink() ? await fs.stat(path.join(base, relPath)) : entry;
+      let stat: { isDirectory(): boolean; isFile(): boolean } = entry;
+      if (entry.isSymbolicLink()) {
+        try {
+          stat = await fs.stat(path.join(base, relPath));
+        } catch {
+          continue;
+        }
+      }
       if (stat.isDirectory()) {
-        await walk(relPath);
+        await walk(relPath, ancestors);
       } else if (stat.isFile()) {
         files.push(relPath);
       }
     }
   }
 
-  await walk('');
+  await walk('', []);
   return files;
 }
 
 /**
  * Copy a list of files.
+ *
+ * Files are written as new files (mode 0666 minus umask, no executable bit),
+ * like a plain checkout of the branch would create them. Directories are
+ * created once; files are copied with limited concurrency.
  */
 export async function copy(files: string[], base: string, dest: string): Promise<void> {
-  for (const file of files) {
+  const pairs = files.map((file) => {
     const src = path.resolve(base, file);
-    const target = path.join(dest, path.relative(base, src));
-    await fs.mkdir(path.dirname(target), { recursive: true });
-    await fs.copyFile(src, target);
+    return { src, target: path.join(dest, path.relative(base, src)) };
+  });
+
+  const dirs = [...new Set(pairs.map(({ target }) => path.dirname(target)))].sort();
+  for (const dir of dirs) {
+    await fs.mkdir(dir, { recursive: true });
   }
+
+  const concurrency = 16;
+  let next = 0;
+  async function worker(): Promise<void> {
+    while (next < pairs.length) {
+      const { src, target } = pairs[next++];
+      await pipeline(createReadStream(src), createWriteStream(target));
+    }
+  }
+  await Promise.all(Array.from({ length: Math.min(concurrency, pairs.length) }, worker));
 }
 
 /**
- * Read the git user of the current working directory.
+ * Read the git user of the given working directory (default: process.cwd()).
  * Resolves with null when name or email is not configured.
  */
-export async function getUser(cwd?: string): Promise<User | null> {
+export async function getUser(cwd = process.cwd(), cmd = 'git'): Promise<User | null> {
   try {
     const [name, email] = await Promise.all([
-      new Git(cwd ?? process.cwd()).exec('config', 'user.name'),
-      new Git(cwd ?? process.cwd()).exec('config', 'user.email')
+      new Git(cwd, cmd).exec('config', 'user.name'),
+      new Git(cwd, cmd).exec('config', 'user.email')
     ]);
     return { name: name.output.trim(), email: email.output.trim() };
   } catch {

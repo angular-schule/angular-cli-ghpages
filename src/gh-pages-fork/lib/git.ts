@@ -6,16 +6,15 @@
  */
 
 import * as cp from 'child_process';
-import * as fs from 'fs/promises';
 import * as path from 'path';
 
 /**
- * Error for a git process that exited with a non-zero code.
- * `message` holds the combined stdout/stderr output of the process.
+ * Error for a git process that didn't exit with code 0.
+ * `message` holds the combined stderr/stdout output of the process.
  */
 export class ProcessError extends Error {
   constructor(
-    public readonly code: number,
+    public readonly code: number | null,
     message: string
   ) {
     super(message);
@@ -23,35 +22,39 @@ export class ProcessError extends Error {
   }
 }
 
+export interface SpawnOptions {
+  cwd?: string;
+  env?: NodeJS.ProcessEnv;
+}
+
 /**
- * Run a process and resolve with its combined stdout/stderr output.
- * Rejects with a ProcessError on a non-zero exit code.
+ * Run a process and resolve with its stdout.
+ * Rejects with a ProcessError unless the process exits with code 0,
+ * which includes a process killed by a signal.
  */
-export function spawn(exe: string, args: string[], cwd?: string): Promise<string> {
+export function spawn(exe: string, args: string[], options: SpawnOptions = {}): Promise<string> {
   return new Promise((resolve, reject) => {
-    const child = cp.spawn(exe, args, { cwd: cwd || process.cwd() });
-    const buffer: string[] = [];
-    child.stderr.on('data', (chunk: Buffer) => buffer.push(chunk.toString()));
-    child.stdout.on('data', (chunk: Buffer) => buffer.push(chunk.toString()));
+    const child = cp.spawn(exe, args, {
+      cwd: options.cwd || process.cwd(),
+      env: options.env ? { ...process.env, ...options.env } : process.env
+    });
+    const stdout: string[] = [];
+    const output: string[] = [];
+    child.stdout.on('data', (chunk: Buffer) => {
+      stdout.push(chunk.toString());
+      output.push(chunk.toString());
+    });
+    child.stderr.on('data', (chunk: Buffer) => output.push(chunk.toString()));
     child.on('error', reject);
-    child.on('close', (code: number | null) => {
-      const output = buffer.join('');
-      if (code) {
-        reject(new ProcessError(code, output || 'Process failed: ' + code));
+    child.on('close', (code: number | null, signal: NodeJS.Signals | null) => {
+      if (code === 0) {
+        resolve(stdout.join(''));
       } else {
-        resolve(output);
+        const reason = signal ? 'Process killed by ' + signal : 'Process failed: ' + code;
+        reject(new ProcessError(code, output.join('') || reason));
       }
     });
   });
-}
-
-async function pathExists(filePath: string): Promise<boolean> {
-  try {
-    await fs.access(filePath);
-    return true;
-  } catch {
-    return false;
-  }
 }
 
 export interface CloneOptions {
@@ -62,46 +65,53 @@ export interface CloneOptions {
 
 /**
  * Executes git commands in one repository directory.
- * `output` holds the output of the last executed command.
+ * `output` holds the stdout of the last executed command.
  */
 export class Git {
   output = '';
 
+  /**
+   * @param cwd Repository directory
+   * @param cmd Git executable
+   * @param args Arguments placed before every git subcommand (e.g. `-c key=value`)
+   * @param env Additional environment variables for every git process
+   */
   constructor(
     public readonly cwd: string,
-    public readonly cmd = 'git'
+    public readonly cmd = 'git',
+    private readonly args: string[] = [],
+    private readonly env?: NodeJS.ProcessEnv
   ) {}
 
   /**
-   * Clone a repo into the given dir if it doesn't already exist.
+   * Clone a branch of a repo into the given (empty or missing) dir.
    * Falls back to a full clone of the default branch when the branch doesn't exist yet.
+   *
+   * The returned instance never operates on a repository above `dir`
+   * (GIT_CEILING_DIRECTORIES), even if `dir` loses its .git directory.
    */
-  static async clone(repo: string, dir: string, branch: string, options: CloneOptions): Promise<Git> {
-    if (await pathExists(dir)) {
-      return new Git(dir, options.git);
-    }
-
-    await fs.mkdir(path.dirname(path.resolve(dir)), { recursive: true });
-
+  static async clone(repo: string, dir: string, branch: string, options: CloneOptions, args: string[] = []): Promise<Git> {
+    const env = { GIT_CEILING_DIRECTORIES: path.dirname(path.resolve(dir)) };
     try {
       await spawn(options.git, [
+        ...args,
         'clone', repo, dir,
         '--branch', branch,
         '--single-branch',
         '--origin', options.remote,
         '--depth', String(options.depth)
-      ]);
+      ], { env });
     } catch {
-      await spawn(options.git, ['clone', repo, dir, '--origin', options.remote]);
+      await spawn(options.git, [...args, 'clone', repo, dir, '--origin', options.remote], { env });
     }
-    return new Git(dir, options.git);
+    return new Git(dir, options.git, args, env);
   }
 
   /**
    * Execute an arbitrary git command.
    */
   async exec(...args: string[]): Promise<this> {
-    this.output = await spawn(this.cmd, args, this.cwd);
+    this.output = await spawn(this.cmd, [...this.args, ...args], { cwd: this.cwd, env: this.env });
     return this;
   }
 
@@ -120,14 +130,8 @@ export class Git {
   }
 
   /**
-   * Fetch from a remote.
-   */
-  fetch(remote: string): Promise<this> {
-    return this.exec('fetch', remote);
-  }
-
-  /**
-   * Checkout a branch (create an orphan if it doesn't exist on the remote).
+   * Checkout a branch. A branch that doesn't exist on the remote is created as
+   * an empty orphan branch (the files of the cloned default branch are removed).
    */
   async checkout(remote: string, branch: string): Promise<this> {
     const treeish = remote + '/' + branch;
@@ -135,7 +139,8 @@ export class Git {
       await this.exec('ls-remote', '--exit-code', '.', treeish);
     } catch (error) {
       if (error instanceof ProcessError && error.code === 2) {
-        return this.exec('checkout', '--orphan', branch);
+        await this.exec('checkout', '--orphan', branch);
+        return this.removeAll();
       }
       throw error;
     }
@@ -150,6 +155,16 @@ export class Git {
    */
   rm(files: string[]): Promise<this> {
     return this.exec('rm', '--ignore-unmatch', '-r', '-f', '--', ...files);
+  }
+
+  /**
+   * Remove all tracked files, including dotfiles and submodule gitlinks.
+   * `.gitmodules` goes first: `git rm` reads it to update submodule entries and
+   * fails when it is already gone while a gitlink sorting before it remains.
+   */
+  async removeAll(): Promise<this> {
+    await this.rm(['.gitmodules']);
+    return this.rm(['.']);
   }
 
   /**
@@ -185,8 +200,10 @@ export class Git {
     try {
       await this.exec('config', '--get', 'remote.' + remote + '.url');
       repo = this.output.split(/[\n\r]/).shift();
-    } catch {
-      repo = undefined;
+    } catch (error) {
+      if (!(error instanceof ProcessError)) {
+        throw error;
+      }
     }
     if (!repo) {
       throw new Error(

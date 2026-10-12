@@ -10,7 +10,8 @@ const files = [
   'package.json',
   'angular-cli-ghpages',
   'deploy/schema.json',
-  'commander-fork/index.js'
+  'commander-fork/index.js',
+  'gh-pages-fork/LICENSE'
 ];
 
 for (const file of files) {

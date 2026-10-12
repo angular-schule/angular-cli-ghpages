@@ -8,7 +8,7 @@
 import { logging } from '@angular-devkit/core';
 
 import { Schema } from '../deploy/schema';
-import { Git } from '../gh-pages-fork/lib/git';
+import { getRepo } from '../gh-pages-fork/lib';
 
 /**
  * Type for options with the three boolean flags that prepareOptions adds,
@@ -178,10 +178,9 @@ export async function injectTokenIntoRepoUrl(options: PreparedOptions): Promise<
  * Get the URL of `options.remote` from the git repository in the current working directory.
  *
  * process.cwd() is the directory from which ng deploy was invoked, i.e. the project root.
- * Expects options.remote to be set (our defaults provide 'origin').
  *
  * Exported for testing - internal use only
  */
 export async function getRemoteUrl(options: Schema & { git?: string; remote?: string }): Promise<string> {
-  return new Git(process.cwd(), options.git).getRemoteUrl(options.remote ?? 'origin');
+  return getRepo({ git: options.git, remote: options.remote });
 }

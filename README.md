@@ -40,7 +40,7 @@
 
 A detailed changelog is available in the [releases](https://github.com/angular-schule/angular-cli-ghpages/releases) section.
 
-`angular-cli-ghpages` v4 supports Angular 18 to 22.
+`angular-cli-ghpages` v3 supports Angular 18 to 22.
 For previous versions of Angular, use v1 or v2.
 
 ## ⚠️ Prerequisites <a name="prerequisites"></a>

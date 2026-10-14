@@ -1,21 +1,16 @@
 import {logging} from '@angular-devkit/core';
-import * as fs from 'fs/promises';
-import * as path from 'path';
 
 import {Schema} from '../deploy/schema';
+import * as ghpages from '../gh-pages-fork/lib';
 import {pathExists} from '../utils';
-import {GHPages, PublishOptions} from '../interfaces';
 import {defaults} from './defaults';
 import {
   PreparedOptions,
-  setupMonkeypatch,
   mapNegatedBooleans,
   handleUserCredentials,
   warnDeprecatedParameters,
   appendCIMetadata,
-  injectTokenIntoRepoUrl,
-  createCleanupBeforeAddHook,
-  ensureGhPagesCacheDir
+  injectTokenIntoRepoUrl
 } from './engine.prepare-options-helpers';
 
 export async function run(
@@ -25,32 +20,8 @@ export async function run(
 ) {
   const prepared = await prepareOptions(options, logger);
 
-  // Provide a cache-dir fallback when there's no package.json in cwd
-  // (e.g. `npx angular-cli-ghpages` in a static-content repo). Without this,
-  // gh-pages' internal find-cache-dir returns undefined and path.join throws.
-  // See issue #203. Must run before the first find-cache-dir call.
-  ensureGhPagesCacheDir();
-
-  // CRITICAL: Must require gh-pages AFTER monkeypatching util.debuglog
-  // gh-pages calls util.debuglog('gh-pages') during module initialization to set up its logger.
-  // If we require gh-pages before monkeypatching, it caches the original util.debuglog,
-  // and our monkeypatch won't capture the logging output.
-  // See prepareOptions() for the monkeypatch implementation.
-  // Note: Dynamic import required for monkeypatch timing (static import would cache before patch)
-  const ghpages = require('gh-pages');
-
-  // always clean the cache directory.
-  // avoids "Error: Remote url mismatch."
-  if (prepared.dryRun) {
-    logger.info('Dry-run / SKIPPED: cleaning of the cache directory');
-  } else {
-    ghpages.clean();
-  }
-
   await checkIfDistFolderExists(dir);
-  await createNotFoundFile(dir, prepared, logger);
-  // gh-pages writes CNAME and .nojekyll into its clone (cname/nojekyll options)
-  await publishViaGhPages(ghpages, dir, prepared, logger);
+  await publishViaGhPages(dir, prepared, logger);
 
   if (!prepared.dryRun) {
     logger.info(
@@ -64,13 +35,12 @@ export async function run(
  *
  * This orchestrator function:
  * 1. Merges defaults with user options
- * 2. Sets up monkeypatch for gh-pages logging
- * 3. Maps negated boolean options (noDotfiles → dotfiles)
- * 4. Handles user credentials
- * 5. Warns about deprecated parameters
- * 6. Appends CI environment metadata
- * 7. Discovers and injects remote URL with authentication tokens
- * 8. Logs dry-run message if applicable
+ * 2. Maps negated boolean options (noDotfiles → dotfiles)
+ * 3. Handles user credentials
+ * 4. Warns about deprecated parameters
+ * 5. Appends CI environment metadata
+ * 6. Discovers and injects remote URL with authentication tokens
+ * 7. Logs dry-run message if applicable
  */
 export async function prepareOptions(
   origOptions: Schema,
@@ -82,25 +52,22 @@ export async function prepareOptions(
     ...origOptions
   };
 
-  // 2. Setup monkeypatch for gh-pages logging (MUST be before requiring gh-pages)
-  setupMonkeypatch(logger);
-
-  // 3. Map negated boolean options
+  // 2. Map negated boolean options
   mapNegatedBooleans(options, origOptions);
 
-  // 4. Handle user credentials
+  // 3. Handle user credentials
   handleUserCredentials(options, origOptions, logger);
 
-  // 5. Warn about deprecated parameters
+  // 4. Warn about deprecated parameters
   warnDeprecatedParameters(origOptions, logger);
 
-  // 6. Append CI environment metadata
+  // 5. Append CI environment metadata
   appendCIMetadata(options);
 
-  // 7. Discover and inject remote URL with authentication tokens
+  // 6. Discover and inject remote URL with authentication tokens
   await injectTokenIntoRepoUrl(options);
 
-  // 8. Log dry-run message if applicable
+  // 7. Log dry-run message if applicable
   if (options.dryRun) {
     logger.info('Dry-run: No changes are applied at all.');
   }
@@ -116,73 +83,22 @@ async function checkIfDistFolderExists(dir: string) {
   }
 }
 
-async function createNotFoundFile(
-  dir: string,
-  options: {
-    notfound: boolean,
-    dryRun?: boolean
-  },
-  logger: logging.LoggerApi
-) {
-  if (!options.notfound) {
-    return;
-  }
-
-  if (options.dryRun) {
-    logger.info('Dry-run / SKIPPED: copying of index.html to 404.html');
-    return;
-  }
-
-  // Note:
-  // There is no guarantee that there will be an index.html file,
-  // as we may may specify a custom index file or a different folder is going to be deployed.
-  const indexHtml = path.join(dir, 'index.html');
-  const notFoundFile = path.join(dir, '404.html');
-
-  try {
-    await fs.copyFile(indexHtml, notFoundFile);
-    logger.info('404.html file created');
-  } catch (err) {
-    const message = err instanceof Error ? err.message : String(err);
-    logger.info('index.html could not be copied to 404.html. Proceeding without it.');
-    logger.debug('Diagnostic info: ' + message);
-    return;
-  }
-}
-
-/**
- * Files that gh-pages writes into its clone (not into dist) for the given options.
- * gh-pages' own remove step already unstages CNAME before rewriting it; listing it
- * here keeps the cleanup hook correct independently of that detail.
- */
-function generatedFiles(options: PreparedOptions): string[] {
-  const files: string[] = [];
-  if (options.nojekyll) {
-    files.push('.nojekyll');
-  }
-  if (options.cname) {
-    files.push('CNAME');
-  }
-  return files;
-}
-
 async function publishViaGhPages(
-  ghPages: GHPages,
   dir: string,
   options: PreparedOptions,
   logger: logging.LoggerApi
 ) {
   if (options.dryRun) {
-    // Note: options.repo may contain auth tokens. This is acceptable because:
-    // 1. CI environments (GitHub Actions, etc.) automatically mask secrets in logs
-    // 2. Dry-run is typically used for debugging, where seeing the full URL helps
-    // 3. Local dry-runs don't persist logs
+    // options.repo may contain an injected token, so its credentials are hidden
+    if (options.notfound) {
+      logger.info('Dry-run / SKIPPED: copying of index.html to 404.html');
+    }
     logger.info(
       `Dry-run / SKIPPED: publishing folder '${dir}' with the following options: ` +
       JSON.stringify(
         {
           dir,
-          repo: options.repo || 'current working directory (which must be a git repo in this case) will be used to commit & push',
+          repo: options.repo ? ghpages.redact(options.repo) : 'current working directory (which must be a git repo in this case) will be used to commit & push',
           remote: options.remote,
           message: options.message,
           branch: options.branch,
@@ -203,36 +119,21 @@ async function publishViaGhPages(
 
   logger.info('🚀 Uploading via git, please wait...');
 
-  // Only pass options that gh-pages understands
-  // gh-pages v6+ supports cname and nojekyll options natively (PR #533)
-  const ghPagesOptions: PublishOptions = {
-    repo: options.repo,
-    branch: options.branch,
-    message: options.message,
-    remote: options.remote,
-    git: options.git as string | undefined,
-    add: options.add,
-    dotfiles: options.dotfiles,
-    user: options.user,
-    cname: options.cname,
-    nojekyll: options.nojekyll,
-    // Workaround for gh-pages#612 (unreleased in v6.3.0): clean up leftover
-    // gh-pages branch files (dotfiles, submodule gitlinks) that the broken
-    // remove step misses. Skipped when the user opts into additive mode.
-    beforeAdd: options.add ? undefined : createCleanupBeforeAddHook(dir, options.dotfiles, logger, generatedFiles(options))
-  };
-
-  // gh-pages@6 silently absorbs errors via its internal .then(_, onRejected)
-  // handler (and returns undefined from some early-exit paths, upstream #465).
-  // The callback always fires with the error, so we bridge that to a rejection.
-  // See issue #205.
-  await new Promise<void>((resolve, reject) => {
-    ghPages.publish(dir, ghPagesOptions, (error: Error | null) => {
-      if (error) {
-        reject(error);
-        return;
-      }
-      resolve();
-    });
-  });
+  await ghpages.publish(
+    dir,
+    {
+      repo: options.repo,
+      branch: options.branch,
+      message: options.message,
+      remote: options.remote,
+      git: options.git,
+      add: options.add,
+      dotfiles: options.dotfiles,
+      user: options.user,
+      cname: options.cname,
+      nojekyll: options.nojekyll,
+      notfound: options.notfound
+    },
+    (message) => logger.info(message)
+  );
 }

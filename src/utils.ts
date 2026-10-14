@@ -1,9 +1,9 @@
-import { workspaces } from '@angular-devkit/core';
-import { SchematicsException, Tree } from '@angular-devkit/schematics';
+import type { workspaces } from '@angular-devkit/core';
+import type { Tree } from '@angular-devkit/schematics';
 import * as fs from 'fs/promises';
 
 /**
- * Check if a path exists (replacement for fs-extra.pathExists)
+ * Check if a path exists
  */
 export async function pathExists(filePath: string): Promise<boolean> {
   try {
@@ -14,11 +14,19 @@ export async function pathExists(filePath: string): Promise<boolean> {
   }
 }
 
+/**
+ * Workspace host for a schematic tree (ng add).
+ *
+ * @angular-devkit/schematics is only loaded here: the deploy engine and the
+ * standalone CLI import this module too, and must run on every supported
+ * Node.js version without the schematics dependencies.
+ */
 export function createHost(tree: Tree): workspaces.WorkspaceHost {
   return {
     async readFile(path: string): Promise<string> {
       const data = tree.read(path);
       if (!data) {
+        const { SchematicsException } = await import('@angular-devkit/schematics');
         throw new SchematicsException('File not found.');
       }
       return data.toString('utf-8');

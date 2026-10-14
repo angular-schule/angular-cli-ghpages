@@ -13,8 +13,7 @@
   - [Programmatic Usage](#programmatic-usage)
     - [Available Types](#available-types)
     - [Advanced: Angular Builder Integration](#advanced-angular-builder-integration)
-  - [Dependency on gh-pages Internal API](#dependency-on-gh-pages-internal-api)
-    - [Remote URL Discovery](#remote-url-discovery)
+  - [gh-pages fork](#gh-pages-fork)
   - [Supporting a new Angular version](#supporting-a-new-angular-version)
   - [Keeping track of all the forks](#keeping-track-of-all-the-forks)
 
@@ -215,12 +214,11 @@ npm dist-tag add angular-cli-ghpages@X.X.X-rc.X next
 For advanced use cases, `angular-cli-ghpages` can be used programmatically in Node.js scripts:
 
 ```typescript
-import { deployToGHPages, defaults, Schema } from 'angular-cli-ghpages';
+import { logging } from '@angular-devkit/core';
+import { deployToGHPages, Schema } from 'angular-cli-ghpages';
 
-// Deploy with custom options
+// Options not set here fall back to the defaults (exported as `defaults`)
 const options: Schema = {
-  ...defaults,
-  dir: 'dist/my-app/browser',
   repo: 'https://github.com/user/repo.git',
   message: 'Custom deploy message',
   branch: 'gh-pages',
@@ -228,14 +226,8 @@ const options: Schema = {
   email: 'bot@example.com'
 };
 
-// Simple logger implementation
-const logger = {
-  info: (msg: string) => console.log(msg),
-  warn: (msg: string) => console.warn(msg),
-  error: (msg: string) => console.error(msg),
-  debug: (msg: string) => console.debug(msg),
-  fatal: (msg: string) => console.error(msg)
-};
+const logger = new logging.Logger('deploy');
+logger.subscribe((entry) => console.log(entry.message));
 
 try {
   await deployToGHPages('dist/my-app/browser', options, logger);
@@ -252,7 +244,6 @@ The package exports these TypeScript types for programmatic usage:
 - `Schema` - Complete options interface
 - `PreparedOptions` - Internal options after processing
 - `DeployUser` - User credentials type
-- `GHPages` - gh-pages library wrapper interface
 - `defaults` - Default configuration object
 
 ### Advanced: Angular Builder Integration
@@ -260,34 +251,20 @@ The package exports these TypeScript types for programmatic usage:
 For custom Angular builders:
 
 ```typescript
-import { angularDeploy } from 'angular-cli-ghpages';
+import { BuilderContext } from '@angular-devkit/architect';
+import { angularDeploy, deployToGHPages, Schema } from 'angular-cli-ghpages';
 
-// Inside your custom builder
-const result = await angularDeploy(context, builderConfig, 'your-project-name');
+// Inside your custom builder: build the target, then deploy its output
+async function deploy(context: BuilderContext, options: Schema) {
+  await angularDeploy({ run: deployToGHPages }, context, { name: 'my-app:build:production' }, options);
+}
 ```
 
 **Note:** The CLI (`ng deploy`) remains the primary and recommended way to use this tool. Programmatic usage is considered advanced/experimental and may change between versions.
 
-## Dependency on gh-pages Internal API
+## gh-pages fork
 
-### Remote URL Discovery
-
-The `getRemoteUrl` function in `src/engine/engine.prepare-options-helpers.ts` calls into `gh-pages/lib/git`, which is an **internal API** not documented in gh-pages' public interface. This dependency carries upgrade risk.
-
-**What we depend on:**
-- `new Git(process.cwd(), options.git).getRemoteUrl(options.remote)` from `gh-pages/lib/git`
-- The exact error message format when remote doesn't exist or not in a git repository
-
-**Upgrade process for gh-pages v6+:**
-
-1. Check test failures in `src/engine/engine.prepare-options-helpers.spec.ts` first, specifically the `getRemoteUrl` test block
-2. If those tests fail, it likely indicates a breaking change in gh-pages' internal Git API
-3. Options:
-   - If `gh-pages/lib/git` still exists with same interface: update our error message assertions
-   - If the internal API changed significantly: implement our own git remote discovery using `child_process.execSync('git config --get remote.{remote}.url')`
-   - If gh-pages added a public API for this: switch to the public API
-
-**Current baseline:** Tests are pinned to gh-pages v6.3.0 behavior and error messages.
+Publishing (clone the target branch, replace its content, commit, push) lives in [`src/gh-pages-fork/`](../src/gh-pages-fork/README.md), a minimal TypeScript fork of the [gh-pages](https://github.com/tschaub/gh-pages) npm package. It exists solely for angular-cli-ghpages and keeps the upstream file structure and function names, so upstream changes can be compared and ported file by file. Its README lists the upstream base commit, what was kept and what was removed.
 
 ## Compatibility principle
 
@@ -327,3 +304,7 @@ To stay in sync with the stuff the Angular team is doing, you might want to keep
 
 - [builder.ts](https://github.com/angular/angularfire/blob/master/src/schematics/deploy/builder.ts)
 - [actions.ts](https://github.com/angular/angularfire/blob/master/src/schematics/deploy/actions.ts)
+
+`src/gh-pages-fork` follows [tschaub/gh-pages](https://github.com/tschaub/gh-pages). npm audit and Dependabot can't report problems in forked code, so watch the upstream repository (releases, security advisories, `lib/`) and port relevant fixes file by file (see `src/gh-pages-fork/README.md`).
+
+`src/commander-fork` is a frozen subset of [commander v3.0.2](https://github.com/tj/commander.js), see `src/commander-fork/README.md`.

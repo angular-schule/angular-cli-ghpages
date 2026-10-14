@@ -19,8 +19,8 @@ let writeSpy: MockInstance;
   capturedExitCode = -1;
   capturedOutput = '';
 
-  exitSpy = vi.spyOn(process, 'exit').mockImplementation((code?: number) => {
-    capturedExitCode = code ?? 0;
+  exitSpy = vi.spyOn(process, 'exit').mockImplementation((code?: string | number | null) => {
+    capturedExitCode = Number(code ?? 0);
     return undefined as never;
   });
   writeSpy = vi.spyOn(process.stdout, 'write').mockImplementation((output: string | Uint8Array) => {

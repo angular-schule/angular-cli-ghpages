@@ -13,8 +13,6 @@ export * from './deploy/builder';
 // Schema and options types
 export { Schema } from './deploy/schema';
 export {
-  GHPages,
-  PublishOptions,
   DeployUser,
   AngularOutputPath,
   AngularOutputPathObject,
@@ -30,7 +28,6 @@ export { run as deployToGHPages } from './engine/engine';
 // Advanced: Extracted option processing functions for custom workflows
 export {
   PreparedOptions,
-  setupMonkeypatch,
   mapNegatedBooleans,
   handleUserCredentials,
   warnDeprecatedParameters,

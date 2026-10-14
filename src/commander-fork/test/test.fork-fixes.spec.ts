@@ -1,11 +1,12 @@
 /**
  * Tests for angular-cli-ghpages fork-specific fixes and features
  *
- * This file contains tests for the 2 intentional improvements we made
+ * This file contains tests for the 3 intentional improvements we made
  * to commander v3.0.2 for angular-cli-ghpages:
  *
- * FIX 1/2: Tightened negate detection regex
- * FIX 2/2: Support for short-only and custom version flags
+ * FIX 1/3: Tightened negate detection regex
+ * FIX 2/3: Support for short-only and custom version flags
+ * FIX 3/3: "--flag=false" leaves a boolean flag unset
  *
  * These tests do NOT exist in the original commander v3.0.2.
  */
@@ -25,8 +26,8 @@ describe('Fork Fix 2: Version short-only and custom flags', () => {
 
     beforeEach(() => {
       captured = {out: '', code: null};
-      exitSpy = vi.spyOn(process, 'exit').mockImplementation((c?: number) => {
-        captured.code = c ?? 0;
+      exitSpy = vi.spyOn(process, 'exit').mockImplementation((c?: string | number | null) => {
+        captured.code = Number(c ?? 0);
         return undefined as never;
       });
       writeSpy = vi.spyOn(process.stdout, 'write').mockImplementation((s: string | Uint8Array) => {
@@ -74,8 +75,8 @@ describe('Fork Fix 2: Version short-only and custom flags', () => {
 
     beforeEach(() => {
       exitCode = null;
-      exitSpy = vi.spyOn(process, 'exit').mockImplementation((c?: number) => {
-        exitCode = c ?? 0;
+      exitSpy = vi.spyOn(process, 'exit').mockImplementation((c?: string | number | null) => {
+        exitCode = Number(c ?? 0);
         throw new Error(`exit(${c})`);
       });
       writeSpy = vi.spyOn(process.stdout, 'write').mockImplementation(() => true);
@@ -110,7 +111,7 @@ describe('Fork Fix 2: Version short-only and custom flags', () => {
     let writeSpy: MockInstance;
 
     beforeEach(() => {
-      exitSpy = vi.spyOn(process, 'exit').mockImplementation((code?: number) => {
+      exitSpy = vi.spyOn(process, 'exit').mockImplementation((code?: string | number | null) => {
         return undefined as never;
       });
       writeSpy = vi.spyOn(process.stdout, 'write').mockImplementation(() => true);
@@ -179,7 +180,7 @@ describe('Fork Fix 2: Version short-only and custom flags', () => {
 
     beforeEach(() => {
       errSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
-      exitSpy = vi.spyOn(process, 'exit').mockImplementation((code?: number) => {
+      exitSpy = vi.spyOn(process, 'exit').mockImplementation((code?: string | number | null) => {
         return undefined as never;
       });
     });
@@ -234,3 +235,52 @@ describe('Fork Fix 2: Version short-only and custom flags', () => {
 });
 
 export {};
+
+describe('Fork Fix 3: Boolean flags with =false', () => {
+  let exitSpy: MockInstance;
+
+  beforeEach(() => {
+    exitSpy = vi.spyOn(process, 'exit').mockImplementation(() => {
+      throw new Error('process.exit');
+    });
+  });
+
+  afterEach(() => {
+    exitSpy.mockRestore();
+  });
+
+  function parse(...args: string[]) {
+    const program = new commander.Command();
+    program
+      .option('-a, --add', 'add')
+      .option('--no-dotfiles', 'no dotfiles')
+      .option('-d, --dir <dir>', 'dir');
+    program.parse(['node', 'test', ...args]);
+    return program;
+  }
+
+  it('sets the flag for =true', () => {
+    expect(parse('--add=true').add).toBe(true);
+  });
+
+  it('leaves the flag unset for =false', () => {
+    const program = parse('--add=false');
+    expect(program.add).toBeUndefined();
+    expect(program.args).toEqual([]);
+  });
+
+  it('handles negated flags', () => {
+    expect(parse('--no-dotfiles=true').dotfiles).toBe(false);
+    expect(parse('--no-dotfiles=false').dotfiles).toBe(true);
+  });
+
+  it('sets the flag for any other value, as commander v3.0.2 does', () => {
+    const program = parse('--add=yes');
+    expect(program.add).toBe(true);
+    expect(program.args).toEqual([]);
+  });
+
+  it('keeps splitting options with an argument', () => {
+    expect(parse('--dir=dist/app').dir).toBe('dist/app');
+  });
+});

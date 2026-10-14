@@ -1,6 +1,5 @@
 import { logging } from '@angular-devkit/core';
 import * as engine from '../engine/engine';
-import { cleanupMonkeypatch } from '../engine/engine.prepare-options-helpers';
 import { DeployUser } from '../interfaces';
 
 /**
@@ -22,8 +21,6 @@ describe('Edge Case Tests', () => {
   const originalEnv = process.env;
 
   beforeEach(() => {
-    // Clean up any previous monkeypatch so each test starts fresh
-    cleanupMonkeypatch();
 
     logger = new logging.NullLogger();
     // Create fresh copy of environment for each test
@@ -51,8 +48,6 @@ describe('Edge Case Tests', () => {
   });
 
   afterAll(() => {
-    // Clean up monkeypatch after all tests
-    cleanupMonkeypatch();
     // Restore original environment for other test files
     process.env = originalEnv;
   });

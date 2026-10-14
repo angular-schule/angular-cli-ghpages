@@ -302,6 +302,8 @@ In this case, provide **both** `name` and `email` string values to identify the 
 
 The command includes dotfiles by default (e.g. `.htaccess` will be committed).
 With `--no-dotfiles` files starting with `.` are ignored.
+Files and folders named `.git` are never published.
+Ignore rules (a global gitignore or a `.gitignore` inside the build) don't apply: every file of the build is published.
 
 #### --no-notfound <a name="no-notfound"></a>
 
@@ -312,6 +314,8 @@ With `--no-dotfiles` files starting with `.` are ignored.
   - `ng deploy --no-notfound` – No `404.html` file is created.
 
 By default, a `404.html` file is created, because this is the only known workaround for SPA routing on GitHub Pages (note: GitHub still returns HTTP 404 status, which may affect Brave browser and social previews).
+The `404.html` is added to the deployment only; your build folder isn't modified.
+If the build already contains a `404.html` (e.g. a custom error page), it is kept.
 
 > [!IMPORTANT]
 > **Cloudflare Pages users:** You **must** use `--no-notfound` to enable native SPA routing. Cloudflare Pages only activates SPA mode when no `404.html` file exists. See [#178](https://github.com/angular-schule/angular-cli-ghpages/issues/178)
@@ -353,17 +357,16 @@ A CNAME file will be created enabling you to use a custom domain.
   - `ng deploy --add=true`
 
 If it is set to `true`, it will only add, and never remove existing files.
-By default, existing files in the target branch are removed before adding new ones.
-[More information](https://www.npmjs.com/package/gh-pages#optionsadd).
+By default, the build replaces the complete content of the target branch.
 
 #### --dir <a name="dir"></a>
 
 - **optional**
-- Default: `undefined` (string) – Conventions will be used to guess the correct directory in your `dist` folder.
+- Default: `undefined` (string) – The output directory of the build target in `angular.json` is used (relative to the workspace root).
 - Example:
   - `ng deploy --dir=dist/completely-different-folder/en`
 
-Overrides the directory for all published sources, relative to the current working directory.
+Overrides the directory for all published sources, relative to the current working directory (absolute paths work as well).
 
 #### --dry-run <a name="dry-run"></a>
 

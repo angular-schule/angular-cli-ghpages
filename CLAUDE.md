@@ -4,7 +4,7 @@ This file provides guidance when working with code in this repository.
 
 ## Overview
 
-`angular-cli-ghpages` is an Angular CLI builder/schematic that deploys Angular applications to GitHub Pages, Cloudflare Pages, or any Git repository. It wraps the `gh-pages` npm package and integrates with Angular CLI's deployment infrastructure via `ng deploy`.
+`angular-cli-ghpages` is an Angular CLI builder/schematic that deploys Angular applications to GitHub Pages, Cloudflare Pages, or any Git repository. It publishes via `src/gh-pages-fork/`, a minimal TypeScript fork of the `gh-pages` npm package, and integrates with Angular CLI's deployment infrastructure via `ng deploy`.
 
 ## Development Commands
 
@@ -102,12 +102,17 @@ npm dist-tag add angular-cli-ghpages@X.X.X-rc.X next
    - Adds deploy target to `angular.json`
 
 3. **Standalone CLI** (`src/angular-cli-ghpages`):
-   - Bash script for non-Angular CLI usage
-   - Uses `commander` for CLI parsing
+   - Node.js script for non-Angular CLI usage (`npx angular-cli-ghpages`)
+   - Parses options with `src/commander-fork` (frozen subset of commander v3.0.2, see its `README.md`)
+   - Positional arguments are ignored with a warning; `--flag=false` leaves a boolean flag unset
 
 4. **Core Engine** (`src/engine/`):
-   - `engine.ts` - Core deployment logic (wraps gh-pages)
+   - `engine.ts` - Core deployment logic (publishes via gh-pages-fork)
    - `defaults.ts` - Default configuration values
+
+5. **gh-pages fork** (`src/gh-pages-fork/`):
+   - Minimal TypeScript fork of `gh-pages`, internal use only (see its `README.md`)
+   - Same file structure and function names as upstream (`lib/index.ts`, `lib/git.ts`, `lib/util.ts`)
 
 ### Deployment Flow
 
@@ -121,10 +126,20 @@ actions.ts (deploy function)
   │   Uses BuilderContext.scheduleTarget()
   └─→ engine.run()
       ├─→ Prepare options (tokens, CI env vars)
-      ├─→ Create .nojekyll file (bypasses Jekyll on GitHub)
-      ├─→ Create 404.html (copy of index.html for SPAs)
-      ├─→ Create CNAME file (if custom domain)
-      └─→ Publish via gh-pages package
+      └─→ gh-pages-fork publish() (never modifies dist)
+          ├─→ Remove stale temporary clones of interrupted deploys
+          ├─→ git ls-remote: does the target branch exist?
+          │   yes → clone only that branch without checkout into a fresh temporary directory
+          │   no  → empty repository with HEAD on the new branch
+          ├─→ --add: index = tree of the branch (read-tree HEAD)
+          ├─→ Write .nojekyll (bypasses Jekyll on GitHub), CNAME (if custom domain) and
+          │   404.html (copy of index.html for SPAs), then copy dist (its own 404.html wins)
+          ├─→ git add --force (--all, or --ignore-removal with --add), commit if something changed
+          ├─→ Push
+          └─→ Remove the temporary clone
+
+All git commands for the clone run with GIT_DIR/GIT_WORK_TREE pinned to it,
+without repository variables inherited from a surrounding git process.
 ```
 
 ### Build Target Resolution
@@ -139,10 +154,11 @@ actions.ts (deploy function)
 - Final target: `prerenderTarget || staticBuildTarget` (see `src/deploy/builder.ts`)
 
 Output directory resolution:
-- Checks `angular.json` for `outputPath`
+- Checks `angular.json` for `outputPath` (resolved against the workspace root)
+- If undefined: `dist/<project>/browser` (Angular 20+ default)
 - If string: appends `/browser` (modern Angular convention)
 - If object: uses `${base}/${browser}` properties
-- Can be overridden with `--dir` option
+- Can be overridden with `--dir` option (relative to the current working directory, or absolute)
 
 ### Token Injection
 
@@ -175,7 +191,7 @@ The engine appends CI metadata to commit messages when running on:
 
 1. **No Server-Side Rendering**: GitHub Pages only supports static files. SSR/Universal build targets are not supported.
 
-2. **404.html Handling**:
+2. **404.html Handling** (written by gh-pages-fork into the deployment, a `404.html` of the build wins):
    - **GitHub Pages**: Requires `404.html` workaround (only way to get SPA routing, but returns HTTP 404 status)
    - **Cloudflare Pages**: MUST NOT have `404.html` - its presence disables native SPA mode
    - **Future**: Consider changing default or auto-detecting deployment target
@@ -194,7 +210,8 @@ The engine appends CI metadata to commit messages when running on:
 
 ## Testing
 
-- Uses Vitest (`npm test`), tests in `*.spec.ts` files
+- Uses Vitest (`npm test`, also type-checks all sources including specs), tests in `*.spec.ts` files
+- Shared helpers for specs that run real git or mock child processes: `src/test-helpers/git.ts` (not part of the package)
 - Requires git clone with `origin` remote (see `test-prerequisites.spec.ts`)
 - All tests preserve/restore `process.env` using `originalEnv` pattern
 - **No test counts in documentation** - they become stale quickly and are bragging
@@ -219,6 +236,8 @@ Use proper types, `unknown`, or `Partial<T>` instead. For mocks: `Partial<Comple
 For sync considerations with AngularFire, monitor:
 - https://github.com/angular/angularfire/blob/master/src/schematics/deploy/builder.ts
 - https://github.com/angular/angularfire/blob/master/src/schematics/deploy/actions.ts
+
+For `src/gh-pages-fork`, monitor upstream https://github.com/tschaub/gh-pages (releases, security advisories, `lib/`). npm audit and Dependabot can't report problems in forked code; port relevant fixes file by file and update the base commit in `src/gh-pages-fork/README.md`.
 
 ## GitHub CLI Usage
 

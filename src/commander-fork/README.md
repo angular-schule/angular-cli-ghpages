@@ -43,6 +43,12 @@ This fork intentionally removes features (subcommands, actions, etc.) and preser
 - Custom event listeners (except version and help)
 - Most EventEmitter functionality
 
+### Fixes on top of commander v3.0.2 🔧
+
+1. **Negate detection**: only real `--no-` flags count as negated options
+2. **Version flags**: short-only (`-v`) and custom version flags work
+3. **Boolean flags with `=false`**: `--add=false` leaves the flag unset; any other value sets it, as in commander v3.0.2 (which also set the flag for `=false`)
+
 ## Compatibility Matrix
 
 | Capability                  | Commander v3.0.2 | commander-fork |

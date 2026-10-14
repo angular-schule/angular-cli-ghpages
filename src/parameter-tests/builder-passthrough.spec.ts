@@ -1,5 +1,6 @@
 import { BuilderContext, BuilderRun, ScheduleOptions, Target } from '@angular-devkit/architect/src';
 import { JsonObject, logging } from '@angular-devkit/core';
+import * as path from 'path';
 import deploy from '../deploy/actions';
 import { BuildTarget } from '../interfaces';
 import { Schema } from '../deploy/schema';
@@ -180,7 +181,8 @@ describe('Angular Builder Parameter Passthrough', () => {
     });
 
     it('should use default outputPath/browser when dir not provided', async () => {
-      const expectedDir = 'dist/some-folder/browser';
+      // relative to the workspace root of the mock context
+      const expectedDir = path.join('/test', 'dist/some-folder/browser');
       const options: Schema = { noBuild: true };
 
       await deploy(mockEngine, context, BUILD_TARGET, options);

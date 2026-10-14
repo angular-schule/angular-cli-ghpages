@@ -171,7 +171,7 @@ In this case provide both `name` and `email` string values to identify the commi
 - Default: `dist`
 
 Directory for all published sources, relative to the current working directory (absolute paths work as well).
-Pass it as an option (`--dir=dist/my-app/browser`); positional arguments are rejected.  
+Pass it as an option (`--dir=dist/my-app/browser`); positional arguments are ignored (with a warning).  
 **Starting with Angular CLI 6, the build artifacts will be put in a subfolder under `dist`.
 Please take a look at the `dist` folder to see whether there is a subfolder with your project's name or not.**
 

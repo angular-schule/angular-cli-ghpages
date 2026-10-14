@@ -408,11 +408,12 @@ describe('CLI End-to-End Tests', () => {
   });
 
   describe('Argument validation', () => {
-    it('should reject positional arguments', () => {
+    it('should warn about positional arguments and ignore them, as before', () => {
       const result = runCliRaw(['dist/my-app/browser', '--dry-run'], path.resolve(__dirname, '..'));
 
-      expect(result.status).toBe(1);
-      expect(result.output).toContain('Unexpected argument(s): dist/my-app/browser');
+      expect(result.status).toBe(0);
+      expect(result.output).toContain('Ignoring argument(s): dist/my-app/browser – use --dir=<dir> to choose the directory to deploy.');
+      expect(parseJsonFromCliOutput(result.output).dir).toBe(path.resolve(__dirname, '..', 'dist'));
     });
 
     it('should treat --add=false as add disabled', () => {

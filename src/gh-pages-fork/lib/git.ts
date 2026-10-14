@@ -91,10 +91,8 @@ export interface CloneOptions {
 
 /**
  * Executes git commands in one repository directory.
- * `output` holds the stdout of the last executed command.
  */
 export class Git {
-  output = '';
 
   /**
    * @param cwd Repository directory
@@ -170,19 +168,18 @@ export class Git {
   }
 
   /**
-   * Execute an arbitrary git command.
+   * Execute an arbitrary git command and resolve with its stdout.
    */
-  async exec(...args: string[]): Promise<this> {
-    this.output = await spawn(this.cmd, [...this.args, ...args], { cwd: this.cwd, env: this.env });
-    return this;
+  exec(...args: string[]): Promise<string> {
+    return spawn(this.cmd, [...this.args, ...args], { cwd: this.cwd, env: this.env });
   }
 
   /**
    * Fill the index with the tree of HEAD (the clone has no checkout), so that
    * a commit keeps the existing files of the branch.
    */
-  keepExistingFiles(): Promise<this> {
-    return this.exec('read-tree', 'HEAD');
+  async keepExistingFiles(): Promise<void> {
+    await this.exec('read-tree', 'HEAD');
   }
 
   /**
@@ -190,26 +187,26 @@ export class Git {
    * (the user's global gitignore or a .gitignore in dist must not drop files).
    * With `keepRemoved`, files missing from the working tree stay in the index.
    */
-  addAll(keepRemoved: boolean): Promise<this> {
-    return this.exec('add', '--force', keepRemoved ? '--ignore-removal' : '--all', '--', '.');
+  async addAll(keepRemoved: boolean): Promise<void> {
+    await this.exec('add', '--force', keepRemoved ? '--ignore-removal' : '--all', '--', '.');
   }
 
   /**
-   * Commit (if there are any changes). Hooks of the user don't apply to deploy commits.
+   * Commit (if there are any changes).
    */
-  async commit(message: string): Promise<this> {
+  async commit(message: string): Promise<void> {
     try {
-      return await this.exec('diff-index', '--quiet', 'HEAD');
+      await this.exec('diff-index', '--quiet', 'HEAD');
     } catch {
-      return this.exec('commit', '--no-verify', '-m', message);
+      await this.exec('commit', '-m', message);
     }
   }
 
   /**
    * Push a branch to a remote name or URL.
    */
-  push(remote: string, branch: string): Promise<this> {
-    return this.exec('push', '--tags', remote, branch);
+  async push(remote: string, branch: string): Promise<void> {
+    await this.exec('push', '--tags', remote, branch);
   }
 
   /**
@@ -218,8 +215,7 @@ export class Git {
   async getRemoteUrl(remote: string): Promise<string> {
     let repo: string | undefined;
     try {
-      await this.exec('config', '--get', 'remote.' + remote + '.url');
-      repo = this.output.split(/[\n\r]/).shift();
+      repo = (await this.exec('config', '--get', 'remote.' + remote + '.url')).split(/[\n\r]/).shift();
     } catch (error) {
       if (!(error instanceof ProcessError)) {
         throw error;

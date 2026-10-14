@@ -104,7 +104,7 @@ npm dist-tag add angular-cli-ghpages@X.X.X-rc.X next
 3. **Standalone CLI** (`src/angular-cli-ghpages`):
    - Node.js script for non-Angular CLI usage (`npx angular-cli-ghpages`)
    - Parses options with `src/commander-fork` (frozen subset of commander v3.0.2, see its `README.md`)
-   - Rejects positional arguments; boolean flags accept `=true` / `=false`
+   - Positional arguments are ignored with a warning; `--flag=false` leaves a boolean flag unset
 
 4. **Core Engine** (`src/engine/`):
    - `engine.ts` - Core deployment logic (publishes via gh-pages-fork)

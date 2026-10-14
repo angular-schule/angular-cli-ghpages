@@ -101,9 +101,7 @@ var consoleLogger = {
 // --no-nojekyll becomes nojekyll: false
 
 if (commander.args.length > 0) {
-  consoleLogger.error('❌ Unexpected argument(s): ' + commander.args.join(' '));
-  consoleLogger.error('   Use --dir=<dir> to choose the directory to deploy.');
-  process.exit(1);
+  consoleLogger.warn('⚠️  Ignoring argument(s): ' + commander.args.join(' ') + ' – use --dir=<dir> to choose the directory to deploy.');
 }
 
 // absolute paths (also Windows drive paths) stay as they are

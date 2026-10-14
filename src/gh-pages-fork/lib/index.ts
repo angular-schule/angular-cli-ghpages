@@ -154,8 +154,8 @@ export async function getRepo(options: { repo?: string; git?: string; remote?: s
   if (!isRelativePath(repo)) {
     return repo;
   }
-  await git.exec('rev-parse', '--show-toplevel');
-  return path.resolve(git.output.trim(), repo);
+  const topLevel = await git.exec('rev-parse', '--show-toplevel');
+  return path.resolve(topLevel.trim(), repo);
 }
 
 /**

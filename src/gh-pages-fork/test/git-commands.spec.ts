@@ -75,7 +75,7 @@ describe('gh-pages-fork git commands', () => {
       `git config user.email ${user.email}`,
       `git config user.name ${user.name}`,
       'git diff-index --quiet HEAD',
-      'git commit --no-verify -m Deploy',
+      'git commit -m Deploy',
       'git push --tags origin gh-pages'
     ]);
   });
@@ -95,7 +95,7 @@ describe('gh-pages-fork git commands', () => {
       `git config user.email ${user.email}`,
       `git config user.name ${user.name}`,
       'git diff-index --quiet HEAD',
-      'git commit --no-verify -m Deploy',
+      'git commit -m Deploy',
       'git push --tags origin gh-pages'
     ]);
   });
@@ -203,7 +203,7 @@ describe('gh-pages-fork git commands', () => {
 
     expect(calls.every((call) => call.args[0] === '-c' && call.args[1] === 'credential.helper=')).toBe(true);
     expect(commands()).toContain('git remote set-url origin https://github.com/user/repo.git');
-    expect(commands()).toContain('git commit --no-verify -m Deploy');
+    expect(commands()).toContain('git commit -m Deploy');
     expect(commands().at(-1)).toBe(`git push --tags ${repoWithToken} gh-pages`);
   });
 

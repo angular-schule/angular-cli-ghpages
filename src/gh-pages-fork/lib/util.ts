@@ -98,11 +98,9 @@ export async function copy(files: string[], base: string, dest: string): Promise
  */
 export async function getUser(cwd = process.cwd(), cmd = 'git'): Promise<User | null> {
   try {
-    const [name, email] = await Promise.all([
-      new Git(cwd, cmd).exec('config', 'user.name'),
-      new Git(cwd, cmd).exec('config', 'user.email')
-    ]);
-    return { name: name.output.trim(), email: email.output.trim() };
+    const git = new Git(cwd, cmd);
+    const [name, email] = await Promise.all([git.exec('config', 'user.name'), git.exec('config', 'user.email')]);
+    return { name: name.trim(), email: email.trim() };
   } catch {
     return null;
   }

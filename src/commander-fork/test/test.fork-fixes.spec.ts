@@ -6,7 +6,7 @@
  *
  * FIX 1/3: Tightened negate detection regex
  * FIX 2/3: Support for short-only and custom version flags
- * FIX 3/3: Boolean flags accept "=true" / "=false"
+ * FIX 3/3: "--flag=false" leaves a boolean flag unset
  *
  * These tests do NOT exist in the original commander v3.0.2.
  */
@@ -236,20 +236,17 @@ describe('Fork Fix 2: Version short-only and custom flags', () => {
 
 export {};
 
-describe('Fork Fix 3: Boolean flags with a value', () => {
+describe('Fork Fix 3: Boolean flags with =false', () => {
   let exitSpy: MockInstance;
-  let errorSpy: MockInstance;
 
   beforeEach(() => {
     exitSpy = vi.spyOn(process, 'exit').mockImplementation(() => {
       throw new Error('process.exit');
     });
-    errorSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
   });
 
   afterEach(() => {
     exitSpy.mockRestore();
-    errorSpy.mockRestore();
   });
 
   function parse(...args: string[]) {
@@ -277,9 +274,10 @@ describe('Fork Fix 3: Boolean flags with a value', () => {
     expect(parse('--no-dotfiles=false').dotfiles).toBe(true);
   });
 
-  it('rejects other values', () => {
-    expect(() => parse('--add=yes')).toThrow('process.exit');
-    expect(errorSpy.mock.calls[0][0]).toContain("doesn't take a value");
+  it('sets the flag for any other value, as commander v3.0.2 does', () => {
+    const program = parse('--add=yes');
+    expect(program.add).toBe(true);
+    expect(program.args).toEqual([]);
   });
 
   it('keeps splitting options with an argument', () => {

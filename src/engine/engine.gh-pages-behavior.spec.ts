@@ -199,9 +199,7 @@ describe('gh-pages-fork publish() - behavioral snapshot', () => {
       await ghPages.publish(basePath, { repo, message });
 
       const commitArgs = gitCalls('commit')[0];
-      expect(commitArgs[commitArgs.indexOf('-m') + 1]).toBe(message);
-      // hooks of the user don't apply to deploy commits
-      expect(commitArgs).toContain('--no-verify');
+      expect(commitArgs).toEqual(['commit', '-m', message]);
     });
   });
 

@@ -25,7 +25,7 @@
  * Fixes on top of commander v3.0.2 (marked FORK FIX 1/3 to 3/3 below):
  * 1. Tightened negate detection for --no- flags
  * 2. Short-only and custom version flags
- * 3. Boolean flags accept "=true" / "=false"
+ * 3. "--flag=false" leaves a boolean flag unset
  */
 
 /**
@@ -339,18 +339,14 @@ Command.prototype.normalize = function(args) {
         });
       }
     } else if (/^--/.test(arg) && ~(index = arg.indexOf('='))) {
-      // FORK FIX 3/3: Boolean flags accept "=true" / "=false"
+      // FORK FIX 3/3: "--flag=false" leaves a boolean flag unset
       // Original: "--add=false" was split into "--add" plus a positional "false",
       //           so the flag was set although the user asked for the opposite.
-      // Fix: "=true" sets the flag, "=false" leaves it unset, any other value is an error.
+      // Fix: "=false" leaves the flag unset; any other value sets it (as before).
       opt = this.optionFor(arg.slice(0, index));
       if (opt && !opt.required && !opt.optional) {
-        var value = arg.slice(index + 1);
-        if (value === 'true') {
+        if (arg.slice(index + 1) !== 'false') {
           ret.push(arg.slice(0, index));
-        } else if (value !== 'false') {
-          console.error("error: option '%s' doesn't take a value (use '%s' or '%s=false')", opt.flags, arg.slice(0, index), arg.slice(0, index));
-          process.exit(1);
         }
       } else {
         ret.push(arg.slice(0, index), arg.slice(index + 1));

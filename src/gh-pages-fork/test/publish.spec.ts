@@ -7,7 +7,8 @@ import * as os from 'os';
 import * as path from 'path';
 
 import { commitCount, createBareRepo, fileUrl, git, seedBranch, tree } from '../../test-helpers/git';
-import { getCacheDir, publish, PublishOptions } from '../lib';
+import { defaults as engineDefaults } from '../../engine/defaults';
+import { defaults, getCacheDir, publish, PublishOptions } from '../lib';
 
 const user = { name: 'Deploy Bot', email: 'bot@example.org' };
 
@@ -391,12 +392,42 @@ describe('gh-pages-fork publish()', () => {
       expect((await fs.readdir(dist)).sort()).toEqual(['.htaccess', 'assets', 'index.html']);
     });
 
-    it('keeps a 404.html of the directory', async () => {
+    it('replaces a 404.html of the directory with the SPA fallback', async () => {
+      const index = '<h1>spa</h1>';
+      await fs.writeFile(path.join(dist, 'index.html'), index);
       await fs.writeFile(path.join(dist, '404.html'), 'custom not found page');
 
       await deploy({ notfound: true });
 
-      expect(git(remote, 'show', 'gh-pages:404.html')).toBe('custom not found page');
+      expect(git(remote, 'show', 'gh-pages:404.html')).toBe(index);
+      expect(await fs.readFile(path.join(dist, '404.html'), 'utf-8')).toBe('custom not found page');
+    });
+
+    it('publishes a 404.html of the directory with notfound: false', async () => {
+      const notFound = 'custom not found page';
+      await fs.writeFile(path.join(dist, '404.html'), notFound);
+
+      await deploy({ notfound: false });
+
+      expect(git(remote, 'show', 'gh-pages:404.html')).toBe(notFound);
+    });
+
+    it('does not take over the mode of index.html', async () => {
+      await fs.chmod(path.join(dist, 'index.html'), 0o755);
+
+      await deploy({ notfound: true });
+
+      expect(git(remote, 'ls-tree', 'gh-pages', '404.html').split(/\s/)[0]).toBe('100644');
+    });
+
+    it('works with a read-only index.html and 404.html in the build', async () => {
+      await fs.writeFile(path.join(dist, '404.html'), 'custom');
+      await fs.chmod(path.join(dist, '404.html'), 0o444);
+      await fs.chmod(path.join(dist, 'index.html'), 0o444);
+
+      await deploy({ notfound: true });
+
+      expect(git(remote, 'show', 'gh-pages:404.html')).toBe(git(remote, 'show', 'gh-pages:index.html'));
     });
 
     it('follows index.html on every deploy', async () => {
@@ -422,5 +453,244 @@ describe('gh-pages-fork publish()', () => {
 
       expect(tree(remote)).toEqual(['assets/app.js', 'index.html']);
     });
+  });
+
+  describe('env files', () => {
+    const envFiles = ['.env', '.ENV', '.env.production', '.env.local', 'production.env', 'config/.env', 'assets/deep/.env.staging', 'nested/.env/secret.txt'];
+
+    beforeEach(async () => {
+      for (const file of envFiles) {
+        await fs.mkdir(path.dirname(path.join(dist, file)), { recursive: true });
+        // .env and .ENV are the same file on a case-insensitive file system
+        await fs.writeFile(path.join(dist, file), 'SECRET=value');
+      }
+    });
+
+    it('never publishes env files, also with dotfiles', async () => {
+      await deploy({ dotfiles: true });
+
+      expect(tree(remote)).toEqual(['.htaccess', 'assets/app.js', 'index.html']);
+    });
+
+    it('never publishes env files without dotfiles', async () => {
+      await deploy({ dotfiles: false });
+
+      expect(tree(remote)).toEqual(['assets/app.js', 'index.html']);
+    });
+
+    it('logs the skipped env files', async () => {
+      const messages: string[] = [];
+
+      await deploy({ dotfiles: true }, (message) => messages.push(message));
+
+      expect(messages).toContain('Skipping config/.env: env files are never published');
+    });
+
+    it('removes env files that are already on the branch', async () => {
+      await seedBranch(remote, path.join(tempDir, 'seed-env'), 'gh-pages', { '.env': 'SECRET=old', 'config/.env.production': 'SECRET=old' });
+
+      await deploy();
+
+      expect(tree(remote)).toEqual(['assets/app.js', 'index.html']);
+    });
+
+    it('removes env files that are already on the branch, also with add', async () => {
+      await seedBranch(remote, path.join(tempDir, 'seed-env'), 'gh-pages', { '.env': 'SECRET=old', 'config/.env.production': 'SECRET=old', 'kept.html': 'kept' });
+
+      await deploy({ add: true });
+
+      expect(tree(remote)).toEqual(['assets/app.js', 'index.html', 'kept.html']);
+    });
+  });
+
+  describe('project root as publish directory', () => {
+    it('refuses a directory with a .git entry when dotfiles are published', async () => {
+      git(dist, 'init');
+
+      await expect(deploy({ dotfiles: true })).rejects.toThrow('contains a .git entry');
+      expect(() => git(remote, 'rev-parse', '--verify', 'gh-pages')).toThrow();
+    });
+
+    it('allows it without dotfiles', async () => {
+      git(dist, 'init');
+
+      await deploy({ dotfiles: false });
+
+      expect(tree(remote)).toEqual(['assets/app.js', 'index.html']);
+    });
+  });
+
+  it('skips nested git repositories in the directory', async () => {
+    const nested = path.join(dist, 'vendor');
+    await fs.mkdir(nested);
+    await fs.writeFile(path.join(nested, 'lib.js'), 'lib');
+    git(nested, 'init');
+
+    await deploy({ dotfiles: true });
+
+    expect(tree(remote)).toEqual(['.htaccess', 'assets/app.js', 'index.html', 'vendor/lib.js']);
+  });
+
+  it('skips a .GIT directory in any case and never touches the git directory of the clone', async () => {
+    // A build output that could overwrite the config of the clone (fsmonitor runs commands)
+    const marker = path.join(tempDir, 'pwned');
+    await fs.mkdir(path.join(dist, 'assets', '.GIT'));
+    await fs.writeFile(path.join(dist, 'assets', '.GIT', 'config'), `[core]\n\tfsmonitor = "touch ${marker}"\n`);
+
+    await deploy({ dotfiles: true });
+
+    expect(tree(remote)).toEqual(['.htaccess', 'assets/app.js', 'index.html']);
+    await expect(fs.access(marker)).rejects.toThrow();
+  });
+
+  it('redeploys with add and an unchanged directory without a new commit', async () => {
+    await seedBranch(remote, path.join(tempDir, 'seed'), 'gh-pages', { 'old-chunk.js': 'old' });
+
+    await deploy({ add: true });
+    await deploy({ add: true });
+
+    expect(tree(remote)).toEqual(['assets/app.js', 'index.html', 'old-chunk.js']);
+    expect(commitCount(remote)).toBe(2);
+  });
+
+  it('accepts a relative CACHE_DIR', async () => {
+    const cwd = process.cwd();
+    process.chdir(tempDir);
+    process.env.CACHE_DIR = 'relative-cache';
+
+    try {
+      await deploy();
+    } finally {
+      process.chdir(cwd);
+    }
+
+    expect(tree(remote)).toEqual(['assets/app.js', 'index.html']);
+  });
+
+  it('ignores the local git config of the project when it looks for the branch', async () => {
+    // actions/checkout stores an extraheader for the source repository the same way
+    const app = path.join(tempDir, 'app');
+    git(tempDir, 'init', app);
+    git(app, 'config', 'url.file:///does/not/exist/.insteadOf', fileUrl(remote));
+    await seedBranch(remote, path.join(tempDir, 'seed'), 'gh-pages', { 'old.html': 'old' });
+    const cwd = process.cwd();
+    process.chdir(app);
+
+    try {
+      await publish(dist, { repo: fileUrl(remote), user, dotfiles: false, nojekyll: false, notfound: false });
+    } finally {
+      process.chdir(cwd);
+    }
+
+    expect(tree(remote)).toEqual(['assets/app.js', 'index.html']);
+    expect(commitCount(remote)).toBe(2);
+  });
+
+  it('works in a project with a broken .git file', async () => {
+    const app = path.join(tempDir, 'broken');
+    await fs.mkdir(app);
+    await fs.writeFile(path.join(app, '.git'), 'gitdir: /does/not/exist\n');
+    const cwd = process.cwd();
+    process.chdir(app);
+
+    try {
+      await publish(dist, { repo: fileUrl(remote), user, dotfiles: false, nojekyll: false, notfound: false });
+    } finally {
+      process.chdir(cwd);
+    }
+
+    expect(tree(remote)).toEqual(['assets/app.js', 'index.html']);
+  });
+
+  it('creates a new branch in the object format of the remote', async () => {
+    await seedBranch(remote, path.join(tempDir, 'seed'), 'main', { 'source.ts': 'source' });
+    process.env.GIT_DEFAULT_HASH = 'sha256';
+
+    await deploy();
+
+    expect(tree(remote)).toEqual(['assets/app.js', 'index.html']);
+  });
+
+  it('prefers a CNAME of the directory over the option', async () => {
+    const fromBuild = 'build.example.org';
+    await fs.writeFile(path.join(dist, 'CNAME'), fromBuild);
+
+    await deploy({ cname: 'option.example.org' });
+
+    expect(git(remote, 'show', 'gh-pages:CNAME')).toBe(fromBuild);
+  });
+
+  it('resolves a relative remote from a subdirectory against the top level of the repository', async () => {
+    const app = path.join(tempDir, 'app');
+    git(tempDir, 'init', app);
+    git(app, 'remote', 'add', 'origin', '../remote.git');
+    const subdirectory = path.join(app, 'frontend');
+    await fs.mkdir(subdirectory);
+    const cwd = process.cwd();
+    process.chdir(subdirectory);
+
+    try {
+      await publish(dist, { user, dotfiles: false, nojekyll: false, notfound: false });
+    } finally {
+      process.chdir(cwd);
+    }
+
+    expect(tree(remote)).toEqual(['assets/app.js', 'index.html']);
+  });
+
+  it('commits with the given user over identity variables of the environment', async () => {
+    process.env.GIT_AUTHOR_NAME = 'Env Author';
+    process.env.GIT_COMMITTER_EMAIL = 'env@example.org';
+
+    await deploy();
+
+    expect(git(remote, 'log', '-1', '--format=%an <%ae> %cn <%ce>', 'gh-pages')).toBe(
+      `${user.name} <${user.email}> ${user.name} <${user.email}>`
+    );
+  });
+
+  it('works when git variables of a surrounding git process point to another repository', async () => {
+    const app = path.join(tempDir, 'app');
+    git(tempDir, 'init', app);
+    process.env.GIT_DIR = path.join(app, '.git');
+    process.env.GIT_WORK_TREE = app;
+    process.env.GIT_INDEX_FILE = path.join(app, '.git', 'index');
+
+    try {
+      await deploy();
+    } finally {
+      delete process.env.GIT_DIR;
+      delete process.env.GIT_WORK_TREE;
+      delete process.env.GIT_INDEX_FILE;
+    }
+
+    expect(tree(remote)).toEqual(['assets/app.js', 'index.html']);
+    expect(() => git(app, 'rev-parse', '--verify', 'gh-pages')).toThrow();
+  });
+
+  it('publishes to an scp-like address without treating it as a relative path', async () => {
+    const fakeGit = path.join(tempDir, 'fake-git');
+    const addressLog = path.join(tempDir, 'addresses');
+    // Maps the scp-like address to the local remote and records what git received
+    await fs.writeFile(fakeGit, [
+      '#!/bin/sh',
+      `echo "$@" >> "${addressLog}"`,
+      `exec git -c "url.${fileUrl(remote)}.insteadOf=git@example.org:o/r.git" "$@"`,
+      ''
+    ].join('\n'));
+    await fs.chmod(fakeGit, 0o755);
+
+    await deploy({ repo: 'git@example.org:o/r.git', git: fakeGit });
+
+    expect(await fs.readFile(addressLog, 'utf-8')).toContain('ls-remote git@example.org:o/r.git');
+    expect(tree(remote)).toEqual(['assets/app.js', 'index.html']);
+  });
+
+  it('has the defaults of angular-cli-ghpages', () => {
+    const { depth, ...rest } = defaults;
+    expect(depth).toBe(1);
+    for (const [key, value] of Object.entries(rest)) {
+      expect(engineDefaults[key as keyof typeof engineDefaults]).toBe(value);
+    }
   });
 });

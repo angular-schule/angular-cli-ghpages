@@ -56,9 +56,9 @@ function cliEnv(): NodeJS.ProcessEnv {
 /**
  * Run the CLI without --dry-run; returns exit code and combined output.
  */
-function runCliRaw(args: string[], cwd: string): { status: number | null; output: string } {
+function runCliRaw(args: string[], cwd: string, env: NodeJS.ProcessEnv = {}): { status: number | null; output: string } {
   const program = path.resolve(__dirname, '../dist/angular-cli-ghpages');
-  const result = spawnSync('node', [program, ...args], { cwd, env: cliEnv() });
+  const result = spawnSync('node', [program, ...args], { cwd, env: { ...cliEnv(), ...env } });
   return { status: result.status, output: result.stdout.toString() + result.stderr.toString() };
 }
 
@@ -408,11 +408,11 @@ describe('CLI End-to-End Tests', () => {
   });
 
   describe('Argument validation', () => {
-    it('should warn about positional arguments and ignore them, as before', () => {
+    it('should warn about positional arguments and ignore them', () => {
       const result = runCliRaw(['dist/my-app/browser', '--dry-run'], path.resolve(__dirname, '..'));
 
       expect(result.status).toBe(0);
-      expect(result.output).toContain('Ignoring argument(s): dist/my-app/browser – use --dir=<dir> to choose the directory to deploy.');
+      expect(result.output).toContain('Ignoring unexpected argument(s): dist/my-app/browser – set the directory to deploy with --dir=<dir> and boolean options with --flag=false.');
       expect(parseJsonFromCliOutput(result.output).dir).toBe(path.resolve(__dirname, '..', 'dist'));
     });
 
@@ -428,6 +428,40 @@ describe('CLI End-to-End Tests', () => {
       const json = parseJsonFromCliOutput(output);
 
       expect(json.add).toBe('all files will be added to the branch. Existing files will not be removed');
+    });
+
+    it('should treat --add=False, 0, no and off as add disabled', () => {
+      for (const value of ['False', 'FALSE', '0', 'no', 'off']) {
+        const json = parseJsonFromCliOutput(runCli(`--add=${value}`));
+        expect(json.add).toBe('existing files will be removed from the branch before adding the new ones');
+      }
+    });
+
+    it('should print the version for --version=false', () => {
+      const program = path.resolve(__dirname, '../dist/angular-cli-ghpages');
+      const version = JSON.parse(fs.readFileSync(path.resolve(__dirname, '../package.json'), 'utf-8')).version;
+
+      expect(execSync(`node ${program} --version=false`, { env: cliEnv() }).toString().trim()).toBe(version);
+    });
+
+    it('should reject an empty --dir', () => {
+      const result = runCliRaw(['--dir=', '--dry-run'], path.resolve(__dirname, '..'));
+
+      expect(result.status).toBe(1);
+      expect(result.output).toContain('--dir is empty');
+    });
+
+    it('should keep a leading slash relative to the cwd when that path exists', () => {
+      const cwd = fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(), 'cli-dir-')));
+      fs.mkdirSync(path.join(cwd, 'dist', 'app'), { recursive: true });
+      const program = path.resolve(__dirname, '../dist/angular-cli-ghpages');
+
+      try {
+        const output = execSync(`node ${program} --dry-run --dir=/dist/app --repo=https://github.com/test/repo.git`, { cwd, env: cliEnv() }).toString();
+        expect(parseJsonFromCliOutput(output).dir).toBe(path.join(cwd, 'dist', 'app'));
+      } finally {
+        fs.rmSync(cwd, { recursive: true, force: true });
+      }
     });
 
     it('should accept an absolute --dir', () => {
@@ -465,6 +499,57 @@ describe('CLI End-to-End Tests', () => {
       expect(result.output).toContain('Successfully published via angular-cli-ghpages!');
       expect(result.status).toBe(0);
       expect(tree(remote)).toEqual(['.nojekyll', '404.html', 'CNAME', 'index.html']);
+    });
+
+    it('should never publish .env files of the directory', () => {
+      const remote = createBareRepo(path.join(tempDir, 'remote.git'));
+      const dist = path.join(tempDir, 'dist');
+      fs.mkdirSync(dist);
+      fs.writeFileSync(path.join(dist, 'index.html'), '<h1>cli</h1>');
+      fs.writeFileSync(path.join(dist, '.env'), 'SECRET=value');
+
+      const result = runCliRaw([`--dir=${dist}`, `--repo=${remote}`, '--name=CLI Bot', '--email=cli@example.org'], tempDir);
+
+      expect(result.status).toBe(0);
+      expect(tree(remote)).toEqual(['.nojekyll', '404.html', 'index.html']);
+    });
+
+    it('should refuse a project root as directory', () => {
+      const remote = createBareRepo(path.join(tempDir, 'remote.git'));
+      const app = path.join(tempDir, 'app');
+      fs.mkdirSync(app);
+      execSync('git init', { cwd: app, stdio: 'pipe', env: cliEnv() });
+      fs.writeFileSync(path.join(app, 'index.html'), '<h1>cli</h1>');
+
+      const result = runCliRaw(['--dir=.', `--repo=${remote}`], app);
+
+      expect(result.status).toBe(1);
+      expect(result.output).toContain('contains a .git entry');
+    });
+
+    it('should clean up the os temp directory without a package.json', () => {
+      const remote = createBareRepo(path.join(tempDir, 'remote.git'));
+      const dist = path.join(tempDir, 'dist');
+      fs.mkdirSync(dist);
+      fs.writeFileSync(path.join(dist, 'index.html'), '<h1>cli</h1>');
+      const tmp = path.join(tempDir, 'tmp');
+      const stale = path.join(tmp, 'angular-cli-ghpages-clone-stale');
+      const recent = path.join(tmp, 'angular-cli-ghpages-clone-recent');
+      const urlNamed = path.join(tmp, 'angular-cli-ghpages-cache', 'gh-pages', 'https!x-access-token!secret@github.com!o!r.git');
+      for (const dir of [stale, recent, urlNamed]) {
+        fs.mkdirSync(dir, { recursive: true });
+      }
+      const sevenHoursAgo = new Date(Date.now() - 7 * 60 * 60 * 1000);
+      fs.utimesSync(stale, sevenHoursAgo, sevenHoursAgo);
+
+      const result = runCliRaw(
+        [`--dir=${dist}`, `--repo=${remote}`, '--name=CLI Bot', '--email=cli@example.org'],
+        tempDir,
+        { TMPDIR: tmp, TEMP: tmp, TMP: tmp }
+      );
+
+      expect(result.status).toBe(0);
+      expect(fs.readdirSync(tmp)).toEqual(['angular-cli-ghpages-clone-recent']);
     });
 
     it('should exit with 1 when the deploy fails', () => {

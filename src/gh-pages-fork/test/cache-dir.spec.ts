@@ -69,8 +69,13 @@ describe('gh-pages-fork redact()', () => {
     expect(redact('https://ghp_token@github.com/o/r.git')).toBe('https://***@github.com/o/r.git');
   });
 
+  it('hides credentials in URL forms git accepts', () => {
+    expect(redact('https:///user:tok@host/o/r.git')).toBe('https:///***@host/o/r.git');
+    expect(redact('https://user:a#b@host/o/r.git')).toBe('https://***@host/o/r.git');
+  });
+
   it('keeps URLs without credentials, scp-like addresses and local paths', () => {
-    for (const repo of ['https://github.com/o/r.git', 'git@github.com:o/r.git', '/srv/git/r.git', '../r.git']) {
+    for (const repo of ['https://github.com/o/r.git', 'https://github.com/o/a@b.git', 'git@github.com:o/r.git', '/srv/git/r.git', '../r.git', 'C:\\git\\u@r.git']) {
       expect(redact(repo)).toBe(repo);
     }
   });

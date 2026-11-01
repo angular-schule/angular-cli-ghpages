@@ -113,19 +113,18 @@ export function appendCIMetadata(options: PreparedOptions): void {
   }
 
   if (process.env.GITHUB_ACTIONS) {
-    options.message +=
-      '\n\n' +
-      'Triggered by commit: ' +
+    const repositoryUrl =
       (process.env.GITHUB_SERVER_URL || 'https://github.com') +
       '/' +
-      (process.env.GITHUB_REPOSITORY || '') +
+      (process.env.GITHUB_REPOSITORY || '');
+
+    options.message +=
+      '\n\n' +
+      'Triggered by commit: ' + repositoryUrl +
       '/commit/' +
       (process.env.GITHUB_SHA || '') +
       '\n' +
-      'GitHub Actions build: ' +
-      (process.env.GITHUB_SERVER_URL || 'https://github.com') +
-      '/' +
-      (process.env.GITHUB_REPOSITORY || '') +
+      'GitHub Actions build: ' + repositoryUrl +
       '/actions/runs/' +
       (process.env.GITHUB_RUN_ID || '');
   }
@@ -146,31 +145,20 @@ export async function injectTokenIntoRepoUrl(options: PreparedOptions): Promise<
 
   // --repo=https://GH_TOKEN@github.com/<username>/<repositoryname>.git gets the token
   // in place of the placeholder; CI configurations use this to inject other tokens, too
-  if (
-    process.env.GH_TOKEN &&
-    options.repo &&
-    options.repo.includes('GH_TOKEN')
-  ) {
-    options.repo = options.repo.replace('GH_TOKEN', process.env.GH_TOKEN);
+  // Replacer functions: `$` patterns in a token must stay literal
+  const ghToken = process.env.GH_TOKEN;
+  if (ghToken && options.repo.includes('GH_TOKEN')) {
+    options.repo = options.repo.replace('GH_TOKEN', () => ghToken);
+    return;
   }
+
   // preferred way: token is replaced from plain URL
   // Note: Only the first available token is used (GH_TOKEN > PERSONAL_TOKEN > GITHUB_TOKEN)
-  else if (options.repo && !options.repo.includes('x-access-token:')) {
-    if (process.env.GH_TOKEN) {
-      options.repo = options.repo.replace(
-        'https://github.com/',
-        `https://x-access-token:${process.env.GH_TOKEN}@github.com/`
-      );
-    } else if (process.env.PERSONAL_TOKEN) {
-      options.repo = options.repo.replace(
-        'https://github.com/',
-        `https://x-access-token:${process.env.PERSONAL_TOKEN}@github.com/`
-      );
-    } else if (process.env.GITHUB_TOKEN) {
-      options.repo = options.repo.replace(
-        'https://github.com/',
-        `https://x-access-token:${process.env.GITHUB_TOKEN}@github.com/`
-      );
-    }
+  const token = ghToken || process.env.PERSONAL_TOKEN || process.env.GITHUB_TOKEN;
+  if (token && !options.repo.includes('x-access-token:')) {
+    options.repo = options.repo.replace(
+      'https://github.com/',
+      () => `https://x-access-token:${token}@github.com/`
+    );
   }
 }

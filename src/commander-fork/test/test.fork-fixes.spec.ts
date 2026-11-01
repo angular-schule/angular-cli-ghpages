@@ -274,7 +274,13 @@ describe('Fork Fix 3: Boolean flags with =false', () => {
     expect(parse('--no-dotfiles=false').dotfiles).toBe(true);
   });
 
-  it('sets the flag for any other value, as commander v3.0.2 does', () => {
+  it('leaves the flag unset for 0, no and off in any case', () => {
+    for (const value of ['False', 'FALSE', '0', 'no', 'OFF']) {
+      expect(parse(`--add=${value}`).add).toBeUndefined();
+    }
+  });
+
+  it('sets the flag for any other value, like commander v3.0.2', () => {
     const program = parse('--add=yes');
     expect(program.add).toBe(true);
     expect(program.args).toEqual([]);

@@ -61,7 +61,7 @@ export async function seedBranch(
     await fs.mkdir(path.dirname(path.join(workDir, file)), { recursive: true });
     await fs.writeFile(path.join(workDir, file), content);
   }
-  git(workDir, 'add', '.');
+  git(workDir, 'add', '--force', '--all');
   git(workDir, 'commit', '--allow-empty', '-m', 'seed');
   for (const gitlink of gitlinks) {
     // update-index --cacheinfo creates a 160000 (submodule) entry without a real subrepo

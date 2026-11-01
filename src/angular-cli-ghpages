@@ -2,7 +2,8 @@
 
 // the standalone version, pure js, no compilation necessary
 
-var path = require('path'),
+var fs = require('fs'),
+  path = require('path'),
   engine = require('./engine/engine'),
   defaults = require('./engine/defaults').defaults,
   pjson = require('./package.json'),
@@ -15,7 +16,7 @@ commander
   .description(pjson.description)
   .option(
     '-d, --dir <dir>',
-    'Directory for all published sources, relative to the current working directory.',
+    'Directory for all published sources, relative to the current working directory (or an absolute path).',
     defaults.dir
   )
   .option(
@@ -101,13 +102,21 @@ var consoleLogger = {
 // --no-nojekyll becomes nojekyll: false
 
 if (commander.args.length > 0) {
-  consoleLogger.warn('⚠️  Ignoring argument(s): ' + commander.args.join(' ') + ' – use --dir=<dir> to choose the directory to deploy.');
+  consoleLogger.warn('⚠️  Ignoring unexpected argument(s): ' + commander.args.join(' ') + ' – set the directory to deploy with --dir=<dir> and boolean options with --flag=false.');
 }
 
-// absolute paths (also Windows drive paths) stay as they are
-var dir = path.resolve(process.cwd(), commander.dir);
+// An empty value (e.g. --dir=$UNSET_VARIABLE) would publish the whole project
+if (commander.dir === '') {
+  consoleLogger.error('❌ --dir is empty. Set the directory to deploy with --dir=<dir>.');
+  process.exit(1);
+}
 
-engine.run(dir, commander, consoleLogger).catch(function (error) {
+// A leading slash counts as relative to the current working directory as long as
+// that path exists; otherwise the value is an absolute path
+var relativeDir = path.join(process.cwd(), commander.dir);
+var dir = path.isAbsolute(commander.dir) && !fs.existsSync(relativeDir) ? commander.dir : relativeDir;
+
+engine.run(dir, commander.opts(), consoleLogger).catch(function (error) {
   consoleLogger.error('❌ An error occurred when trying to deploy:');
   consoleLogger.error(error.message);
   process.exit(1);

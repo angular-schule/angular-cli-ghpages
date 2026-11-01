@@ -11,8 +11,7 @@
  * - publish() clones from and pushes to the local repo (no network required)
  * - Verify the files on the pushed gh-pages branch
  *
- * 404.html is created by the engine in dist; CNAME and .nojekyll are written
- * by publish() into its clone.
+ * 404.html, CNAME and .nojekyll are written by publish() into its clone.
  */
 
 import * as path from 'path';

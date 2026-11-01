@@ -19,13 +19,25 @@ export interface User {
 }
 
 /**
+ * Whether a file name or path belongs to an env file (`.env`, `.env.production`,
+ * `production.env`, or anything inside a directory with such a name, any case).
+ * These hold secrets and are never published, whatever the options say.
+ */
+export function isEnvFile(filePath: string): boolean {
+  return filePath.split(/[/\\]/).some((segment) => {
+    const name = segment.toLowerCase();
+    return name === '.env' || name.startsWith('.env.') || name.endsWith('.env');
+  });
+}
+
+/**
  * List all files below `base` as relative paths with POSIX separators.
  * Symbolic links are followed (their targets get copied); broken links and
  * links to a directory of the current path (cycles) are skipped.
  * Entries starting with `.` are skipped unless `dotfiles` is set; entries named
- * `.git` are always skipped (git can't track them).
+ * `.git` (any case, git can't track them) and env files are always skipped.
  */
-export async function listFiles(base: string, dotfiles: boolean): Promise<string[]> {
+export async function listFiles(base: string, dotfiles: boolean, onEnvFile: (relPath: string) => void = () => undefined): Promise<string[]> {
   const files: string[] = [];
   // JavaScript implementation: the native realpath fails on some Windows volumes (e.g. RAM disks)
   const resolve = promisify(realpath);
@@ -39,10 +51,14 @@ export async function listFiles(base: string, dotfiles: boolean): Promise<string
 
     const entries = await fs.readdir(path.join(base, relDir), { withFileTypes: true });
     for (const entry of entries) {
-      if (entry.name === '.git' || (!dotfiles && entry.name.startsWith('.'))) {
+      const relPath = relDir ? `${relDir}/${entry.name}` : entry.name;
+      if (isEnvFile(entry.name)) {
+        onEnvFile(relPath);
         continue;
       }
-      const relPath = relDir ? `${relDir}/${entry.name}` : entry.name;
+      if (entry.name.toLowerCase() === '.git' || (!dotfiles && entry.name.startsWith('.'))) {
+        continue;
+      }
       let stat: { isDirectory(): boolean; isFile(): boolean } = entry;
       if (entry.isSymbolicLink()) {
         try {
@@ -71,12 +87,9 @@ export async function listFiles(base: string, dotfiles: boolean): Promise<string
  * once; files are copied with limited concurrency.
  */
 export async function copy(files: string[], base: string, dest: string): Promise<void> {
-  const pairs = files.map((file) => {
-    const src = path.resolve(base, file);
-    return { src, target: path.join(dest, path.relative(base, src)) };
-  });
+  const pairs = files.map((file) => ({ src: path.join(base, file), target: path.join(dest, file) }));
 
-  const dirs = [...new Set(pairs.map(({ target }) => path.dirname(target)))].sort();
+  const dirs = new Set(pairs.map(({ target }) => path.dirname(target)));
   for (const dir of dirs) {
     await fs.mkdir(dir, { recursive: true });
   }

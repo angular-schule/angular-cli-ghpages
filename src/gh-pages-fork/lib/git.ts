@@ -9,6 +9,8 @@ import * as cp from 'child_process';
 import * as fs from 'fs/promises';
 import * as path from 'path';
 
+import { REPOSITORY_VARIABLES } from './repository-variables';
+
 /**
  * Error for a git process that didn't exit with code 0.
  * `message` holds the combined stderr/stdout output of the process
@@ -61,18 +63,6 @@ export function spawn(exe: string, args: string[], options: SpawnOptions = {}): 
 }
 
 /**
- * Variables that point git at a repository. A deploy started by git itself
- * (hooks, `!` aliases, worktrees) inherits them; commands for the clone must
- * never act on that repository.
- */
-const REPOSITORY_VARIABLES = [
-  'GIT_DIR', 'GIT_WORK_TREE', 'GIT_IMPLICIT_WORK_TREE', 'GIT_INDEX_FILE',
-  'GIT_OBJECT_DIRECTORY', 'GIT_ALTERNATE_OBJECT_DIRECTORIES', 'GIT_COMMON_DIR',
-  'GIT_GRAFT_FILE', 'GIT_NO_REPLACE_OBJECTS', 'GIT_REPLACE_REF_BASE',
-  'GIT_PREFIX', 'GIT_SHALLOW_FILE'
-];
-
-/**
  * process.env without the repository variables, plus `extra`.
  */
 function isolatedEnv(extra: NodeJS.ProcessEnv = {}): NodeJS.ProcessEnv {
@@ -81,6 +71,37 @@ function isolatedEnv(extra: NodeJS.ProcessEnv = {}): NodeJS.ProcessEnv {
     delete env[name];
   }
   return { ...env, ...extra };
+}
+
+/** Scheme (group 1) and userinfo (group 2) of a repository URL; two characters minimum, so `C:\\` is no scheme */
+const URL_WITH_USERINFO = /^([a-z][a-z0-9+.-]+:[/\\]*)([^/]*)@/i;
+
+/**
+ * Hide credentials (e.g. an injected token) in a repository URL for logging.
+ */
+export function redact(repo: string): string {
+  return repo.replace(URL_WITH_USERINFO, '$1***@');
+}
+
+/**
+ * Whether a repository URL carries a password or token. A URL with only a
+ * username (e.g. the HTTPS clone URLs of Bitbucket and Azure DevOps) relies on
+ * the user's credential helper and doesn't count.
+ */
+export function hasPassword(repo: string): boolean {
+  return !!URL_WITH_USERINFO.exec(repo)?.[2].includes(':');
+}
+
+/**
+ * Whether an http(s) URL has userinfo: a token can also be the username
+ * (`https://TOKEN@github.com/...`), so it must not stay in the clone's config.
+ */
+export function hasHttpUserinfo(repo: string): boolean {
+  return /^https?:/i.test(repo) && URL_WITH_USERINFO.test(repo);
+}
+
+export function withoutUserinfo(repo: string): string {
+  return repo.replace(URL_WITH_USERINFO, '$1');
 }
 
 export interface CloneOptions {
@@ -95,7 +116,7 @@ export interface CloneOptions {
 export class Git {
 
   /**
-   * @param cwd Repository directory
+   * @param cwd Work tree
    * @param cmd Git executable
    * @param args Arguments placed before every git subcommand (e.g. `-c key=value`)
    * @param env Complete environment of every git process (default: process.env)
@@ -105,66 +126,86 @@ export class Git {
     public readonly cwd: string,
     public readonly cmd = 'git',
     private readonly args: string[] = [],
-    private readonly env?: NodeJS.ProcessEnv,
+    private env?: NodeJS.ProcessEnv,
     public readonly isNewBranch = false
   ) {}
 
   /**
-   * Whether `branch` exists in the repository `repo`.
-   * Rejects for every other failure (authentication, network, missing repository).
-   */
-  static async branchExists(repo: string, branch: string, cmd: string, args: string[] = []): Promise<boolean> {
-    try {
-      await spawn(cmd, [...args, 'ls-remote', '--exit-code', '--heads', repo, 'refs/heads/' + branch], { env: isolatedEnv() });
-      return true;
-    } catch (error) {
-      if (error instanceof ProcessError && error.code === 2) {
-        return false;
-      }
-      throw error;
-    }
-  }
-
-  /**
-   * Prepare a repository for `branch` of `repo` in the given empty dir,
-   * without checking out any files (the index starts empty):
-   * - existing branch: clone only that branch (shallow, then in full for
-   *   servers without shallow clone support)
+   * Prepare a repository for `branch` of `repo` below the given private, empty
+   * dir, without checking out any files (the index starts empty):
+   * - existing branch: clone only that branch (see cloneBranch)
    * - new branch: an empty repository with `repo` as remote and HEAD on the unborn branch
    *
-   * The returned instance always operates on `dir`: GIT_DIR and GIT_WORK_TREE
-   * point to it, inherited repository variables are removed, and
-   * safe.directory covers it.
+   * The git directory (`<dir>/git`) lives outside the work tree (`<dir>/work`),
+   * so no copied file can ever overwrite it. Commands of the returned instance
+   * have GIT_DIR and GIT_WORK_TREE pinned to these, inherited repository
+   * variables are removed, and the throwaway repository runs no maintenance.
    */
-  static async clone(repo: string, dir: string, branch: string, options: CloneOptions, args: string[] = []): Promise<Git> {
-    const exists = await Git.branchExists(repo, branch, options.git, args);
-    const run = (...gitArgs: string[]) => spawn(options.git, [...args, ...gitArgs], { env: isolatedEnv() });
+  static async clone(repo: string, dir: string, branch: string, options: CloneOptions, args: string[] = [], log: (message: string) => void = () => undefined): Promise<Git> {
+    const workTree = path.join(dir, 'work');
+    const gitDir = path.join(dir, 'git');
+    const run = (gitArgs: string[], env: NodeJS.ProcessEnv = {}) =>
+      spawn(options.git, [...args, ...gitArgs], {
+        cwd: dir,
+        // ls-remote reads the config of a repository around its cwd (e.g. the
+        // extraheader of actions/checkout); the ceiling keeps it out of the project
+        env: isolatedEnv({ GIT_CEILING_DIRECTORIES: path.dirname(dir), ...env })
+      });
+    const cloneArgs = ['clone', repo, workTree, '--separate-git-dir', gitDir, '--origin', options.remote, '--no-checkout'];
+
+    const refs = (await run(['ls-remote', repo])).split('\n').filter(Boolean);
+    const exists = refs.some((ref) => ref.endsWith('\trefs/heads/' + branch));
 
     if (exists) {
-      const clone = ['clone', repo, dir, '--origin', options.remote, '--branch', branch, '--single-branch', '--no-checkout'];
-      try {
-        await run(...clone, '--depth', String(options.depth));
-      } catch {
-        await fs.rm(dir, { recursive: true, force: true });
-        await fs.mkdir(dir, { recursive: true });
-        await run(...clone);
-      }
+      await cloneBranch(
+        (extraArgs) => run([...cloneArgs, '--branch', branch, '--single-branch', ...extraArgs]),
+        String(options.depth),
+        async () => {
+          await fs.rm(workTree, { recursive: true, force: true });
+          await fs.rm(gitDir, { recursive: true, force: true });
+        },
+        (message) => log(message.split(repo).join(redact(repo)))
+      );
+    } else if (refs.length > 0) {
+      // The object format of a new repository must match the remote, or the push fails
+      const objectFormat = refs[0].split('\t')[0].length === 64 ? 'sha256' : 'sha1';
+      await run(['init', '--separate-git-dir', gitDir, workTree], { GIT_DEFAULT_HASH: objectFormat });
     } else {
-      await run('init', dir);
+      // An empty remote: cloning it takes over its object format
+      await run(cloneArgs);
     }
 
+    await fs.rm(path.join(workTree, '.git'), { force: true });
+    await fs.mkdir(workTree, { recursive: true });
+
     const git = new Git(
-      dir,
+      workTree,
       options.git,
-      [...args, '-c', 'safe.directory=' + dir],
-      isolatedEnv({ GIT_DIR: path.join(dir, '.git'), GIT_WORK_TREE: dir }),
+      [...args, '-c', 'maintenance.auto=false', '-c', 'gc.auto=0'],
+      isolatedEnv({ GIT_DIR: gitDir, GIT_WORK_TREE: workTree }),
       !exists
     );
     if (!exists) {
-      await git.exec('remote', 'add', options.remote, repo);
+      if (refs.length > 0) {
+        await git.exec('remote', 'add', options.remote, repo);
+      }
       await git.exec('symbolic-ref', 'HEAD', 'refs/heads/' + branch);
     }
     return git;
+  }
+
+  /**
+   * Commit with this identity, also over GIT_AUTHOR_* / GIT_COMMITTER_* from the
+   * environment (git hooks and some CI systems export them).
+   */
+  setIdentity(user: { name: string; email: string }): void {
+    this.env = {
+      ...(this.env ?? process.env),
+      GIT_AUTHOR_NAME: user.name,
+      GIT_AUTHOR_EMAIL: user.email,
+      GIT_COMMITTER_NAME: user.name,
+      GIT_COMMITTER_EMAIL: user.email
+    };
   }
 
   /**
@@ -196,7 +237,8 @@ export class Git {
    */
   async commit(message: string): Promise<void> {
     try {
-      await this.exec('diff-index', '--quiet', 'HEAD');
+      // --cached: the work tree only holds the new files, not the kept ones of --add
+      await this.exec('diff-index', '--cached', '--quiet', 'HEAD');
     } catch {
       await this.exec('commit', '-m', message);
     }
@@ -233,5 +275,38 @@ export class Git {
       );
     }
     return repo;
+  }
+}
+
+/**
+ * Clone shallow; a server without shallow clone support gets a full clone right
+ * away. Any other failure may be transient: one more shallow attempt, then a
+ * full clone as the last resort.
+ */
+async function cloneBranch(
+  clone: (extraArgs: string[]) => Promise<string>,
+  depth: string,
+  reset: () => Promise<void>,
+  log: (message: string) => void
+): Promise<void> {
+  const shallow = ['--depth', depth];
+  try {
+    await clone(shallow);
+    return;
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    log(`Shallow clone failed: ${message}`);
+    await reset();
+    if (/shallow/i.test(message)) {
+      await clone([]);
+      return;
+    }
+  }
+  try {
+    await clone(shallow);
+  } catch (error) {
+    log(`Shallow clone failed: ${error instanceof Error ? error.message : String(error)}`);
+    await reset();
+    await clone([]);
   }
 }

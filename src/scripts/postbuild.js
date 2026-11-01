@@ -12,6 +12,7 @@ const files = [
   'deploy/schema.json',
   'deploy/schema.d.ts',
   'commander-fork/index.js',
+  'commander-fork/LICENSE',
   'gh-pages-fork/LICENSE'
 ];
 
@@ -19,8 +20,9 @@ for (const file of files) {
   copy(file, path.join('dist', file));
 }
 
-// README.md lives in the repository root, outside src/
+// These live in the repository root, outside src/
 copy('../README.md', 'dist/README.md');
+copy('../LICENSE', 'dist/LICENSE');
 
 function copy(from, to) {
   fs.mkdirSync(path.dirname(to), { recursive: true });

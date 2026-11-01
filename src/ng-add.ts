@@ -1,9 +1,5 @@
 import { workspaces } from '@angular-devkit/core';
-import {
-  SchematicContext,
-  SchematicsException,
-  Tree
-} from '@angular-devkit/schematics';
+import type { SchematicContext, Tree } from '@angular-devkit/schematics';
 import { createHost } from './utils';
 
 interface NgAddOptions {
@@ -14,6 +10,10 @@ export const ngAdd = (options: NgAddOptions) => async (
   tree: Tree,
   context: SchematicContext
 ) => {
+  // Loaded here: the package entry point re-exports ngAdd and must load on every
+  // supported Node.js version without the schematics dependencies
+  const { SchematicsException } = await import('@angular-devkit/schematics');
+
   const host = createHost(tree);
   const { workspace } = await workspaces.readWorkspace('/', host);
 

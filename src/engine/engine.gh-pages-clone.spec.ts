@@ -4,8 +4,7 @@
  * What we're testing:
  * - publish() clones into a fresh directory below the cache directory
  * - that directory is removed after a successful AND after a failed deploy,
- *   so no clone (with a token in .git/config) stays on disk and concurrent
- *   deploys never share a clone
+ *   and concurrent deploys never share a clone
  */
 
 import * as fs from 'fs/promises';
@@ -68,12 +67,12 @@ describe('gh-pages-fork temporary clone', () => {
     expect(await fs.readdir(cacheDir)).toEqual([]);
   });
 
-  it('should remove stale clones and clones of older versions, but keep recent clones', async () => {
+  it('should remove stale clones and directories named after a URL, but keep recent clones', async () => {
     await fs.mkdir(cacheDir, { recursive: true });
     const stale = path.join(cacheDir, 'clone-stale');
     const recent = path.join(cacheDir, 'clone-recent');
-    const legacy = path.join(cacheDir, 'https!x-access-token!secret@github.com!owner!repo.git');
-    for (const dir of [stale, recent, legacy]) {
+    const urlNamed = path.join(cacheDir, 'https!x-access-token!secret@github.com!owner!repo.git');
+    for (const dir of [stale, recent, urlNamed]) {
       await fs.mkdir(dir);
     }
     const sevenHoursAgo = new Date(Date.now() - 7 * 60 * 60 * 1000);
@@ -82,5 +81,17 @@ describe('gh-pages-fork temporary clone', () => {
     await ghPages.publish(basePath, { repo: bareRepoPath, user });
 
     expect(await fs.readdir(cacheDir)).toEqual(['clone-recent']);
+  });
+
+  it('should keep a clone younger than the stale limit', async () => {
+    await fs.mkdir(cacheDir, { recursive: true });
+    const concurrent = path.join(cacheDir, 'clone-concurrent');
+    await fs.mkdir(concurrent);
+    const fiveHoursAgo = new Date(Date.now() - 5 * 60 * 60 * 1000);
+    await fs.utimes(concurrent, fiveHoursAgo, fiveHoursAgo);
+
+    await ghPages.publish(basePath, { repo: bareRepoPath, user });
+
+    expect(await fs.readdir(cacheDir)).toEqual(['clone-concurrent']);
   });
 });

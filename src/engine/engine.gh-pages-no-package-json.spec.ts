@@ -3,8 +3,8 @@
  *
  * `angular-cli-ghpages` must work in a directory with no `package.json` in any
  * parent — typical for `npx angular-cli-ghpages` on a repo that is just a
- * `dist/` folder. The cache directory then falls back to
- * `<os tmpdir>/angular-cli-ghpages-cache/gh-pages` (see gh-pages-fork getCacheDir()).
+ * `dist/` folder. getCacheDir() then returns undefined and the clone goes to a
+ * private `angular-cli-ghpages-clone-*` directory in the os temp dir.
  *
  * Flow:
  *   1. Make a local bare repo and seed a gh-pages branch with one file.
@@ -48,7 +48,7 @@ describe('engine.run() in a directory with no package.json (issue #203)', () => 
     await fs.mkdir(distDir, { recursive: true });
     await fs.writeFile(path.join(distDir, 'index.html'), '<html>fresh</html>\n');
 
-    // Bare repo + seed a gh-pages branch, so clone + checkout run the existing-branch path.
+    // Bare repo + seed a gh-pages branch, so the existing-branch path runs.
     bareRepoPath = createBareRepo(path.join(workDir, 'bare.git'));
     await seedBranch(bareRepoPath, path.join(workDir, 'seed'), 'gh-pages', { 'old.html': '<html>old</html>' });
   });

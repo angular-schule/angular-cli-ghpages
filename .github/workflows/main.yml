@@ -35,14 +35,25 @@ jobs:
           retention-days: 1
 
   # Install the built package fresh (like `npx angular-cli-ghpages` in a
-  # non-Angular project) on every Node.js version that engines allows and
-  # deploy with the standalone CLI to a local bare repository.
-  test-node-versions:
+  # non-Angular project) on every Node.js version that engines allows, on all
+  # platforms: load the package entry point and deploy with the standalone CLI
+  # to a local bare repository.
+  test-package:
     needs: build-and-test
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
     strategy:
+      fail-fast: false
       matrix:
+        os: [ubuntu-latest]
         node-version: ['18.19.1', '20', '22', '24']
+        include:
+          - os: macos-latest
+            node-version: '24'
+          - os: windows-latest
+            node-version: '24'
+    defaults:
+      run:
+        shell: bash
 
     steps:
       - uses: actions/setup-node@v7
@@ -57,18 +68,51 @@ jobs:
 
       - name: Install the package
         run: |
-          (cd dist && npm pack --pack-destination /tmp)
-          mkdir /tmp/site && cd /tmp/site
+          (cd dist && npm pack --pack-destination "$RUNNER_TEMP")
+          mkdir "$RUNNER_TEMP/site" && cd "$RUNNER_TEMP/site"
           npm init -y > /dev/null
-          npm install --no-fund --no-audit /tmp/angular-cli-ghpages-*.tgz
+          npm install --no-fund --no-audit "$RUNNER_TEMP"/angular-cli-ghpages-*.tgz
+
+      - name: Load the package with require and import
+        run: |
+          cd "$RUNNER_TEMP/site"
+          node -e "if (typeof require('angular-cli-ghpages').deployToGHPages !== 'function') process.exit(1)"
+          node --input-type=module -e "import('angular-cli-ghpages').then((m) => { if (typeof m.default.deployToGHPages !== 'function') process.exit(1); })"
+          node -e "require('angular-cli-ghpages/deploy/builder')"
 
       - name: Deploy with the standalone CLI
         run: |
-          cd /tmp/site
-          git init --bare --initial-branch=main /tmp/remote.git
-          mkdir public && echo '<h1>site</h1>' > public/index.html
-          node node_modules/angular-cli-ghpages/angular-cli-ghpages --dir=public --repo=/tmp/remote.git --name="CI Bot" --email="ci@test.local"
-          git --git-dir=/tmp/remote.git ls-tree --name-only gh-pages | sort | tr '\n' ' ' | grep -x '.nojekyll 404.html index.html '
+          cd "$RUNNER_TEMP/site"
+          git config --global user.name "CI Bot"
+          git config --global user.email "ci@test.local"
+          REMOTE="$RUNNER_TEMP/remote.git"
+          CLI="node node_modules/angular-cli-ghpages/angular-cli-ghpages"
+          tree() { git --git-dir="$REMOTE" ls-tree -r --name-only "$1" | sort | tr '\n' ' '; }
+          git init --bare --initial-branch=main "$REMOTE"
+
+          mkdir -p public/config
+          echo '<h1>site</h1>' > public/index.html
+          echo 'SECRET=value' > public/.env
+          echo 'SECRET=value' > public/config/.env.production
+
+          # env files are never published
+          $CLI --dir=public --repo="$REMOTE"
+          test "$(tree gh-pages)" = '.nojekyll 404.html index.html '
+
+          # --add keeps existing files; an unchanged redeploy creates no commit
+          mv public/index.html public/new.html
+          $CLI --dir=public --repo="$REMOTE" --add --no-notfound
+          test "$(tree gh-pages)" = '.nojekyll 404.html index.html new.html '
+          COMMITS=$(git --git-dir="$REMOTE" rev-list --count gh-pages)
+          $CLI --dir=public --repo="$REMOTE" --add --no-notfound
+          test "$(git --git-dir="$REMOTE" rev-list --count gh-pages)" = "$COMMITS"
+
+          # an empty --dir and a project root as directory never publish anything
+          git init project
+          echo 'SECRET=value' > project/.env
+          if $CLI --dir= --repo="$REMOTE" --branch=never; then exit 1; fi
+          if (cd project && node ../node_modules/angular-cli-ghpages/angular-cli-ghpages --dir=. --repo="$REMOTE" --branch=never); then exit 1; fi
+          if git --git-dir="$REMOTE" rev-parse --verify never; then exit 1; fi
 
   # Test ng add and ng deploy across multiple Angular versions (sequentially)
   # This catches breaking changes in angular.json structure
@@ -123,10 +167,13 @@ jobs:
           npx ng add angular-cli-ghpages
           npx ng deploy
           echo second > dist/test-app-18/browser/second.txt
+          echo SECRET=value > dist/test-app-18/browser/.env
           npx ng deploy --no-build --message="second deploy"
           cd /tmp/remote-18.git && git branch | grep gh-pages
           test "$(git rev-list --count gh-pages)" = 2
           git cat-file -e gh-pages:.nojekyll
+          if git ls-tree -r --name-only gh-pages | grep -E '(^|/)\.env'; then exit 1; fi
+          git cat-file -e gh-pages:second.txt
           echo "Angular 18: build + deploy successful"
 
       - name: Test Angular 19
@@ -140,10 +187,13 @@ jobs:
           npx ng add angular-cli-ghpages
           npx ng deploy
           echo second > dist/test-app-19/browser/second.txt
+          echo SECRET=value > dist/test-app-19/browser/.env
           npx ng deploy --no-build --message="second deploy"
           cd /tmp/remote-19.git && git branch | grep gh-pages
           test "$(git rev-list --count gh-pages)" = 2
           git cat-file -e gh-pages:.nojekyll
+          if git ls-tree -r --name-only gh-pages | grep -E '(^|/)\.env'; then exit 1; fi
+          git cat-file -e gh-pages:second.txt
           echo "Angular 19: build + deploy successful"
 
       - name: Test Angular 20
@@ -157,10 +207,13 @@ jobs:
           npx ng add angular-cli-ghpages
           npx ng deploy
           echo second > dist/test-app-20/browser/second.txt
+          echo SECRET=value > dist/test-app-20/browser/.env
           npx ng deploy --no-build --message="second deploy"
           cd /tmp/remote-20.git && git branch | grep gh-pages
           test "$(git rev-list --count gh-pages)" = 2
           git cat-file -e gh-pages:.nojekyll
+          if git ls-tree -r --name-only gh-pages | grep -E '(^|/)\.env'; then exit 1; fi
+          git cat-file -e gh-pages:second.txt
           echo "Angular 20: build + deploy successful"
 
       - name: Test Angular 21
@@ -174,10 +227,13 @@ jobs:
           npx ng add angular-cli-ghpages
           npx ng deploy
           echo second > dist/test-app-21/browser/second.txt
+          echo SECRET=value > dist/test-app-21/browser/.env
           npx ng deploy --no-build --message="second deploy"
           cd /tmp/remote-21.git && git branch | grep gh-pages
           test "$(git rev-list --count gh-pages)" = 2
           git cat-file -e gh-pages:.nojekyll
+          if git ls-tree -r --name-only gh-pages | grep -E '(^|/)\.env'; then exit 1; fi
+          git cat-file -e gh-pages:second.txt
           echo "Angular 21: build + deploy successful"
 
       - name: Test Angular 22
@@ -191,8 +247,11 @@ jobs:
           npx ng add angular-cli-ghpages
           npx ng deploy
           echo second > dist/test-app-22/browser/second.txt
+          echo SECRET=value > dist/test-app-22/browser/.env
           npx ng deploy --no-build --message="second deploy"
           cd /tmp/remote-22.git && git branch | grep gh-pages
           test "$(git rev-list --count gh-pages)" = 2
           git cat-file -e gh-pages:.nojekyll
+          if git ls-tree -r --name-only gh-pages | grep -E '(^|/)\.env'; then exit 1; fi
+          git cat-file -e gh-pages:second.txt
           echo "Angular 22: build + deploy successful"

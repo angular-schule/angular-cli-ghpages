@@ -79,6 +79,17 @@ describe('ng-add', () => {
     });
   });
 
+  describe('writing the workspace', () => {
+    it('has written angular.json when the rule resolves', async () => {
+      const tree = Tree.empty();
+      tree.create('angular.json', JSON.stringify(generateAngularJson()));
+
+      const result = await ngAdd({ project: PROJECT_NAME })(tree, mockContext);
+
+      expect(readJSONFromTree(result, 'angular.json').projects[PROJECT_NAME].architect.deploy.builder).toBe('angular-cli-ghpages:deploy');
+    });
+  });
+
   describe('project selection', () => {
 
     it('should select the first project if there is only one', async () => {

@@ -5,6 +5,7 @@
  * by testing each helper function independently.
  */
 
+import { execSync } from 'child_process';
 import * as fs from 'fs/promises';
 import * as os from 'os';
 import * as path from 'path';
@@ -557,7 +558,41 @@ describe('prepareOptions helpers - intensive tests', () => {
 
   });
 
+  describe('tokens with $ patterns', () => {
+    it('should keep them literal', async () => {
+      const token = 'a$&b$$c';
+      process.env.GH_TOKEN = token;
+      const placeholder: helpers.PreparedOptions = { repo: 'https://GH_TOKEN@host/o/r.git', dotfiles: true, notfound: true, nojekyll: true };
+      const plain: helpers.PreparedOptions = { repo: 'https://github.com/o/r.git', dotfiles: true, notfound: true, nojekyll: true };
+
+      await helpers.injectTokenIntoRepoUrl(placeholder);
+      await helpers.injectTokenIntoRepoUrl(plain);
+
+      expect(placeholder.repo).toBe(`https://${token}@host/o/r.git`);
+      expect(plain.repo).toBe(`https://x-access-token:${token}@github.com/o/r.git`);
+    });
+  });
+
   describe('remote URL discovery (gh-pages-fork getRepo)', () => {
+    it('should use the configured remote', async () => {
+      const app = await fs.mkdtemp(path.join(os.tmpdir(), 'remote-discovery-'));
+      const upstreamUrl = 'https://github.com/test/upstream.git';
+      execSync('git init', { cwd: app, stdio: 'pipe' });
+      execSync('git remote add origin https://github.com/test/origin.git', { cwd: app, stdio: 'pipe' });
+      execSync(`git remote add upstream ${upstreamUrl}`, { cwd: app, stdio: 'pipe' });
+      const originalCwd = process.cwd();
+      process.chdir(app);
+
+      try {
+        const options: helpers.PreparedOptions = { remote: 'upstream', dotfiles: true, notfound: true, nojekyll: true };
+        await helpers.injectTokenIntoRepoUrl(options);
+        expect(options.repo).toBe(upstreamUrl);
+      } finally {
+        process.chdir(originalCwd);
+        await fs.rm(app, { recursive: true, force: true });
+      }
+    });
+
     /**
      * Environment assumptions for this test:
      * - Tests must be run from a git clone of angular-schule/angular-cli-ghpages
@@ -571,7 +606,6 @@ describe('prepareOptions helpers - intensive tests', () => {
       const options = { remote: 'origin' };
 
       // Get what git actually says
-      const { execSync } = require('child_process');
       const expectedUrl = execSync('git config --get remote.origin.url', { encoding: 'utf8' }).trim();
 
       // Verify getRepo returns the same value

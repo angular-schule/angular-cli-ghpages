@@ -89,7 +89,6 @@ async function publishViaGhPages(
   logger: logging.LoggerApi
 ) {
   if (options.dryRun) {
-    // options.repo may contain an injected token, so its credentials are hidden
     if (options.notfound) {
       logger.info('Dry-run / SKIPPED: copying of index.html to 404.html');
     }
@@ -98,6 +97,7 @@ async function publishViaGhPages(
       JSON.stringify(
         {
           dir,
+          // options.repo may contain an injected token
           repo: options.repo ? ghpages.redact(options.repo) : 'current working directory (which must be a git repo in this case) will be used to commit & push',
           remote: options.remote,
           message: options.message,

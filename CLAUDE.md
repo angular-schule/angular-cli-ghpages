@@ -104,7 +104,8 @@ npm dist-tag add angular-cli-ghpages@X.X.X-rc.X next
 3. **Standalone CLI** (`src/angular-cli-ghpages`):
    - Node.js script for non-Angular CLI usage (`npx angular-cli-ghpages`)
    - Parses options with `src/commander-fork` (frozen subset of commander v3.0.2, see its `README.md`)
-   - Positional arguments are ignored with a warning; `--flag=false` leaves a boolean flag unset
+   - Positional arguments are ignored with a warning; `--flag=false` (also `0`, `no`, `off`) leaves a boolean flag unset
+   - An empty `--dir` is an error; a leading slash stays relative to the cwd as long as that path exists
 
 4. **Core Engine** (`src/engine/`):
    - `engine.ts` - Core deployment logic (publishes via gh-pages-fork)
@@ -127,19 +128,23 @@ actions.ts (deploy function)
   └─→ engine.run()
       ├─→ Prepare options (tokens, CI env vars)
       └─→ gh-pages-fork publish() (never modifies dist)
+          ├─→ Refuse a directory with a .git entry (project root) when dotfiles are on
           ├─→ Remove stale temporary clones of interrupted deploys
-          ├─→ git ls-remote: does the target branch exist?
+          ├─→ git ls-remote (not reading the project's config): does the target branch exist?
           │   yes → clone only that branch without checkout into a fresh temporary directory
-          │   no  → empty repository with HEAD on the new branch
-          ├─→ --add: index = tree of the branch (read-tree HEAD)
-          ├─→ Write .nojekyll (bypasses Jekyll on GitHub), CNAME (if custom domain) and
-          │   404.html (copy of index.html for SPAs), then copy dist (its own 404.html wins)
-          ├─→ git add --force (--all, or --ignore-removal with --add), commit if something changed
-          ├─→ Push
+          │   no  → empty repository in the remote's object format, HEAD on the new branch
+          ├─→ --add on an existing branch: index = tree of the branch (read-tree HEAD)
+          ├─→ Write .nojekyll (bypasses Jekyll on GitHub) and CNAME (if custom domain),
+          │   copy dist (without env files and .git), write 404.html (copy of index.html)
+          ├─→ git add --force (--all, or --ignore-removal with --add)
+          ├─→ Remove env files from the index, whatever they came from
+          ├─→ Commit if something changed, push
           └─→ Remove the temporary clone
 
-All git commands for the clone run with GIT_DIR/GIT_WORK_TREE pinned to it,
-without repository variables inherited from a surrounding git process.
+The git directory lives next to the work tree in the temporary directory, so no copied
+file can overwrite it. All git commands that operate on the clone run with GIT_DIR and
+GIT_WORK_TREE pinned to it; ls-remote, clone and init run without repository variables
+inherited from a surrounding git process.
 ```
 
 ### Build Target Resolution
@@ -191,14 +196,16 @@ The engine appends CI metadata to commit messages when running on:
 
 1. **No Server-Side Rendering**: GitHub Pages only supports static files. SSR/Universal build targets are not supported.
 
-2. **404.html Handling** (written by gh-pages-fork into the deployment, a `404.html` of the build wins):
+2. **404.html Handling** (written by gh-pages-fork into the deployment, replacing a `404.html` of the build; `--no-notfound` publishes that one):
    - **GitHub Pages**: Requires `404.html` workaround (only way to get SPA routing, but returns HTTP 404 status)
    - **Cloudflare Pages**: MUST NOT have `404.html` - its presence disables native SPA mode
    - **Future**: Consider changing default or auto-detecting deployment target
 
-3. **Jekyll Bypass**: Creates `.nojekyll` to prevent GitHub Pages from processing files through Jekyll (which would break files starting with `_` or `.txt` in assets).
+3. **Env files are never published**: `.env`, `.env.*`, `*.env` (any case, any folder, also folders with such a name) are skipped when copying and removed from the index before every commit, also with `--add`. There is no option to turn this off. CI verifies it for every Angular version and on every platform.
 
-4. **Breaking Changes in v2**: Changed from guessing build conventions in Angular 17+. Projects may need explicit `--build-target` specification.
+4. **Jekyll Bypass**: Creates `.nojekyll` to prevent GitHub Pages from processing files through Jekyll (which would break files starting with `_` or `.txt` in assets).
+
+5. **Breaking Changes in v2**: Changed from guessing build conventions in Angular 17+. Projects may need explicit `--build-target` specification.
 
 ## Deprecated Options (Maintainers Only)
 

@@ -25,7 +25,7 @@ import * as engine from './engine';
  */
 const EXPECTED_GIT_COMMANDS = [
   'ls-remote', 'clone', 'init', 'remote', 'symbolic-ref', 'read-tree',
-  'add', 'config', 'diff-index', 'commit', 'push'
+  'add', 'ls-files', 'diff', 'config', 'diff-index', 'commit', 'push'
 ];
 
 const { mockSpawn, mockCopy, mockGetUser } = vi.hoisted(() => ({
@@ -63,6 +63,11 @@ describe('gh-pages-fork publish() - behavioral snapshot', () => {
     const override = spawnOverride?.(args);
     if (override) {
       return override;
+    }
+    // every branch of these tests exists on the remote, unless a test says otherwise
+    if (args[0] === 'ls-remote') {
+      const sha = 'a'.repeat(40);
+      return { output: ['gh-pages', 'production', 'existing-branch'].map((branch) => `${sha}\trefs/heads/${branch}`).join('\n') };
     }
     // exit code 1: there are changes to commit
     return args[0] === 'diff-index' ? { code: 1 } : undefined;
@@ -143,7 +148,7 @@ describe('gh-pages-fork publish() - behavioral snapshot', () => {
 
       await ghPages.publish(basePath, { repo, message: 'Deploy' });
 
-      expect(gitCalls()[0]).toEqual(['ls-remote', '--exit-code', '--heads', repo, 'refs/heads/gh-pages']);
+      expect(gitCalls()[0]).toEqual(['ls-remote', repo]);
       expect(gitCommands()[1]).toBe('clone');
     });
   });
@@ -239,8 +244,9 @@ describe('gh-pages-fork publish() - behavioral snapshot', () => {
       const [files, source, destination] = mockCopy.mock.calls[0] as unknown as [string[], string, string];
       expect([...files].sort()).toEqual(['index.html', 'main.js', 'styles.css']);
       expect(source).toBe(basePath);
-      expect(path.dirname(destination)).toBe(ghPages.getCacheDir());
-      expect(path.basename(destination)).toMatch(/^clone-/);
+      expect(path.dirname(path.dirname(destination))).toBe(ghPages.getCacheDir());
+      expect(path.basename(path.dirname(destination))).toMatch(/^clone-/);
+      expect(path.basename(destination)).toBe('work');
     });
   });
 
@@ -366,7 +372,7 @@ describe('gh-pages-fork publish() - behavioral snapshot', () => {
     it('should create an empty repository instead of cloning when the branch does not exist', async () => {
       const repo = 'https://github.com/test/new-branch-test.git';
       const branch = 'pages';
-      spawnOverride = (args) => args[0] === 'ls-remote' ? { code: 2 } : undefined;
+      spawnOverride = (args) => args[0] === 'ls-remote' ? { output: `${'a'.repeat(40)}\trefs/heads/main` } : undefined;
 
       await ghPages.publish(basePath, { repo, branch, message: 'Deploy' });
 

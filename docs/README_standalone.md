@@ -170,7 +170,9 @@ In this case provide both `name` and `email` string values to identify the commi
 - **optional**
 - Default: `dist`
 
-Directory for all published sources, relative to the current working directory (absolute paths work as well).
+Directory for all published sources, relative to the current working directory.
+An absolute path works as well, unless the same path exists relative to the current working directory.
+An empty value and a directory with a `.git` entry (a project root) are rejected when dotfiles are published.
 Pass it as an option (`--dir=dist/my-app/browser`); positional arguments are ignored (with a warning).  
 **Starting with Angular CLI 6, the build artifacts will be put in a subfolder under `dist`.
 Please take a look at the `dist` folder to see whether there is a subfolder with your project's name or not.**
@@ -188,6 +190,8 @@ which are not related at all to angular.
 
 The command includes dotfiles by default (e.g. `.htaccess` will be committed)
 With `--no-dotfiles` files starting with `.` are ignored.
+Env files (`.env`, `.env.*`, `*.env`, in any folder) are never published and are removed from the target branch if they are already there. Files and folders named `.git` are never published either.
+Ignore rules (a global gitignore or a `.gitignore` inside the directory) don't apply: every other file of the directory is published.
 
 #### --dry-run <a name="dry-run"></a>
 
@@ -213,7 +217,7 @@ A CNAME file will be created enabling you to use a custom domain. [More informat
 - **optional**
 - Default: `false` (boolean) – The existing files will be removed from the branch you'll be pushing to as expected.
 - Example:
-  - `npx angular-cli-ghpages --add` (or `--add=true`; `--add=false` keeps the default)
+  - `npx angular-cli-ghpages --add` (or `--add=true`; `--add=false` keeps the default, as do `0`, `no` and `off`)
 
 If is set to `true`, it will only add, and never remove existing files.
 By default, the published directory replaces the complete content of the target branch.
@@ -228,6 +232,7 @@ By default, the published directory replaces the complete content of the target 
 
 By default, a `404.html` file is created as a copy of `index.html`.
 This is required for GitHub Pages to support SPA routing (though it returns HTTP 404 status).
+The file is added to the deployment only; the published directory isn't modified. To publish your own `404.html`, use `--no-notfound`.
 
 **Important for Cloudflare Pages:** Use `--no-notfound` when deploying to Cloudflare Pages.
 The presence of a `404.html` file disables Cloudflare's native SPA mode.

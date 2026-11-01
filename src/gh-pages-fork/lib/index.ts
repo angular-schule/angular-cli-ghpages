@@ -10,8 +10,10 @@ import * as fs from 'fs/promises';
 import * as os from 'os';
 import * as path from 'path';
 
-import { Git } from './git';
-import { copy, getUser, listFiles, User } from './util';
+import { Git, hasHttpUserinfo, hasPassword, redact, withoutUserinfo } from './git';
+import { copy, getUser, isEnvFile, listFiles, User } from './util';
+
+export { redact };
 
 export interface PublishOptions {
   repo?: string;
@@ -46,6 +48,9 @@ export const defaults = {
   notfound: true
 };
 
+/** Prefix of temporary clones below the cache directory */
+const CLONE_PREFIX = 'clone-';
+
 /** Prefix of temporary clones in the os temp directory */
 const TMP_CLONE_PREFIX = 'angular-cli-ghpages-clone-';
 
@@ -79,31 +84,32 @@ export function getCacheDir(cwd = process.cwd()): string | undefined {
 }
 
 /**
- * Create a fresh, private directory for a temporary clone: `clone-*` below
- * getCacheDir(), or `angular-cli-ghpages-clone-*` in the os temp directory if
+ * Create a fresh, private directory for a temporary clone: `clone-*` below the
+ * cache directory, or `angular-cli-ghpages-clone-*` in the os temp directory if
  * there is no cache directory or it isn't writable (e.g. a read-only node_modules).
+ * The path is absolute, because git resolves GIT_DIR and GIT_WORK_TREE against
+ * the directory it runs in.
  */
-async function createCloneDir(): Promise<string> {
-  const cacheDir = getCacheDir();
+async function createCloneDir(cacheDir: string | undefined): Promise<string> {
   if (cacheDir) {
     try {
       await fs.mkdir(cacheDir, { recursive: true });
-      return await fs.mkdtemp(path.join(cacheDir, 'clone-'));
+      return path.resolve(await fs.mkdtemp(path.join(cacheDir, CLONE_PREFIX)));
     } catch {
       // fall through to the os temp directory
     }
   }
-  return fs.mkdtemp(path.join(os.tmpdir(), TMP_CLONE_PREFIX));
+  return path.resolve(await fs.mkdtemp(path.join(os.tmpdir(), TMP_CLONE_PREFIX)));
 }
 
 /**
  * Remove what interrupted deploys (Ctrl+C, a cancelled CI job) leave behind:
- * `clone-*` directories older than STALE_CLONE_MS and any other entry of the
- * cache directory (clones of older angular-cli-ghpages versions, named after
- * the repository URL including a token), plus old temporary clones in the os
- * temp directory. Clones of concurrent deploys are younger and stay.
+ * temporary clones older than STALE_CLONE_MS and every other entry of the cache
+ * directory, plus `<os tmpdir>/angular-cli-ghpages-cache`. Such directories can
+ * be named after a repository URL including a token. Clones of concurrent
+ * deploys are younger and stay.
  */
-async function removeStaleClones(): Promise<void> {
+async function removeStaleClones(cacheDir: string | undefined): Promise<void> {
   const now = Date.now();
   const removeIfStale = async (dir: string, name: string, clonePrefix: string) => {
     const target = path.join(dir, name);
@@ -117,12 +123,12 @@ async function removeStaleClones(): Promise<void> {
     }
   };
 
-  const cacheDir = getCacheDir();
   if (cacheDir) {
     const entries = await fs.readdir(cacheDir).catch(() => [] as string[]);
-    await Promise.all(entries.map((name) => removeIfStale(cacheDir, name, 'clone-')));
+    await Promise.all(entries.map((name) => removeIfStale(cacheDir, name, CLONE_PREFIX)));
   }
 
+  await fs.rm(path.join(os.tmpdir(), 'angular-cli-ghpages-cache'), { recursive: true, force: true }).catch(() => undefined);
   const tmpEntries = await fs.readdir(os.tmpdir()).catch(() => [] as string[]);
   await Promise.all(
     tmpEntries
@@ -135,7 +141,7 @@ async function removeStaleClones(): Promise<void> {
  * Whether `repo` is a relative local path (not a URL, not an scp-like `host:path`).
  */
 function isRelativePath(repo: string): boolean {
-  return !parseUrl(repo) && !/^[^/\\]+:/.test(repo) && !path.isAbsolute(repo);
+  return !/^[^/\\]+:/.test(repo) && !path.isAbsolute(repo);
 }
 
 /**
@@ -159,53 +165,16 @@ export async function getRepo(options: { repo?: string; git?: string; remote?: s
 }
 
 /**
- * Parse a repository URL; undefined for scp-like addresses and local paths.
- */
-function parseUrl(repo: string): URL | undefined {
-  try {
-    return new URL(repo);
-  } catch {
-    return undefined;
-  }
-}
-
-/**
- * Whether a repository URL carries a password or token. A URL with only a
- * username (e.g. the HTTPS clone URLs of Bitbucket and Azure DevOps) relies on
- * the user's credential helper and doesn't count.
- */
-function hasPassword(repo: string): boolean {
-  return !!parseUrl(repo)?.password;
-}
-
-function withoutCredentials(repo: string): string {
-  const url = parseUrl(repo)!;
-  url.username = '';
-  url.password = '';
-  return url.toString();
-}
-
-/**
- * Hide credentials (e.g. an injected token) in a repository URL for logging.
- */
-export function redact(repo: string): string {
-  const url = parseUrl(repo);
-  if (!url || (!url.username && !url.password)) {
-    return repo;
-  }
-  return repo.replace(/^([^:/]+:\/\/)[^/]*@/, '$1***@');
-}
-
-/**
  * Publish the files in `basePath` to a branch of a git repository.
  *
  * Prepares the branch in a fresh temporary directory without checking out its
- * files, writes the files from `basePath` (plus .nojekyll, CNAME and a 404.html
- * copy of index.html), stages
- * them as the complete new content of the branch (with `add`: on top of the
- * existing files), commits and pushes. The temporary clone is removed when
- * publish() finishes; a token in the repository URL is only passed on the
- * command line, never kept in the clone's .git/config.
+ * files, writes .nojekyll and CNAME, the files from `basePath` and a 404.html
+ * copy of index.html, stages them as the complete new content of the branch
+ * (with `add`: on top of the existing files), commits and pushes. Env files
+ * never end up in the commit. The temporary directory is removed when publish()
+ * finishes; a token in an http(s) URL stays in the clone's .git/config only until
+ * the clone is done (an interrupted deploy can leave it there for the next
+ * deploy's cleanup) and is passed to git on the command line.
  */
 export async function publish(basePath: string, config: PublishOptions, log: Log = () => undefined): Promise<void> {
   const options = { ...defaults, ...config };
@@ -214,7 +183,16 @@ export async function publish(basePath: string, config: PublishOptions, log: Log
     throw new Error('The "base" option must be an existing directory');
   }
 
-  const files = await listFiles(basePath, options.dotfiles);
+  // A project root as publish directory (e.g. an empty --dir) would publish the
+  // sources and everything the project's .gitignore keeps out of its repository
+  if (options.dotfiles && existsSync(path.join(basePath, '.git'))) {
+    throw new Error(
+      `The directory "${basePath}" contains a .git entry, so it looks like a project root and not like a build output. ` +
+      'Set the directory to publish with --dir (or use --no-dotfiles if you really want to publish this directory).'
+    );
+  }
+
+  const files = await listFiles(basePath, options.dotfiles, (file) => log(`Skipping ${file}: env files are never published`));
   if (files.length === 0) {
     throw new Error(`The directory "${basePath}" doesn't contain any files to publish.`);
   }
@@ -222,18 +200,19 @@ export async function publish(basePath: string, config: PublishOptions, log: Log
   const user = options.user ?? await getUser(process.cwd(), options.git);
   const repoUrl = await getRepo(options);
 
-  await removeStaleClones();
-  const clone = await createCloneDir();
+  const cacheDir = getCacheDir();
+  await removeStaleClones(cacheDir);
+  const clone = await createCloneDir(cacheDir);
 
   try {
     // Credentials in the URL must not end up in a credential helper's store
-    const credentials = hasPassword(repoUrl);
-    const gitArgs = credentials ? ['-c', 'credential.helper='] : [];
+    const gitArgs = hasPassword(repoUrl) ? ['-c', 'credential.helper='] : [];
 
     log(`Cloning ${redact(repoUrl)} into ${clone}`);
-    const git = await Git.clone(repoUrl, clone, options.branch, options, gitArgs);
-    if (credentials) {
-      await git.exec('remote', 'set-url', options.remote, withoutCredentials(repoUrl));
+    const git = await Git.clone(repoUrl, clone, options.branch, options, gitArgs, log);
+    const stripUserinfo = hasHttpUserinfo(repoUrl);
+    if (stripUserinfo) {
+      await git.exec('remote', 'set-url', options.remote, withoutUserinfo(repoUrl));
     }
 
     if (options.add && !git.isNewBranch) {
@@ -251,22 +230,41 @@ export async function publish(basePath: string, config: PublishOptions, log: Log
       await fs.writeFile(path.join(git.cwd, 'CNAME'), options.cname);
     }
 
-    // 404.html for SPA routing on GitHub Pages; a 404.html of basePath overwrites it below
+    log('Copying files');
+    await copy(files, basePath, git.cwd);
+
+    // After the copy: the SPA fallback for GitHub Pages replaces a 404.html of the
+    // build (--no-notfound publishes that one). writeFile: a new file without the
+    // mode of index.html.
     if (options.notfound) {
       if (files.includes('index.html')) {
-        await fs.copyFile(path.join(basePath, 'index.html'), path.join(git.cwd, '404.html'));
-        log(files.includes('404.html') ? '404.html of the directory is kept' : '404.html file created');
+        await fs.writeFile(path.join(git.cwd, '404.html'), await fs.readFile(path.join(basePath, 'index.html')));
+        log('404.html file created');
       } else {
         log('index.html could not be copied to 404.html. Proceeding without it.');
       }
     }
 
-    log('Copying files');
-    await copy(files, basePath, git.cwd);
-
     log('Adding all');
     await git.addAll(options.add);
 
+    // The last gate before the commit: also covers env files kept by `add`
+    const envFiles = (await git.exec('ls-files', '-z')).split('\0').filter((file) => file && isEnvFile(file));
+    if (envFiles.length > 0) {
+      log(`Removing env files from the branch: ${envFiles.join(', ')}`);
+      await git.exec('rm', '--cached', '--quiet', '--', ...envFiles);
+    }
+
+    if (!git.isNewBranch) {
+      const removed = (await git.exec('diff', '--cached', '--name-only', '--diff-filter=D', 'HEAD')).split('\n').filter(Boolean);
+      if (removed.length > 0) {
+        log(`Removing ${removed.length} file(s) from the branch: ${removed.join(', ')}`);
+      }
+    }
+
+    if (options.user) {
+      git.setIdentity(options.user);
+    }
     if (user) {
       await git.exec('config', 'user.email', user.email);
       if (user.name) {
@@ -278,7 +276,7 @@ export async function publish(basePath: string, config: PublishOptions, log: Log
     await git.commit(options.message);
 
     log('Pushing');
-    await git.push(credentials ? repoUrl : options.remote, options.branch);
+    await git.push(stripUserinfo ? repoUrl : options.remote, options.branch);
   } finally {
     try {
       await fs.rm(clone, { recursive: true, force: true, maxRetries: 10 });

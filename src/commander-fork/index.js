@@ -25,7 +25,7 @@
  * Fixes on top of commander v3.0.2 (marked FORK FIX 1/3 to 3/3 below):
  * 1. Tightened negate detection for --no- flags
  * 2. Short-only and custom version flags
- * 3. "--flag=false" leaves a boolean flag unset
+ * 3. "--flag=false" (also 0, no, off) leaves a boolean flag unset
  */
 
 /**
@@ -340,12 +340,14 @@ Command.prototype.normalize = function(args) {
       }
     } else if (/^--/.test(arg) && ~(index = arg.indexOf('='))) {
       // FORK FIX 3/3: "--flag=false" leaves a boolean flag unset
-      // Original: "--add=false" was split into "--add" plus a positional "false",
-      //           so the flag was set although the user asked for the opposite.
-      // Fix: "=false" leaves the flag unset; any other value sets it (as before).
+      // Upstream commander v3.0.2 splits "--add=false" into "--add" plus a positional
+      // "false", which sets the flag. Here false, 0, no and off (any case) leave a
+      // boolean flag unset; any other value sets it like upstream. The version flag
+      // always prints the version.
       opt = this.optionFor(arg.slice(0, index));
       if (opt && !opt.required && !opt.optional) {
-        if (arg.slice(index + 1) !== 'false') {
+        var isVersion = opt.attributeName() === this._versionOptionName;
+        if (isVersion || !/^(false|0|no|off)$/i.test(arg.slice(index + 1))) {
           ret.push(arg.slice(0, index));
         }
       } else {

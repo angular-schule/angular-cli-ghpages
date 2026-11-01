@@ -302,8 +302,9 @@ In this case, provide **both** `name` and `email` string values to identify the 
 
 The command includes dotfiles by default (e.g. `.htaccess` will be committed).
 With `--no-dotfiles` files starting with `.` are ignored.
-Files and folders named `.git` are never published.
-Ignore rules (a global gitignore or a `.gitignore` inside the build) don't apply: every file of the build is published.
+Env files (`.env`, `.env.*`, `*.env`, in any folder, also inside a folder with such a name) are never published, whatever the options say, and are removed from the target branch if they are already there. Note that this can't remove them from the history of the branch.
+Files and folders named `.git` are never published either.
+Ignore rules (a global gitignore or a `.gitignore` inside the build) don't apply: every other file of the build is published.
 
 #### --no-notfound <a name="no-notfound"></a>
 
@@ -315,7 +316,7 @@ Ignore rules (a global gitignore or a `.gitignore` inside the build) don't apply
 
 By default, a `404.html` file is created, because this is the only known workaround for SPA routing on GitHub Pages (note: GitHub still returns HTTP 404 status, which may affect Brave browser and social previews).
 The `404.html` is added to the deployment only; your build folder isn't modified.
-If the build already contains a `404.html` (e.g. a custom error page), it is kept.
+If you want to publish your own `404.html`, use `--no-notfound`: otherwise the copy of `index.html` replaces it in the deployment.
 
 > [!IMPORTANT]
 > **Cloudflare Pages users:** You **must** use `--no-notfound` to enable native SPA routing. Cloudflare Pages only activates SPA mode when no `404.html` file exists. See [#178](https://github.com/angular-schule/angular-cli-ghpages/issues/178)

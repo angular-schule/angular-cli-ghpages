@@ -562,6 +562,16 @@ describe('gh-pages-fork publish()', () => {
       expect(tree(remote)).toEqual(['HEAD/index.html', 'assets/app.js', 'index.html']);
     });
 
+    it('redeploys when a tag has the name of the branch', async () => {
+      await deploy();
+      git(remote, 'tag', 'gh-pages', 'gh-pages');
+      await fs.writeFile(path.join(dist, 'index.html'), 'changed');
+
+      await deploy();
+
+      expect(commitCount(remote, 'refs/heads/gh-pages')).toBe(2);
+    });
+
     it('deploys a build with a 404.html folder without the 404.html copy', async () => {
       const messages: string[] = [];
       await fs.mkdir(path.join(dist, '404.html'));

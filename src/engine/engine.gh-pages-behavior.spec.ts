@@ -217,7 +217,7 @@ describe('gh-pages-fork publish() - behavioral snapshot', () => {
 
       await ghPages.publish(basePath, { repo, branch, remote, message: 'Deploy' });
 
-      expect(gitCalls('push')).toEqual([['push', '--tags', remote, branch]]);
+      expect(gitCalls('push')).toEqual([['push', '--tags', remote, 'refs/heads/' + branch]]);
     });
 
     it('should NOT use force push', async () => {

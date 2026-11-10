@@ -253,10 +253,11 @@ export class Git {
   }
 
   /**
-   * Push a branch to a remote name or URL.
+   * Push a branch to a remote name or URL. The full ref name keeps the push working when a
+   * tag has the same name as the branch.
    */
   async push(remote: string, branch: string): Promise<void> {
-    await this.exec('push', '--tags', remote, branch);
+    await this.exec('push', '--tags', remote, 'refs/heads/' + branch);
   }
 
   /**

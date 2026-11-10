@@ -94,7 +94,7 @@ describe('gh-pages-fork git commands', () => {
     `git config user.name ${user.name}`,
     'git diff-index --cached --quiet HEAD --',
     'git commit -m Deploy',
-    'git push --tags origin gh-pages'
+    'git push --tags origin refs/heads/gh-pages'
   ];
 
   it('deploys to an existing branch', async () => {
@@ -226,7 +226,7 @@ describe('gh-pages-fork git commands', () => {
     await deploy();
 
     expect(commands().some((command) => command.startsWith('git commit'))).toBe(false);
-    expect(commands().at(-1)).toBe('git push --tags origin gh-pages');
+    expect(commands().at(-1)).toBe('git push --tags origin refs/heads/gh-pages');
   });
 
   it('reads the git user when no user is given', async () => {
@@ -258,7 +258,7 @@ describe('gh-pages-fork git commands', () => {
 
     expect(calls.every((call) => call.cmd === git)).toBe(true);
     expect(commands()[3]).toBe(`${git} clone ${repo} ${workTree()} --separate-git-dir ${gitDir()} --origin ${remote} --no-checkout --branch gh-pages --single-branch --depth 1`);
-    expect(commands().at(-1)).toBe(`${git} push --tags ${remote} gh-pages`);
+    expect(commands().at(-1)).toBe(`${git} push --tags ${remote} refs/heads/gh-pages`);
   });
 
   it('pins commands to the clone, without inherited repository variables', async () => {
@@ -329,7 +329,7 @@ describe('gh-pages-fork git commands', () => {
     expect(calls.every((call) => call.args[0] === '-c' && call.args[1] === 'credential.helper=')).toBe(true);
     expect(commands()).toContain('git remote set-url origin https://github.com/user/repo.git');
     expect(commands()).toContain('git commit -m Deploy');
-    expect(commands().at(-1)).toBe(`git push --tags ${repoWithToken} gh-pages`);
+    expect(commands().at(-1)).toBe(`git push --tags ${repoWithToken} refs/heads/gh-pages`);
   });
 
   it('keeps credential helpers for a URL with only a username, without the username in the clone config', async () => {
@@ -339,7 +339,7 @@ describe('gh-pages-fork git commands', () => {
 
     expect(calls.some((call) => call.args.includes('credential.helper='))).toBe(false);
     expect(commands()).toContain('git remote set-url origin https://dev.azure.com/org/project/_git/repo');
-    expect(commands().at(-1)).toBe(`git push --tags ${repoWithUser} gh-pages`);
+    expect(commands().at(-1)).toBe(`git push --tags ${repoWithUser} refs/heads/gh-pages`);
   });
 
   it('keeps the remote of an ssh URL untouched', async () => {
@@ -348,6 +348,6 @@ describe('gh-pages-fork git commands', () => {
     await deploy({ repo: sshRepo });
 
     expect(commands().some((command) => command.includes('set-url'))).toBe(false);
-    expect(commands().at(-1)).toBe('git push --tags origin gh-pages');
+    expect(commands().at(-1)).toBe('git push --tags origin refs/heads/gh-pages');
   });
 });

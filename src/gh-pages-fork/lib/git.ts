@@ -179,9 +179,12 @@ export class Git {
       await run(cloneArgs);
     }
 
-    // A relative path keeps working when a launcher translates paths (wslgit)
+    // A relative path keeps working when a launcher translates paths (wslgit).
+    // Removed first: git marks the file hidden on Windows, which can't be opened for writing.
+    const gitFile = path.join(workTree, '.git');
     await fs.mkdir(workTree, { recursive: true });
-    await fs.writeFile(path.join(workTree, '.git'), 'gitdir: ../.git\n');
+    await fs.rm(gitFile, { force: true });
+    await fs.writeFile(gitFile, 'gitdir: ../.git\n');
 
     const git = new Git(
       workTree,

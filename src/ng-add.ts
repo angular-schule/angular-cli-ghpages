@@ -11,8 +11,9 @@ export const ngAdd = (options: NgAddOptions) => async (
   context: SchematicContext
 ) => {
   // Loaded here: the package entry point re-exports ngAdd and must load on every
-  // supported Node.js version without the schematics dependencies
-  const { SchematicsException } = await import('@angular-devkit/schematics');
+  // supported Node.js version without the schematics dependencies. require, not
+  // import(): the Angular CLI can run schematics in a vm wrapper that only supports require.
+  const { SchematicsException } = require('@angular-devkit/schematics') as typeof import('@angular-devkit/schematics');
 
   const host = createHost(tree);
   const { workspace } = await workspaces.readWorkspace('/', host);

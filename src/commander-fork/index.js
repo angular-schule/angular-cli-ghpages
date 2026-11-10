@@ -343,12 +343,12 @@ Command.prototype.normalize = function(args) {
       // FORK FIX 3/4: "--flag=false" leaves a boolean flag unset
       // Upstream commander v3.0.2 splits "--add=false" into "--add" plus a positional
       // "false", which sets the flag. Here false, 0, no and off (any case) leave a
-      // boolean flag unset; any other value sets it like upstream. The version flag
-      // always prints the version.
+      // boolean flag unset; any other value sets it like upstream. Negated flags
+      // (--no-dotfiles=false) and the version flag keep the upstream behavior.
       opt = this.optionFor(arg.slice(0, index));
       if (opt && !opt.required && !opt.optional) {
-        var isVersion = opt.attributeName() === this._versionOptionName;
-        if (isVersion || !/^(false|0|no|off)$/i.test(arg.slice(index + 1))) {
+        var keepsFlag = opt.attributeName() === this._versionOptionName || opt.negate;
+        if (keepsFlag || !/^(false|0|no|off)$/i.test(arg.slice(index + 1))) {
           ret.push(arg.slice(0, index));
         }
       } else {

@@ -111,6 +111,7 @@ jobs:
 
           # an empty --dir and a project root as directory never publish anything
           git init project
+          echo '{}' > project/package.json
           echo 'SECRET=value' > project/.env
           if $CLI --dir= --repo="$REMOTE" --branch=never; then exit 1; fi
           if (cd project && node ../node_modules/angular-cli-ghpages/angular-cli-ghpages --dir=. --repo="$REMOTE" --branch=never); then exit 1; fi

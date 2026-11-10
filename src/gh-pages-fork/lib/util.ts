@@ -42,8 +42,9 @@ export async function listFiles(base: string, dotfiles: boolean): Promise<string
   // JavaScript implementation: the native realpath fails on some Windows volumes (e.g. RAM disks)
   const resolve = promisify(realpath);
 
-  async function walk(relDir: string, ancestors: string[]): Promise<void> {
-    const realDir = await resolve(path.join(base, relDir));
+  // realDir: the real path of relDir; only the base and symbolic links need a
+  // realpath call, a child of a real directory is that directory plus its name
+  async function walk(relDir: string, realDir: string, ancestors: string[]): Promise<void> {
     if (ancestors.includes(realDir)) {
       return;
     }
@@ -64,14 +65,15 @@ export async function listFiles(base: string, dotfiles: boolean): Promise<string
         }
       }
       if (stat.isDirectory()) {
-        await walk(relPath, ancestors);
+        const realChild = entry.isSymbolicLink() ? await resolve(path.join(base, relPath)) : path.join(realDir, entry.name);
+        await walk(relPath, realChild, ancestors);
       } else if (stat.isFile()) {
         files.push(relPath);
       }
     }
   }
 
-  await walk('', []);
+  await walk('', await resolve(base), []);
   return files;
 }
 

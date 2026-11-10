@@ -50,7 +50,7 @@ export interface Schema {
    */
   email?: string;
   /**
-   * Deprecated! This parameter is no longer needed. It will be ignored.
+   * Deprecated! This parameter has no effect and is ignored.
    */
   noSilent?: boolean;
   /**

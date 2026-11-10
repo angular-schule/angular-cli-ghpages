@@ -105,6 +105,7 @@ describe('end-to-end cleanup regression (issue #204, real git)', () => {
   }, 30_000);
 
   it('keeps .nojekyll and CNAME on a redeploy', async () => {
+    const cname = 'example.org';
     const deploy = () => engine.run(
       distDir,
       {
@@ -113,7 +114,7 @@ describe('end-to-end cleanup regression (issue #204, real git)', () => {
         dotfiles: true,
         notfound: false,
         nojekyll: true,
-        cname: 'example.org',
+        cname,
         name: 'Test',
         email: 'test@test.com',
         message: 'test deploy'
@@ -128,7 +129,7 @@ describe('end-to-end cleanup regression (issue #204, real git)', () => {
     const files = tree(bareRepoPath);
 
     expect(files).toEqual(['.nojekyll', 'CNAME', 'index.html']);
-    expect(git(bareRepoPath, 'show', 'gh-pages:CNAME')).toBe('example.org');
+    expect(git(bareRepoPath, 'show', 'gh-pages:CNAME')).toBe(cname);
   }, 30_000);
 
   it('removes a leftover .nojekyll when nojekyll is disabled', async () => {

@@ -87,7 +87,7 @@ describe('engine - real filesystem tests', () => {
 
   /**
    * publish() writes CNAME and .nojekyll into its clone; the engine only
-   * creates 404.html in dist.
+   * passes the options.
    *
    * What we're testing:
    * - Verify we DO pass cname option to publish() when provided
@@ -215,6 +215,13 @@ describe('engine - real filesystem tests', () => {
 
       expect(warnSpy).not.toHaveBeenCalled();
       warnSpy.mockRestore();
+    });
+
+    it('should not fail the dry run when the build can\'t be listed', async () => {
+      const file = path.join(testDir, 'index.html');
+      await fs.writeFile(file, '<h1>app</h1>');
+
+      await expect(engine.run(file, { dryRun: true }, logger)).resolves.toBeUndefined();
     });
 
     it('should forward the warnings of publish() to logger.warn', async () => {

@@ -41,7 +41,7 @@ describe('gh-pages-fork git commands', () => {
     return publish(dist, { repo, user, message: 'Deploy', nojekyll: false, notfound: false, ...options });
   }
 
-  // The private clone directory: the first command (ls-remote) runs in it
+  // The private clone directory: the first command (init of the probe) runs in it
   function cloneDir(): string {
     return calls[0].options.cwd!;
   }
@@ -51,7 +51,12 @@ describe('gh-pages-fork git commands', () => {
   }
 
   function gitDir(): string {
-    return path.join(cloneDir(), 'git');
+    return path.join(cloneDir(), '.git');
+  }
+
+  // ls-remote runs inside a throwaway repository with the remote, so includeIf sections apply
+  function probe(git = 'git', remote = 'origin', url = repo): string[] {
+    return [`${git} init --quiet --bare ${gitDir()}`, `${git} remote add ${remote} ${url}`, `${git} ls-remote ${url}`];
   }
 
   beforeEach(async () => {
@@ -81,11 +86,13 @@ describe('gh-pages-fork git commands', () => {
     return `git clone ${repo} ${workTree()} --separate-git-dir ${gitDir()} --origin origin --no-checkout ${extraArgs.join(' ')}`.trim();
   }
 
-  const staging = ['git add --force --all -- .', 'git ls-files -z'];
+  const listIgnored = 'git ls-files --others --ignored --exclude-standard -z';
+  const staging = [listIgnored, 'git add --force --all -- .', 'git ls-files -z'];
+  const listRemoved = 'git diff-index --cached --name-only --diff-filter=D -z HEAD --';
   const commitAndPush = [
     `git config user.email ${user.email}`,
     `git config user.name ${user.name}`,
-    'git diff-index --cached --quiet HEAD',
+    'git diff-index --cached --quiet HEAD --',
     'git commit -m Deploy',
     'git push --tags origin gh-pages'
   ];
@@ -94,10 +101,10 @@ describe('gh-pages-fork git commands', () => {
     await deploy();
 
     expect(commands()).toEqual([
-      `git ls-remote ${repo}`,
+      ...probe(),
       cloneCommand('--branch gh-pages --single-branch --depth 1'),
       ...staging,
-      'git diff --cached --name-only --diff-filter=D HEAD',
+      listRemoved,
       ...commitAndPush
     ]);
   });
@@ -108,7 +115,7 @@ describe('gh-pages-fork git commands', () => {
     await deploy();
 
     expect(commands()).toEqual([
-      `git ls-remote ${repo}`,
+      ...probe(),
       `git init --separate-git-dir ${gitDir()} ${workTree()}`,
       `git remote add origin ${repo}`,
       'git symbolic-ref HEAD refs/heads/gh-pages',
@@ -122,7 +129,7 @@ describe('gh-pages-fork git commands', () => {
 
     await deploy();
 
-    expect(commands()[1]).toBe(`git init --separate-git-dir ${gitDir()} ${workTree()}`);
+    expect(commands()[3]).toBe(`git init --separate-git-dir ${gitDir()} ${workTree()}`);
   });
 
   it('clones an empty remote, which takes over its object format', async () => {
@@ -130,8 +137,8 @@ describe('gh-pages-fork git commands', () => {
 
     await deploy();
 
-    expect(commands().slice(0, 3)).toEqual([
-      `git ls-remote ${repo}`,
+    expect(commands().slice(0, 5)).toEqual([
+      ...probe(),
       cloneCommand(),
       'git symbolic-ref HEAD refs/heads/gh-pages'
     ]);
@@ -144,7 +151,7 @@ describe('gh-pages-fork git commands', () => {
 
       await deploy();
 
-      const init = calls.find((call) => gitSubcommand(call.args) === 'init')!;
+      const init = calls.find((call) => gitSubcommand(call.args) === 'init' && call.args.includes('--separate-git-dir'))!;
       expect(init.options.env?.GIT_DEFAULT_HASH).toBe(objectFormat);
     }
   });
@@ -152,8 +159,9 @@ describe('gh-pages-fork git commands', () => {
   it('keeps the existing files with add', async () => {
     await deploy({ add: true });
 
-    expect(commands().slice(2, 4)).toEqual([
+    expect(commands().slice(4, 7)).toEqual([
       'git read-tree HEAD',
+      listIgnored,
       'git add --force --ignore-removal -- .'
     ]);
   });
@@ -178,7 +186,7 @@ describe('gh-pages-fork git commands', () => {
 
     await deploy();
 
-    expect(commands().slice(1, 3)).toEqual([
+    expect(commands().slice(3, 5)).toEqual([
       cloneCommand('--branch gh-pages --single-branch --depth 1'),
       cloneCommand('--branch gh-pages --single-branch')
     ]);
@@ -196,7 +204,7 @@ describe('gh-pages-fork git commands', () => {
 
     await publish(dist, { repo, user, message: 'Deploy', nojekyll: false, notfound: false }, (message) => messages.push(message));
 
-    expect(commands().slice(1, 4)).toEqual([
+    expect(commands().slice(3, 6)).toEqual([
       cloneCommand('--branch gh-pages --single-branch --depth 1'),
       cloneCommand('--branch gh-pages --single-branch --depth 1'),
       cloneCommand('--branch gh-pages --single-branch')
@@ -209,7 +217,7 @@ describe('gh-pages-fork git commands', () => {
     results['ls-remote'] = { code: 128, stderr: error };
 
     await expect(deploy()).rejects.toThrow(error);
-    expect(commands()).toHaveLength(1);
+    expect(commands()).toEqual(probe());
   });
 
   it('skips the commit when nothing changed', async () => {
@@ -249,7 +257,7 @@ describe('gh-pages-fork git commands', () => {
     await deploy({ git, remote });
 
     expect(calls.every((call) => call.cmd === git)).toBe(true);
-    expect(commands()[1]).toBe(`${git} clone ${repo} ${workTree()} --separate-git-dir ${gitDir()} --origin ${remote} --no-checkout --branch gh-pages --single-branch --depth 1`);
+    expect(commands()[3]).toBe(`${git} clone ${repo} ${workTree()} --separate-git-dir ${gitDir()} --origin ${remote} --no-checkout --branch gh-pages --single-branch --depth 1`);
     expect(commands().at(-1)).toBe(`${git} push --tags ${remote} gh-pages`);
   });
 
@@ -263,11 +271,12 @@ describe('gh-pages-fork git commands', () => {
     for (const call of calls) {
       expect(call.options.env?.GIT_INDEX_FILE).toBeUndefined();
     }
-    for (const call of calls.slice(0, 2)) {
-      expect(call.options.env?.GIT_DIR).toBeUndefined();
+    // init of the probe and clone: no repository; remote add and ls-remote: the probe
+    for (const call of calls.slice(0, 4)) {
+      expect([undefined, gitDir()]).toContain(call.options.env?.GIT_DIR);
       expect(call.options.env?.GIT_WORK_TREE).toBeUndefined();
     }
-    for (const call of calls.slice(2)) {
+    for (const call of calls.slice(4)) {
       expect(call.options.env?.GIT_DIR).toBe(gitDir());
       expect(call.options.env?.GIT_WORK_TREE).toBe(workTree());
       expect(call.options.cwd).toBe(workTree());
@@ -284,7 +293,7 @@ describe('gh-pages-fork git commands', () => {
   it('turns off git maintenance for the throwaway repository', async () => {
     await deploy();
 
-    for (const call of calls.slice(2)) {
+    for (const call of calls.slice(4)) {
       expect(call.args.slice(0, 4)).toEqual(['-c', 'maintenance.auto=false', '-c', 'gc.auto=0']);
     }
   });
@@ -302,7 +311,7 @@ describe('gh-pages-fork git commands', () => {
   });
 
   it('warns about env files of the index and commits them', async () => {
-    results['ls-files'] = { output: ['.env', 'index.html', 'config/.env.production'].join('\0') };
+    results['ls-files -z'] = { output: ['.env', 'index.html', 'config/.env.production'].join('\0') };
     const warnings: string[] = [];
 
     await publish(dist, { repo, user, message: 'Deploy', nojekyll: false, notfound: false, add: true }, undefined, (message) => warnings.push(message));

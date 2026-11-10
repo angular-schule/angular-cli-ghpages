@@ -82,10 +82,11 @@ commander
   )
   .parse(process.argv);
 
-// Warnings in bold yellow, like ng deploy shows them (NO_COLOR and FORCE_COLOR as usual)
-var colorWarnings = process.env.FORCE_COLOR
-  ? process.env.FORCE_COLOR !== '0'
-  : Boolean(process.stderr.isTTY) && !process.env.NO_COLOR;
+// Warnings in bold yellow, like ng deploy shows them: on a terminal or with
+// FORCE_COLOR, following Node.js for FORCE_COLOR, NO_COLOR and TERM=dumb
+var colorWarnings =
+  (Boolean(process.stderr.isTTY) || process.env.FORCE_COLOR !== undefined) &&
+  require('tty').WriteStream.prototype.hasColors.call(process.stderr);
 
 var consoleLogger = {
   createChild: () => consoleLogger,

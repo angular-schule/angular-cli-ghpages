@@ -185,10 +185,11 @@ export async function publish(basePath: string, config: PublishOptions, log: Log
   }
 
   // A project root as publish directory (e.g. an empty --dir) would publish the
-  // sources and everything the project's .gitignore keeps out of its repository
-  if (options.dotfiles && existsSync(path.join(basePath, '.git'))) {
+  // sources and everything the project's .gitignore keeps out of its repository.
+  // A build folder that is itself a clone (of the pages branch) has no package.json.
+  if (options.dotfiles && existsSync(path.join(basePath, '.git')) && existsSync(path.join(basePath, 'package.json'))) {
     throw new Error(
-      `The directory "${basePath}" contains a .git entry, so it looks like a project root and not like a build output. ` +
+      `The directory "${basePath}" contains a .git entry and a package.json, so it looks like a project root and not like a build output. ` +
       'Set the directory to publish with --dir (or use --no-dotfiles if you really want to publish this directory).'
     );
   }
@@ -236,14 +237,21 @@ export async function publish(basePath: string, config: PublishOptions, log: Log
 
     // After the copy: the SPA fallback for GitHub Pages replaces a 404.html of the
     // build (--no-notfound publishes that one). writeFile: a new file without the
-    // mode of index.html.
+    // mode of index.html. Without a readable index.html file (also Index.html on a
+    // case-sensitive file system) or with a 404.html folder, the deploy goes on.
     if (options.notfound) {
-      if (files.includes('index.html')) {
+      try {
         await fs.writeFile(path.join(git.cwd, '404.html'), await fs.readFile(path.join(basePath, 'index.html')));
         log('404.html file created');
-      } else {
+      } catch {
         log('index.html could not be copied to 404.html. Proceeding without it.');
       }
+    }
+
+    // Every file of the build is published; name the ones an ignore rule would leave out
+    const ignored = (await git.exec('ls-files', '--others', '--ignored', '--exclude-standard', '-z')).split('\0').filter(Boolean);
+    if (ignored.length > 0) {
+      ignoredFileWarning(ignored).forEach((line) => warn(line));
     }
 
     log('Adding all');
@@ -256,9 +264,10 @@ export async function publish(basePath: string, config: PublishOptions, log: Log
     }
 
     if (!git.isNewBranch) {
-      const removed = (await git.exec('diff', '--cached', '--name-only', '--diff-filter=D', 'HEAD')).split('\n').filter(Boolean);
+      // diff-index: no rename detection, which would hide removed files and take seconds
+      const removed = (await git.exec('diff-index', '--cached', '--name-only', '--diff-filter=D', '-z', 'HEAD', '--')).split('\0').filter(Boolean);
       if (removed.length > 0) {
-        log(`Removing ${removed.length} file(s) from the branch: ${removed.join(', ')}`);
+        log(`Removing ${removed.length} file(s) from the branch: ${shortList(removed)}`);
       }
     }
 
@@ -294,8 +303,27 @@ export async function publish(basePath: string, config: PublishOptions, log: Log
  */
 export function envFileWarning(envFiles: string[]): string[] {
   return [
-    `⚠️  WARNING: Publishing env files, which usually contain secrets: ${envFiles.join(', ')}`,
+    `⚠️  WARNING: Publishing env files, which usually contain secrets: ${shortList(envFiles)}`,
     '   Everything on the branch is publicly visible. If this is not intended, remove them from the build ' +
     '(and from the branch with a deploy without --add) and rotate the secrets.'
   ];
+}
+
+/**
+ * Ignore rules (the user's global gitignore, a .gitignore in the build) don't
+ * decide what is published: the deployment holds every file of the build.
+ */
+export function ignoredFileWarning(files: string[]): string[] {
+  return [
+    `⚠️  WARNING: Publishing files that match an ignore rule (global gitignore or a .gitignore in the build): ${shortList(files)}`,
+    '   Every file of the build is published, ignore rules don\'t apply. If this is not intended, remove them from the build.'
+  ];
+}
+
+/** At most 10 paths, so a large site doesn't produce a log line of megabytes */
+function shortList(files: string[]): string {
+  const limit = 10;
+  return files.length > limit
+    ? `${files.slice(0, limit).join(', ')} and ${files.length - limit} more`
+    : files.join(', ');
 }

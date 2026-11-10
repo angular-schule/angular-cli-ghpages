@@ -15,6 +15,7 @@ import { MockInstance } from 'vitest';
 import * as helpers from './engine.prepare-options-helpers';
 import { getRepo } from '../gh-pages-fork/lib';
 import { Schema } from '../deploy/schema';
+import { git } from '../test-helpers/git';
 
 describe('prepareOptions helpers - intensive tests', () => {
   let testLogger: logging.Logger;
@@ -577,9 +578,9 @@ describe('prepareOptions helpers - intensive tests', () => {
     it('should use the configured remote', async () => {
       const app = await fs.mkdtemp(path.join(os.tmpdir(), 'remote-discovery-'));
       const upstreamUrl = 'https://github.com/test/upstream.git';
-      execSync('git init', { cwd: app, stdio: 'pipe' });
-      execSync('git remote add origin https://github.com/test/origin.git', { cwd: app, stdio: 'pipe' });
-      execSync(`git remote add upstream ${upstreamUrl}`, { cwd: app, stdio: 'pipe' });
+      git(app, 'init');
+      git(app, 'remote', 'add', 'origin', 'https://github.com/test/origin.git');
+      git(app, 'remote', 'add', 'upstream', upstreamUrl);
       const originalCwd = process.cwd();
       process.chdir(app);
 

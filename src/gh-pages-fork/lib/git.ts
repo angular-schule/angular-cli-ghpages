@@ -136,24 +136,28 @@ export class Git {
    * - existing branch: clone only that branch (see cloneBranch)
    * - new branch: an empty repository with `repo` as remote and HEAD on the unborn branch
    *
-   * The git directory (`<dir>/git`) lives outside the work tree (`<dir>/work`),
+   * The git directory (`<dir>/.git`) lives outside the work tree (`<dir>/work`),
    * so no copied file can ever overwrite it. Commands of the returned instance
    * have GIT_DIR and GIT_WORK_TREE pinned to these, inherited repository
    * variables are removed, and the throwaway repository runs no maintenance.
+   * The work tree also gets a `.git` file pointing to the git directory: a git
+   * launcher that drops GIT_DIR (wslgit, sudo) still finds the clone and never
+   * the project's repository.
    */
   static async clone(repo: string, dir: string, branch: string, options: CloneOptions, args: string[] = [], log: (message: string) => void = () => undefined): Promise<Git> {
     const workTree = path.join(dir, 'work');
-    const gitDir = path.join(dir, 'git');
+    // Named .git: [includeIf "gitdir:..."] patterns of the user's config often end in /.git
+    const gitDir = path.join(dir, '.git');
     const run = (gitArgs: string[], env: NodeJS.ProcessEnv = {}) =>
       spawn(options.git, [...args, ...gitArgs], {
         cwd: dir,
-        // ls-remote reads the config of a repository around its cwd (e.g. the
-        // extraheader of actions/checkout); the ceiling keeps it out of the project
+        // Git must not read the config of a repository around the private dir
+        // (e.g. the extraheader of actions/checkout in the project)
         env: isolatedEnv({ GIT_CEILING_DIRECTORIES: path.dirname(dir), ...env })
       });
     const cloneArgs = ['clone', repo, workTree, '--separate-git-dir', gitDir, '--origin', options.remote, '--no-checkout'];
 
-    const refs = (await run(['ls-remote', repo])).split('\n').filter(Boolean);
+    const refs = (await listRemoteRefs(run, repo, gitDir, options.remote)).split('\n').filter(Boolean);
     const exists = refs.some((ref) => ref.endsWith('\trefs/heads/' + branch));
 
     if (exists) {
@@ -175,8 +179,9 @@ export class Git {
       await run(cloneArgs);
     }
 
-    await fs.rm(path.join(workTree, '.git'), { force: true });
+    // A relative path keeps working when a launcher translates paths (wslgit)
     await fs.mkdir(workTree, { recursive: true });
+    await fs.writeFile(path.join(workTree, '.git'), 'gitdir: ../.git\n');
 
     const git = new Git(
       workTree,
@@ -199,12 +204,11 @@ export class Git {
    * environment (git hooks and some CI systems export them).
    */
   setIdentity(user: { name: string; email: string }): void {
+    // An empty value leaves the identity of the config in place (like `git config` in publish())
     this.env = {
       ...(this.env ?? process.env),
-      GIT_AUTHOR_NAME: user.name,
-      GIT_AUTHOR_EMAIL: user.email,
-      GIT_COMMITTER_NAME: user.name,
-      GIT_COMMITTER_EMAIL: user.email
+      ...(user.name ? { GIT_AUTHOR_NAME: user.name, GIT_COMMITTER_NAME: user.name } : {}),
+      ...(user.email ? { GIT_AUTHOR_EMAIL: user.email, GIT_COMMITTER_EMAIL: user.email } : {})
     };
   }
 
@@ -237,8 +241,9 @@ export class Git {
    */
   async commit(message: string): Promise<void> {
     try {
-      // --cached: the work tree only holds the new files, not the kept ones of --add
-      await this.exec('diff-index', '--cached', '--quiet', 'HEAD');
+      // --cached: the work tree only holds the new files, not the kept ones of --add;
+      // `--`: a file or folder named HEAD (or head) in the build is no revision
+      await this.exec('diff-index', '--cached', '--quiet', 'HEAD', '--');
     } catch {
       await this.exec('commit', '-m', message);
     }
@@ -279,6 +284,27 @@ export class Git {
 }
 
 /**
+ * The refs of `repo`, read from inside a throwaway repository at `gitDir` with
+ * `repo` as remote: [includeIf "gitdir:..."] and [includeIf "hasconfig:remote.*.url:..."]
+ * sections of the user's config (per-account SSH key, insteadOf, proxy) apply
+ * as they do for the clone and the push. The repository is removed afterwards.
+ */
+async function listRemoteRefs(
+  run: (gitArgs: string[], env?: NodeJS.ProcessEnv) => Promise<string>,
+  repo: string,
+  gitDir: string,
+  remote: string
+): Promise<string> {
+  try {
+    await run(['init', '--quiet', '--bare', gitDir]);
+    await run(['remote', 'add', remote, repo], { GIT_DIR: gitDir });
+    return await run(['ls-remote', repo], { GIT_DIR: gitDir });
+  } finally {
+    await fs.rm(gitDir, { recursive: true, force: true });
+  }
+}
+
+/**
  * Clone shallow; a server without shallow clone support gets a full clone right
  * away. Any other failure may be transient: one more shallow attempt, then a
  * full clone as the last resort.
@@ -290,23 +316,18 @@ async function cloneBranch(
   log: (message: string) => void
 ): Promise<void> {
   const shallow = ['--depth', depth];
-  try {
-    await clone(shallow);
-    return;
-  } catch (error) {
-    const message = error instanceof Error ? error.message : String(error);
-    log(`Shallow clone failed: ${message}`);
-    await reset();
-    if (/shallow/i.test(message)) {
-      await clone([]);
+  for (const last of [false, true]) {
+    try {
+      await clone(shallow);
       return;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      log(`Shallow clone failed: ${message}`);
+      await reset();
+      if (last || /shallow/i.test(message)) {
+        await clone([]);
+        return;
+      }
     }
-  }
-  try {
-    await clone(shallow);
-  } catch (error) {
-    log(`Shallow clone failed: ${error instanceof Error ? error.message : String(error)}`);
-    await reset();
-    await clone([]);
   }
 }

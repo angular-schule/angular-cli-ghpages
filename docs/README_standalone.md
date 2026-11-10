@@ -172,7 +172,7 @@ In this case provide both `name` and `email` string values to identify the commi
 
 Directory for all published sources, relative to the current working directory.
 An absolute path works as well, unless the same path exists relative to the current working directory.
-An empty value and a directory with a `.git` entry (a project root) are rejected when dotfiles are published.
+An empty value and a directory with a `.git` entry and a `package.json` (a project root) are rejected when dotfiles are published.
 Pass it as an option (`--dir=dist/my-app/browser`); positional arguments are ignored (with a warning).  
 **Starting with Angular CLI 6, the build artifacts will be put in a subfolder under `dist`.
 Please take a look at the `dist` folder to see whether there is a subfolder with your project's name or not.**
@@ -191,7 +191,7 @@ which are not related at all to angular.
 The command includes dotfiles by default (e.g. `.htaccess` will be committed)
 With `--no-dotfiles` files starting with `.` are ignored.
 Env files (`.env`, `.env.*`, `*.env`, in any folder) are published like every other file, but each deploy (also `--dry-run`) shows a warning listing them, because they usually contain secrets. Files and folders named `.git` are never published.
-Ignore rules (a global gitignore or a `.gitignore` inside the directory) don't apply: every other file of the directory is published.
+Ignore rules (a global gitignore or a `.gitignore` inside the directory) don't apply: every other file of the directory is published, and a warning lists the files an ignore rule matches.
 
 #### --dry-run <a name="dry-run"></a>
 

@@ -25,7 +25,7 @@ import * as engine from './engine';
  */
 const EXPECTED_GIT_COMMANDS = [
   'ls-remote', 'clone', 'init', 'remote', 'symbolic-ref', 'read-tree',
-  'add', 'ls-files', 'diff', 'config', 'diff-index', 'commit', 'push'
+  'add', 'ls-files', 'config', 'diff-index', 'commit', 'push'
 ];
 
 const { mockSpawn, mockCopy, mockGetUser } = vi.hoisted(() => ({
@@ -70,7 +70,7 @@ describe('gh-pages-fork publish() - behavioral snapshot', () => {
       return { output: ['gh-pages', 'production', 'existing-branch'].map((branch) => `${sha}\trefs/heads/${branch}`).join('\n') };
     }
     // exit code 1: there are changes to commit
-    return args[0] === 'diff-index' ? { code: 1 } : undefined;
+    return args[0] === 'diff-index' && args.includes('--quiet') ? { code: 1 } : undefined;
   }
 
   // Git calls by subcommand, without the leading `-c` pairs
@@ -110,15 +110,9 @@ describe('gh-pages-fork publish() - behavioral snapshot', () => {
     mockCopy.mockClear();
     mockGetUser.mockClear();
 
-    // Isolated clone directory; no injected token, no CI metadata
+    // Isolated clone directory (vitest-setup removes tokens and CI variables)
     originalEnv = { ...process.env };
     process.env.CACHE_DIR = path.join(tempDir, 'cache');
-    delete process.env.GH_TOKEN;
-    delete process.env.PERSONAL_TOKEN;
-    delete process.env.GITHUB_TOKEN;
-    delete process.env.TRAVIS;
-    delete process.env.CIRCLECI;
-    delete process.env.GITHUB_ACTIONS;
   });
 
   afterEach(() => {
@@ -148,8 +142,9 @@ describe('gh-pages-fork publish() - behavioral snapshot', () => {
 
       await ghPages.publish(basePath, { repo, message: 'Deploy' });
 
-      expect(gitCalls()[0]).toEqual(['ls-remote', repo]);
-      expect(gitCommands()[1]).toBe('clone');
+      // ls-remote runs in a throwaway repository with the remote (includeIf sections apply)
+      expect(gitCommands().slice(0, 4)).toEqual(['init', 'remote', 'ls-remote', 'clone']);
+      expect(gitCalls('ls-remote')).toEqual([['ls-remote', repo]]);
     });
   });
 
@@ -377,8 +372,9 @@ describe('gh-pages-fork publish() - behavioral snapshot', () => {
       await ghPages.publish(basePath, { repo, branch, message: 'Deploy' });
 
       expect(gitCommands()).not.toContain('clone');
-      expect(gitCalls('init')).toHaveLength(1);
-      expect(gitCalls('remote')).toEqual([['remote', 'add', 'origin', repo]]);
+      expect(gitCalls('init').filter((args) => args.includes('--separate-git-dir'))).toHaveLength(1);
+      // the throwaway repository of ls-remote, then the new repository
+      expect(gitCalls('remote')).toEqual([['remote', 'add', 'origin', repo], ['remote', 'add', 'origin', repo]]);
       expect(gitCalls('symbolic-ref')).toEqual([['symbolic-ref', 'HEAD', 'refs/heads/' + branch]]);
     });
   });
@@ -415,7 +411,7 @@ describe('gh-pages-fork publish() - behavioral snapshot', () => {
 
       await ghPages.publish(basePath, { repo, message: 'Deploy' });
 
-      // publish() uses: git diff-index --quiet HEAD || git commit -m "message"
+      // publish() uses: git diff-index --cached --quiet HEAD -- || git commit -m "message"
       expect(gitCommands()).not.toContain('commit');
       // But push should still be called (even with no new commits)
       expect(gitCommands()).toContain('push');

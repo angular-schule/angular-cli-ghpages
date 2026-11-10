@@ -3,7 +3,7 @@ import fs from 'fs';
 import os from 'os';
 import { execSync, spawnSync } from 'child_process';
 
-import { createBareRepo, tree } from '../test-helpers/git';
+import { createBareRepo, git, tree } from '../test-helpers/git';
 
 /**
  * END-TO-END CLI TESTS
@@ -41,16 +41,9 @@ function runCli(args: string): string {
   return execSync(`node ${program} --dry-run ${args}`, { env: cliEnv() }).toString();
 }
 
-// No CI metadata, no injected token: consistent test behavior across environments
+// vitest-setup removes tokens and CI variables; output stays uncolored unless a test sets them
 function cliEnv(): NodeJS.ProcessEnv {
   const env = { ...process.env };
-  delete env.TRAVIS;
-  delete env.CIRCLECI;
-  delete env.GITHUB_ACTIONS;
-  delete env.GH_TOKEN;
-  delete env.PERSONAL_TOKEN;
-  delete env.GITHUB_TOKEN;
-  // Uncolored output unless a test sets them
   delete env.FORCE_COLOR;
   delete env.NO_COLOR;
   return env;
@@ -531,22 +524,25 @@ describe('CLI End-to-End Tests', () => {
       expect(result.stderr).toContain('⚠️  WARNING: Publishing env files, which usually contain secrets: .env');
     });
 
-    it('should color warnings with FORCE_COLOR and not with NO_COLOR', () => {
+    it('should color warnings with FORCE_COLOR, not with NO_COLOR, FORCE_COLOR=0/false or without a terminal', () => {
       const unexpected = ['--dir=missing', 'extra-argument'];
 
       const colored = runCliRaw(unexpected, tempDir, { FORCE_COLOR: '1' });
-      const plain = runCliRaw(unexpected, tempDir, { NO_COLOR: '1' });
-
       expect(colored.stderr).toContain('\u001b[1m\u001b[33m⚠️  Ignoring unexpected argument(s)');
-      expect(plain.stderr).toContain('⚠️  Ignoring unexpected argument(s)');
-      expect(plain.stderr).not.toContain('\u001b[');
+
+      for (const env of [{ NO_COLOR: '1' }, { FORCE_COLOR: '0' }, { FORCE_COLOR: 'false' }, {}]) {
+        const plain = runCliRaw(unexpected, tempDir, env);
+        expect(plain.stderr).toContain('⚠️  Ignoring unexpected argument(s)');
+        expect(plain.stderr).not.toContain('\u001b[');
+      }
     });
 
     it('should refuse a project root as directory', () => {
       const remote = createBareRepo(path.join(tempDir, 'remote.git'));
       const app = path.join(tempDir, 'app');
       fs.mkdirSync(app);
-      execSync('git init', { cwd: app, stdio: 'pipe', env: cliEnv() });
+      git(app, 'init');
+      fs.writeFileSync(path.join(app, 'package.json'), '{}');
       fs.writeFileSync(path.join(app, 'index.html'), '<h1>cli</h1>');
 
       const result = runCliRaw(['--dir=.', `--repo=${remote}`], app);

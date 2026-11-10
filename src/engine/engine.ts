@@ -90,8 +90,9 @@ async function publishViaGhPages(
   logger: logging.LoggerApi
 ) {
   if (options.dryRun) {
-    // Only the build: env files kept by --add are on the branch, which a dry-run doesn't read
-    const envFiles = (await listFiles(dir, options.dotfiles)).filter(isEnvFile).sort();
+    // Only the build: env files kept by --add are on the branch, which a dry-run doesn't read.
+    // A hint only: a build that can't be listed doesn't fail the dry run.
+    const envFiles = (await listFiles(dir, options.dotfiles).catch(() => [])).filter(isEnvFile).sort();
     if (envFiles.length > 0) {
       ghpages.envFileWarning(envFiles).forEach((line) => logger.warn(line));
     }
@@ -103,8 +104,8 @@ async function publishViaGhPages(
       JSON.stringify(
         {
           dir,
-          // options.repo may contain an injected token
-          repo: options.repo ? ghpages.redact(options.repo) : 'current working directory (which must be a git repo in this case) will be used to commit & push',
+          // prepareOptions() always resolves the repository; it may contain an injected token
+          repo: ghpages.redact(options.repo!),
           remote: options.remote,
           message: options.message,
           branch: options.branch,

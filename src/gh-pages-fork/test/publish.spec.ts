@@ -8,7 +8,7 @@ import * as path from 'path';
 
 import { commitCount, createBareRepo, fileUrl, git, seedBranch, tree } from '../../test-helpers/git';
 import { defaults as engineDefaults } from '../../engine/defaults';
-import { defaults, envFileWarning, getCacheDir, publish, PublishOptions } from '../lib';
+import { defaults, envFileWarning, getCacheDir, ignoredFileWarning, publish, PublishOptions } from '../lib';
 
 const user = { name: 'Deploy Bot', email: 'bot@example.org' };
 
@@ -55,7 +55,7 @@ describe('gh-pages-fork publish()', () => {
     await deploy({ dotfiles: true });
 
     expect(tree(remote)).toEqual(['.htaccess', 'assets/app.js', 'index.html']);
-    expect(git(remote, 'log', '-1', '--format=%an <%ae> | %s', 'gh-pages')).toBe('Deploy Bot <bot@example.org> | deploy');
+    expect(git(remote, 'log', '-1', '--format=%an <%ae> | %s', 'gh-pages')).toBe(`${user.name} <${user.email}> | deploy`);
   });
 
   it('replaces the whole branch content, including dotfiles and submodule gitlinks', async () => {
@@ -74,7 +74,7 @@ describe('gh-pages-fork publish()', () => {
     await deploy(options);
 
     expect(tree(remote)).toEqual(['.nojekyll', 'CNAME', 'assets/app.js', 'index.html']);
-    expect(git(remote, 'show', 'gh-pages:CNAME')).toBe('example.org');
+    expect(git(remote, 'show', 'gh-pages:CNAME')).toBe(options.cname);
     expect(commitCount(remote)).toBe(2);
   });
 
@@ -111,14 +111,15 @@ describe('gh-pages-fork publish()', () => {
   it('follows symbolic links in dist', async () => {
     const shared = path.join(tempDir, 'shared');
     await fs.mkdir(shared);
-    await fs.writeFile(path.join(shared, 'data.txt'), 'shared');
+    const content = 'shared';
+    await fs.writeFile(path.join(shared, 'data.txt'), content);
     await fs.symlink(shared, path.join(dist, 'linked'));
     await fs.symlink('index.html', path.join(dist, 'alias.html'));
 
     await deploy();
 
     expect(tree(remote)).toEqual(['alias.html', 'assets/app.js', 'index.html', 'linked/data.txt']);
-    expect(git(remote, 'show', 'gh-pages:linked/data.txt')).toBe('shared');
+    expect(git(remote, 'show', 'gh-pages:linked/data.txt')).toBe(content);
   });
 
   it('uses the git user of the current working directory when no user is given', async () => {
@@ -395,12 +396,13 @@ describe('gh-pages-fork publish()', () => {
     it('replaces a 404.html of the directory with the SPA fallback', async () => {
       const index = '<h1>spa</h1>';
       await fs.writeFile(path.join(dist, 'index.html'), index);
-      await fs.writeFile(path.join(dist, '404.html'), 'custom not found page');
+      const notFound = 'custom not found page';
+      await fs.writeFile(path.join(dist, '404.html'), notFound);
 
       await deploy({ notfound: true });
 
       expect(git(remote, 'show', 'gh-pages:404.html')).toBe(index);
-      expect(await fs.readFile(path.join(dist, '404.html'), 'utf-8')).toBe('custom not found page');
+      expect(await fs.readFile(path.join(dist, '404.html'), 'utf-8')).toBe(notFound);
     });
 
     it('publishes a 404.html of the directory with notfound: false', async () => {
@@ -432,10 +434,11 @@ describe('gh-pages-fork publish()', () => {
 
     it('follows index.html on every deploy', async () => {
       await deploy({ notfound: true });
-      await fs.writeFile(path.join(dist, 'index.html'), '<h1>v2</h1>');
+      const index = '<h1>v2</h1>';
+      await fs.writeFile(path.join(dist, 'index.html'), index);
       await deploy({ notfound: true });
 
-      expect(git(remote, 'show', 'gh-pages:404.html')).toBe('<h1>v2</h1>');
+      expect(git(remote, 'show', 'gh-pages:404.html')).toBe(index);
     });
 
     it('creates no 404.html without index.html and still deploys', async () => {
@@ -518,19 +521,118 @@ describe('gh-pages-fork publish()', () => {
   });
 
   describe('project root as publish directory', () => {
-    it('refuses a directory with a .git entry when dotfiles are published', async () => {
+    it('refuses a directory with a .git entry and a package.json when dotfiles are published', async () => {
       git(dist, 'init');
+      await fs.writeFile(path.join(dist, 'package.json'), '{}');
 
-      await expect(deploy({ dotfiles: true })).rejects.toThrow('contains a .git entry');
+      await expect(deploy({ dotfiles: true })).rejects.toThrow('contains a .git entry and a package.json');
       expect(() => git(remote, 'rev-parse', '--verify', 'gh-pages')).toThrow();
     });
 
-    it('allows it without dotfiles', async () => {
+    it('publishes a build folder that is a clone itself (no package.json)', async () => {
       git(dist, 'init');
+
+      await deploy({ dotfiles: true });
+
+      expect(tree(remote)).toEqual(['.htaccess', 'assets/app.js', 'index.html']);
+    });
+
+    it('allows a project root without dotfiles', async () => {
+      git(dist, 'init');
+      await fs.writeFile(path.join(dist, 'package.json'), '{}');
 
       await deploy({ dotfiles: false });
 
+      expect(tree(remote)).toEqual(['assets/app.js', 'index.html', 'package.json']);
+    });
+  });
+
+  describe('compatibility with 3.1.2', () => {
+    it('redeploys a build with a top-level HEAD folder', async () => {
+      await fs.mkdir(path.join(dist, 'HEAD'));
+      await fs.writeFile(path.join(dist, 'HEAD', 'index.html'), 'head route');
+      await deploy();
+      await fs.writeFile(path.join(dist, 'HEAD', 'index.html'), 'head route, changed');
+
+      await deploy();
+      // unchanged: no commit
+      await deploy();
+
+      expect(commitCount(remote)).toBe(2);
+      expect(tree(remote)).toEqual(['HEAD/index.html', 'assets/app.js', 'index.html']);
+    });
+
+    it('deploys a build with a 404.html folder without the 404.html copy', async () => {
+      const messages: string[] = [];
+      await fs.mkdir(path.join(dist, '404.html'));
+      await fs.writeFile(path.join(dist, '404.html', 'index.html'), 'route');
+
+      await deploy({ notfound: true }, (message) => messages.push(message));
+
+      expect(tree(remote)).toEqual(['404.html/index.html', 'assets/app.js', 'index.html']);
+      expect(messages).toContain('index.html could not be copied to 404.html. Proceeding without it.');
+    });
+
+    it('commits with the name of the config when the user has an empty name', async () => {
+      process.env.GIT_CONFIG_GLOBAL = path.join(tempDir, 'gitconfig');
+      await fs.writeFile(process.env.GIT_CONFIG_GLOBAL, '[user]\n\tname = Global User\n');
+      const email = 'bot@example.org';
+
+      await deploy({ user: { name: '', email } });
+
+      expect(git(remote, 'log', '-1', '--format=%an <%ae>', 'gh-pages').trim()).toBe(`Global User <${email}>`);
+    });
+
+    it('lists removed files without rename detection and with at most 10 names', async () => {
+      const messages: string[] = [];
+      const chunks = Array.from({ length: 12 }, (_, index) => `chunk-${index}.js`);
+      for (const chunk of chunks) {
+        await fs.writeFile(path.join(dist, chunk), 'export const value = 1;\n'.repeat(20));
+      }
+      await deploy();
+      for (const chunk of chunks) {
+        await fs.rename(path.join(dist, chunk), path.join(dist, 'new-' + chunk));
+      }
+
+      await deploy({}, (message) => messages.push(message));
+
+      expect(messages.find((message) => message.startsWith('Removing '))).toMatch(/^Removing 12 file\(s\) from the branch: (chunk-\d+\.js, ){9}chunk-\d+\.js and 2 more$/);
+    });
+
+    it('warns about files that an ignore rule would leave out and publishes them', async () => {
+      const warnings: string[] = [];
+      await fs.writeFile(path.join(dist, '.gitignore'), '*.map\n');
+      await fs.writeFile(path.join(dist, 'main.js.map'), '{}');
+
+      await deploy({ dotfiles: true }, undefined, (message) => warnings.push(message));
+
+      expect(tree(remote)).toContain('main.js.map');
+      expect(warnings).toEqual(ignoredFileWarning(['main.js.map']));
+    });
+
+    it('applies includeIf sections of the user config to the remote check', async () => {
+      // The alias only resolves through a config included for git directories ending in /.git
+      const alias = 'https://alias.invalid/pages.git';
+      const included = path.join(tempDir, 'included');
+      await fs.writeFile(included, `[url "${fileUrl(remote)}"]\n\tinsteadOf = ${alias}\n`);
+      process.env.GIT_CONFIG_GLOBAL = path.join(tempDir, 'gitconfig');
+      await fs.writeFile(process.env.GIT_CONFIG_GLOBAL, `[includeIf "gitdir:**/.git"]\n\tpath = ${included}\n`);
+
+      await deploy({ repo: alias });
+
       expect(tree(remote)).toEqual(['assets/app.js', 'index.html']);
+    });
+
+    it.skipIf(process.platform === 'win32')('keeps the clone when a git launcher drops GIT_DIR and GIT_WORK_TREE', async () => {
+      // Like wslgit or sudo: same working directory, without the git variables
+      const launcher = path.join(tempDir, 'launcher');
+      await fs.writeFile(launcher, '#!/bin/sh\nunset GIT_DIR GIT_WORK_TREE\nexec git "$@"\n');
+      await fs.chmod(launcher, 0o755);
+      await seedBranch(remote, path.join(tempDir, 'seed'), 'gh-pages', { 'old.html': 'old' });
+
+      await deploy({ git: launcher, add: true });
+
+      expect(tree(remote)).toEqual(['assets/app.js', 'index.html', 'old.html']);
     });
   });
 

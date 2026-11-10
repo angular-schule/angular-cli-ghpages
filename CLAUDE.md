@@ -128,23 +128,25 @@ actions.ts (deploy function)
   └─→ engine.run()
       ├─→ Prepare options (tokens, CI env vars)
       └─→ gh-pages-fork publish() (never modifies dist)
-          ├─→ Refuse a directory with a .git entry (project root) when dotfiles are on
+          ├─→ Refuse a directory with a .git entry and a package.json (project root) when dotfiles are on
           ├─→ Remove stale temporary clones of interrupted deploys
-          ├─→ git ls-remote (not reading the project's config): does the target branch exist?
+          ├─→ git ls-remote in a throwaway repository with the remote (the user's includeIf
+          │   sections apply, the project's config doesn't): does the target branch exist?
           │   yes → clone only that branch without checkout into a fresh temporary directory
           │   no  → empty repository in the remote's object format, HEAD on the new branch
           ├─→ --add on an existing branch: index = tree of the branch (read-tree HEAD)
           ├─→ Write .nojekyll (bypasses Jekyll on GitHub) and CNAME (if custom domain),
           │   copy dist (without .git), write 404.html (copy of index.html)
+          ├─→ Warn about files an ignore rule would leave out (every file is published)
           ├─→ git add --force (--all, or --ignore-removal with --add)
           ├─→ Warn about env files in the index, whatever they came from
           ├─→ Commit if something changed, push
           └─→ Remove the temporary clone
 
-The git directory lives next to the work tree in the temporary directory, so no copied
-file can overwrite it. All git commands that operate on the clone run with GIT_DIR and
-GIT_WORK_TREE pinned to it; ls-remote, clone and init run without repository variables
-inherited from a surrounding git process.
+The git directory (`.git`) lives next to the work tree in the temporary directory, so no
+copied file can overwrite it; a `.git` file in the work tree points to it. All git commands
+that operate on the clone run with GIT_DIR and GIT_WORK_TREE pinned to it; ls-remote, clone
+and init run without repository variables inherited from a surrounding git process.
 ```
 
 ### Build Target Resolution
@@ -201,11 +203,11 @@ The engine appends CI metadata to commit messages when running on:
    - **Cloudflare Pages**: MUST NOT have `404.html` - its presence disables native SPA mode
    - **Future**: Consider changing default or auto-detecting deployment target
 
-3. **Env files are published with a warning**: `.env`, `.env.*`, `*.env` (any case, any folder, also folders with such a name) are published like every other file of the build, as in gh-pages; someone who puts one into the build may intend it. Every deploy (also `--dry-run`) warns about them via `logger.warn` (bold yellow in `ng deploy` and in the standalone CLI). Protection against accidentally publishing a project root: an empty `--dir` is an error, and a directory with a `.git` entry is refused while dotfiles are on. CI verifies the warning for every Angular version and on every platform.
+3. **Env files are published with a warning**: `.env`, `.env.*`, `*.env` (any case, any folder, also folders with such a name) are published like every other file of the build, as in gh-pages; someone who puts one into the build may intend it. Every deploy (also `--dry-run`) warns about them via `logger.warn` (bold yellow in `ng deploy` and in the standalone CLI). Protection against accidentally publishing a project root: an empty `--dir` is an error, and a directory with a `.git` entry and a `package.json` (a project root) is refused while dotfiles are on. CI verifies the warning for every Angular version and on every platform.
 
 4. **Jekyll Bypass**: Creates `.nojekyll` to prevent GitHub Pages from processing files through Jekyll (which would break files starting with `_` or `.txt` in assets).
 
-5. **Breaking Changes in v2**: Changed from guessing build conventions in Angular 17+. Projects may need explicit `--build-target` specification.
+5. **Build target**: No guessing of build conventions for Angular 17+; projects may need an explicit `--build-target`.
 
 ## Deprecated Options (Maintainers Only)
 

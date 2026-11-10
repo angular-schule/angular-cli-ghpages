@@ -26,7 +26,7 @@ export function createHost(tree: Tree): workspaces.WorkspaceHost {
     async readFile(path: string): Promise<string> {
       const data = tree.read(path);
       if (!data) {
-        const { SchematicsException } = await import('@angular-devkit/schematics');
+        const { SchematicsException } = require('@angular-devkit/schematics') as typeof import('@angular-devkit/schematics');
         throw new SchematicsException('File not found.');
       }
       return data.toString('utf-8');

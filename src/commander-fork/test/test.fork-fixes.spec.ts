@@ -270,9 +270,10 @@ describe('Fork Fix 3: Boolean flags with =false', () => {
     expect(program.args).toEqual([]);
   });
 
-  it('handles negated flags', () => {
-    expect(parse('--no-dotfiles=true').dotfiles).toBe(false);
-    expect(parse('--no-dotfiles=false').dotfiles).toBe(true);
+  it('sets negated flags with any value, like commander v3.0.2', () => {
+    for (const value of ['true', 'false', '0', 'off']) {
+      expect(parse(`--no-dotfiles=${value}`).dotfiles).toBe(false);
+    }
   });
 
   it('leaves the flag unset for 0, no and off in any case', () => {
@@ -288,7 +289,9 @@ describe('Fork Fix 3: Boolean flags with =false', () => {
   });
 
   it('keeps splitting options with an argument', () => {
-    expect(parse('--dir=dist/app').dir).toBe('dist/app');
+    const dir = 'dist/app';
+
+    expect(parse(`--dir=${dir}`).dir).toBe(dir);
   });
 });
 
@@ -303,7 +306,9 @@ describe('Fork Fix 4: opts() with option names of Command methods', () => {
   }
 
   it('leaves an unset --name undefined', () => {
-    expect(parse('--email=bot@example.org').opts()).toEqual({ name: undefined, email: 'bot@example.org' });
+    const email = 'bot@example.org';
+
+    expect(parse(`--email=${email}`).opts()).toEqual({ name: undefined, email });
   });
 
   it('returns a set --name', () => {

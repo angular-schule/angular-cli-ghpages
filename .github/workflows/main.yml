@@ -96,7 +96,7 @@ jobs:
           echo 'SECRET=value' > public/config/.env.production
 
           # env files are published like other files, with a warning
-          $CLI --dir=public --repo="$REMOTE" 2> warnings.txt
+          $CLI --dir=public --repo="$REMOTE" 2> warnings.txt || { cat warnings.txt; exit 1; }
           cat warnings.txt
           grep -F 'WARNING: Publishing env files, which usually contain secrets: .env, config/.env.production' warnings.txt
           test "$(tree gh-pages)" = '.env .nojekyll 404.html config/.env.production index.html '

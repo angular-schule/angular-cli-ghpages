@@ -48,6 +48,7 @@ This fork intentionally removes features (subcommands, actions, etc.) and preser
 1. **Negate detection**: only real `--no-` flags count as negated options
 2. **Version flags**: short-only (`-v`) and custom version flags work
 3. **Boolean flags with `=false`**: `--add=false` (also `0`, `no`, `off`, in any case) leaves the flag unset; any other value sets it, like commander v3.0.2
+4. **`.opts()` with method names**: an unset option whose name is also a `Command` method (`--name`) is `undefined` in `.opts()`, not the method
 
 ## Compatibility Matrix
 

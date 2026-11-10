@@ -135,9 +135,9 @@ actions.ts (deploy function)
           │   no  → empty repository in the remote's object format, HEAD on the new branch
           ├─→ --add on an existing branch: index = tree of the branch (read-tree HEAD)
           ├─→ Write .nojekyll (bypasses Jekyll on GitHub) and CNAME (if custom domain),
-          │   copy dist (without env files and .git), write 404.html (copy of index.html)
+          │   copy dist (without .git), write 404.html (copy of index.html)
           ├─→ git add --force (--all, or --ignore-removal with --add)
-          ├─→ Remove env files from the index, whatever they came from
+          ├─→ Warn about env files in the index, whatever they came from
           ├─→ Commit if something changed, push
           └─→ Remove the temporary clone
 
@@ -201,7 +201,7 @@ The engine appends CI metadata to commit messages when running on:
    - **Cloudflare Pages**: MUST NOT have `404.html` - its presence disables native SPA mode
    - **Future**: Consider changing default or auto-detecting deployment target
 
-3. **Env files are never published**: `.env`, `.env.*`, `*.env` (any case, any folder, also folders with such a name) are skipped when copying and removed from the index before every commit, also with `--add`. There is no option to turn this off. CI verifies it for every Angular version and on every platform.
+3. **Env files are published with a warning**: `.env`, `.env.*`, `*.env` (any case, any folder, also folders with such a name) are published like every other file of the build, as in gh-pages; someone who puts one into the build may intend it. Every deploy (also `--dry-run`) warns about them via `logger.warn` (bold yellow in `ng deploy` and in the standalone CLI). Protection against accidentally publishing a project root: an empty `--dir` is an error, and a directory with a `.git` entry is refused while dotfiles are on. CI verifies the warning for every Angular version and on every platform.
 
 4. **Jekyll Bypass**: Creates `.nojekyll` to prevent GitHub Pages from processing files through Jekyll (which would break files starting with `_` or `.txt` in assets).
 

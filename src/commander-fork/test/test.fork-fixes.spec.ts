@@ -1,12 +1,13 @@
 /**
  * Tests for angular-cli-ghpages fork-specific fixes and features
  *
- * This file contains tests for the 3 intentional improvements we made
+ * This file contains tests for the 4 intentional improvements we made
  * to commander v3.0.2 for angular-cli-ghpages:
  *
- * FIX 1/3: Tightened negate detection regex
- * FIX 2/3: Support for short-only and custom version flags
- * FIX 3/3: "--flag=false" leaves a boolean flag unset
+ * FIX 1/4: Tightened negate detection regex
+ * FIX 2/4: Support for short-only and custom version flags
+ * FIX 3/4: "--flag=false" leaves a boolean flag unset
+ * FIX 4/4: .opts() leaves unset options undefined, also --name
  *
  * These tests do NOT exist in the original commander v3.0.2.
  */
@@ -288,5 +289,30 @@ describe('Fork Fix 3: Boolean flags with =false', () => {
 
   it('keeps splitting options with an argument', () => {
     expect(parse('--dir=dist/app').dir).toBe('dist/app');
+  });
+});
+
+describe('Fork Fix 4: opts() with option names of Command methods', () => {
+  function parse(...args: string[]) {
+    const program = new commander.Command();
+    program
+      .option('--name <name>', 'name')
+      .option('--email <email>', 'email');
+    program.parse(['node', 'test', ...args]);
+    return program;
+  }
+
+  it('leaves an unset --name undefined', () => {
+    expect(parse('--email=bot@example.org').opts()).toEqual({ name: undefined, email: 'bot@example.org' });
+  });
+
+  it('returns a set --name', () => {
+    const name = 'Deploy Bot';
+
+    expect(parse(`--name=${name}`).opts().name).toBe(name);
+  });
+
+  it('keeps the name() method of the command', () => {
+    expect(typeof parse().name).toBe('function');
   });
 });

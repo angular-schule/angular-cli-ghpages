@@ -170,13 +170,14 @@ export async function getRepo(options: { repo?: string; git?: string; remote?: s
  * Prepares the branch in a fresh temporary directory without checking out its
  * files, writes .nojekyll and CNAME, the files from `basePath` and a 404.html
  * copy of index.html, stages them as the complete new content of the branch
- * (with `add`: on top of the existing files), commits and pushes. Env files
- * never end up in the commit. The temporary directory is removed when publish()
- * finishes; a token in an http(s) URL stays in the clone's .git/config only until
- * the clone is done (an interrupted deploy can leave it there for the next
- * deploy's cleanup) and is passed to git on the command line.
+ * (with `add`: on top of the existing files), commits and pushes. Env files in
+ * the commit are published like all other files, with a warning (`warn`, falls
+ * back to `log`). The temporary directory is removed when publish() finishes;
+ * a token in an http(s) URL stays in the clone's .git/config only until the
+ * clone is done (an interrupted deploy can leave it there for the next deploy's
+ * cleanup) and is passed to git on the command line.
  */
-export async function publish(basePath: string, config: PublishOptions, log: Log = () => undefined): Promise<void> {
+export async function publish(basePath: string, config: PublishOptions, log: Log = () => undefined, warn: Log = log): Promise<void> {
   const options = { ...defaults, ...config };
 
   if (!(await fs.stat(basePath)).isDirectory()) {
@@ -192,7 +193,7 @@ export async function publish(basePath: string, config: PublishOptions, log: Log
     );
   }
 
-  const files = await listFiles(basePath, options.dotfiles, (file) => log(`Skipping ${file}: env files are never published`));
+  const files = await listFiles(basePath, options.dotfiles);
   if (files.length === 0) {
     throw new Error(`The directory "${basePath}" doesn't contain any files to publish.`);
   }
@@ -248,11 +249,10 @@ export async function publish(basePath: string, config: PublishOptions, log: Log
     log('Adding all');
     await git.addAll(options.add);
 
-    // The last gate before the commit: also covers env files kept by `add`
+    // The complete content of the commit: also covers env files kept by `add`
     const envFiles = (await git.exec('ls-files', '-z')).split('\0').filter((file) => file && isEnvFile(file));
     if (envFiles.length > 0) {
-      log(`Removing env files from the branch: ${envFiles.join(', ')}`);
-      await git.exec('rm', '--cached', '--quiet', '--', ...envFiles);
+      envFileWarning(envFiles).forEach((line) => warn(line));
     }
 
     if (!git.isNewBranch) {
@@ -285,4 +285,17 @@ export async function publish(basePath: string, config: PublishOptions, log: Log
       log(`Could not remove the temporary clone ${clone}: ${error instanceof Error ? error.message : String(error)}`);
     }
   }
+}
+
+/**
+ * Env files usually hold secrets, and everything on the branch is public on
+ * GitHub Pages. Publishing them can still be intended, so this is a warning.
+ * One message per line: loggers color each message, CI logs color each line.
+ */
+export function envFileWarning(envFiles: string[]): string[] {
+  return [
+    `⚠️  WARNING: Publishing env files, which usually contain secrets: ${envFiles.join(', ')}`,
+    '   Everything on the branch is publicly visible. If this is not intended, remove them from the build ' +
+    '(and from the branch with a deploy without --add) and rotate the secrets.'
+  ];
 }

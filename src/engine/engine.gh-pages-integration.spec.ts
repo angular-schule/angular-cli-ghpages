@@ -33,6 +33,12 @@ vi.mock('../gh-pages-fork/lib/git', async () => {
   };
 });
 
+// The dry-run lists the build to warn about env files; the test directories don't exist
+vi.mock('../gh-pages-fork/lib/util', async () => ({
+  ...(await vi.importActual('../gh-pages-fork/lib/util')),
+  listFiles: vi.fn().mockResolvedValue([])
+}));
+
 vi.mock('../gh-pages-fork/lib', async () => ({
   ...(await vi.importActual('../gh-pages-fork/lib')),
   publish: vi.fn()
@@ -84,10 +90,11 @@ describe('engine - gh-pages-fork integration', () => {
       await engine.run(testDir, options, logger);
 
       expect(ghpagesPublishSpy).toHaveBeenCalledTimes(1);
-      // third argument: log function that forwards to the logger
+      // third and fourth argument: log and warn functions that forward to the logger
       expect(ghpagesPublishSpy).toHaveBeenCalledWith(
         testDir,
         expect.any(Object),
+        expect.any(Function),
         expect.any(Function)
       );
     });
@@ -469,7 +476,7 @@ describe('engine - gh-pages-fork integration', () => {
   });
 
   describe('Promise handling integration', () => {
-    it('should invoke publish() with a log function', async () => {
+    it('should invoke publish() with a log and a warn function', async () => {
       const testDir = '/test/dist';
       const options = { dotfiles: true, notfound: true, nojekyll: true };
 
@@ -478,6 +485,7 @@ describe('engine - gh-pages-fork integration', () => {
       expect(ghpagesPublishSpy).toHaveBeenCalledWith(
         expect.any(String),
         expect.any(Object),
+        expect.any(Function),
         expect.any(Function)
       );
     });

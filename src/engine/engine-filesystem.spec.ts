@@ -189,4 +189,46 @@ describe('engine - real filesystem tests', () => {
       expect(capturedOptions.nojekyll).toBe(false);
     });
   });
+
+  describe('env files in dry-run', () => {
+    it('should warn about the env files that would be published', async () => {
+      const warnSpy = vi.spyOn(logger, 'warn');
+      await fs.mkdir(path.join(testDir, 'config'));
+      await fs.writeFile(path.join(testDir, 'index.html'), '<h1>app</h1>');
+      await fs.writeFile(path.join(testDir, '.env'), 'SECRET=value');
+      await fs.writeFile(path.join(testDir, 'config', 'production.env'), 'SECRET=value');
+
+      await engine.run(testDir, { dryRun: true, dotfiles: true }, logger);
+
+      const warnings = warnSpy.mock.calls.map(([message]) => message);
+      expect(warnings).toEqual(ghpages.envFileWarning(['.env', 'config/production.env']));
+      expect(ghpages.publish).not.toHaveBeenCalled();
+      warnSpy.mockRestore();
+    });
+
+    it('should not warn about a .env that --no-dotfiles leaves out', async () => {
+      const warnSpy = vi.spyOn(logger, 'warn');
+      await fs.writeFile(path.join(testDir, 'index.html'), '<h1>app</h1>');
+      await fs.writeFile(path.join(testDir, '.env'), 'SECRET=value');
+
+      await engine.run(testDir, { dryRun: true, noDotfiles: true }, logger);
+
+      expect(warnSpy).not.toHaveBeenCalled();
+      warnSpy.mockRestore();
+    });
+
+    it('should forward the warnings of publish() to logger.warn', async () => {
+      const warnSpy = vi.spyOn(logger, 'warn');
+      const warning = ghpages.envFileWarning(['.env'])[0];
+      vi.mocked(ghpages.publish).mockImplementationOnce(async (_dir, _options, _log, warn) => {
+        warn?.(warning);
+      });
+      await fs.writeFile(path.join(testDir, 'index.html'), '<h1>app</h1>');
+
+      await engine.run(testDir, { dotfiles: true }, logger);
+
+      expect(warnSpy).toHaveBeenCalledWith(warning);
+      warnSpy.mockRestore();
+    });
+  });
 });

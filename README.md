@@ -302,7 +302,7 @@ In this case, provide **both** `name` and `email` string values to identify the 
 
 The command includes dotfiles by default (e.g. `.htaccess` will be committed).
 With `--no-dotfiles` files starting with `.` are ignored.
-Env files (`.env`, `.env.*`, `*.env`, in any folder, also inside a folder with such a name) are never published, whatever the options say, and are removed from the target branch if they are already there. Note that this can't remove them from the history of the branch.
+Env files (`.env`, `.env.*`, `*.env`, in any folder, also inside a folder with such a name) are published like every other file, but each deploy (also `--dry-run`) shows a warning listing them, because they usually contain secrets.
 Files and folders named `.git` are never published either.
 Ignore rules (a global gitignore or a `.gitignore` inside the build) don't apply: every other file of the build is published.
 

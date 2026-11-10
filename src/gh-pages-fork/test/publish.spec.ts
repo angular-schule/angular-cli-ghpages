@@ -8,7 +8,7 @@ import * as path from 'path';
 
 import { commitCount, createBareRepo, fileUrl, git, seedBranch, tree } from '../../test-helpers/git';
 import { defaults as engineDefaults } from '../../engine/defaults';
-import { defaults, getCacheDir, publish, PublishOptions } from '../lib';
+import { defaults, envFileWarning, getCacheDir, publish, PublishOptions } from '../lib';
 
 const user = { name: 'Deploy Bot', email: 'bot@example.org' };
 
@@ -19,9 +19,9 @@ describe('gh-pages-fork publish()', () => {
   let originalEnv: NodeJS.ProcessEnv;
 
   // dotfiles/nojekyll off by default here, so the expected trees only show what a test enables
-  function deploy(options: PublishOptions = {}, log?: (message: string) => void) {
+  function deploy(options: PublishOptions = {}, log?: (message: string) => void, warn?: (message: string) => void) {
     // file:// URL: git honors --depth only for real URLs, so clones are really shallow
-    return publish(dist, { repo: fileUrl(remote), user, message: 'deploy', dotfiles: false, nojekyll: false, notfound: false, ...options }, log);
+    return publish(dist, { repo: fileUrl(remote), user, message: 'deploy', dotfiles: false, nojekyll: false, notfound: false, ...options }, log, warn);
   }
 
   beforeEach(async () => {
@@ -466,40 +466,54 @@ describe('gh-pages-fork publish()', () => {
       }
     });
 
-    it('never publishes env files, also with dotfiles', async () => {
+    it('publishes env files like other files, with dotfiles', async () => {
       await deploy({ dotfiles: true });
 
-      expect(tree(remote)).toEqual(['.htaccess', 'assets/app.js', 'index.html']);
+      expect(tree(remote)).toEqual(expect.arrayContaining(['.env', '.env.production', 'production.env', 'config/.env', 'assets/deep/.env.staging', 'nested/.env/secret.txt']));
     });
 
-    it('never publishes env files without dotfiles', async () => {
+    it('leaves dotted env files out without dotfiles and publishes the others', async () => {
       await deploy({ dotfiles: false });
 
-      expect(tree(remote)).toEqual(['assets/app.js', 'index.html']);
+      expect(tree(remote)).toEqual(['assets/app.js', 'index.html', 'production.env']);
     });
 
-    it('logs the skipped env files', async () => {
+    it('warns about every published env file', async () => {
+      const messages: string[] = [];
+      const warnings: string[] = [];
+
+      await deploy({ dotfiles: false }, (message) => messages.push(message), (message) => warnings.push(message));
+
+      expect(warnings).toEqual(envFileWarning(['production.env']));
+      expect(messages).not.toContain(warnings[0]);
+    });
+
+    it('sends the warning to log without a warn function', async () => {
       const messages: string[] = [];
 
-      await deploy({ dotfiles: true }, (message) => messages.push(message));
+      await deploy({ dotfiles: false }, (message) => messages.push(message));
 
-      expect(messages).toContain('Skipping config/.env: env files are never published');
+      expect(messages).toEqual(expect.arrayContaining(envFileWarning(['production.env'])));
     });
 
-    it('removes env files that are already on the branch', async () => {
-      await seedBranch(remote, path.join(tempDir, 'seed-env'), 'gh-pages', { '.env': 'SECRET=old', 'config/.env.production': 'SECRET=old' });
+    it('warns about env files kept from the branch with add', async () => {
+      await fs.rm(path.join(dist, 'production.env'));
+      await seedBranch(remote, path.join(tempDir, 'seed-env'), 'gh-pages', { '.env': 'SECRET=old', 'kept.html': 'kept' });
+      const warnings: string[] = [];
 
-      await deploy();
+      await deploy({ add: true }, undefined, (message) => warnings.push(message));
 
-      expect(tree(remote)).toEqual(['assets/app.js', 'index.html']);
+      expect(tree(remote)).toEqual(['.env', 'assets/app.js', 'index.html', 'kept.html']);
+      expect(warnings).toEqual(envFileWarning(['.env']));
     });
 
-    it('removes env files that are already on the branch, also with add', async () => {
-      await seedBranch(remote, path.join(tempDir, 'seed-env'), 'gh-pages', { '.env': 'SECRET=old', 'config/.env.production': 'SECRET=old', 'kept.html': 'kept' });
+    it('does not warn without env files', async () => {
+      const warnings: string[] = [];
+      await fs.rm(path.join(dist, 'production.env'));
 
-      await deploy({ add: true });
+      await deploy({ dotfiles: false }, undefined, (message) => warnings.push(message));
 
-      expect(tree(remote)).toEqual(['assets/app.js', 'index.html', 'kept.html']);
+      expect(warnings).toEqual([]);
     });
   });
 

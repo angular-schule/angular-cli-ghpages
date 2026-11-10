@@ -50,16 +50,19 @@ function cliEnv(): NodeJS.ProcessEnv {
   delete env.GH_TOKEN;
   delete env.PERSONAL_TOKEN;
   delete env.GITHUB_TOKEN;
+  // Uncolored output unless a test sets them
+  delete env.FORCE_COLOR;
+  delete env.NO_COLOR;
   return env;
 }
 
 /**
- * Run the CLI without --dry-run; returns exit code and combined output.
+ * Run the CLI without --dry-run; returns exit code, combined output and stderr.
  */
-function runCliRaw(args: string[], cwd: string, env: NodeJS.ProcessEnv = {}): { status: number | null; output: string } {
+function runCliRaw(args: string[], cwd: string, env: NodeJS.ProcessEnv = {}): { status: number | null; output: string; stderr: string } {
   const program = path.resolve(__dirname, '../dist/angular-cli-ghpages');
   const result = spawnSync('node', [program, ...args], { cwd, env: { ...cliEnv(), ...env } });
-  return { status: result.status, output: result.stdout.toString() + result.stderr.toString() };
+  return { status: result.status, output: result.stdout.toString() + result.stderr.toString(), stderr: result.stderr.toString() };
 }
 
 function parseJsonFromCliOutput(output: string): DryRunOutput {
@@ -132,6 +135,19 @@ describe('CLI End-to-End Tests', () => {
 
       expect(json.name).toBe(expectedNameMessage);
       expect(json.email).toBe(expectedEmailMessage);
+    });
+
+    it('should leave the name unset with --email alone', () => {
+      const email = 'bot@example.com';
+
+      const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'cli-email-'));
+
+      const result = runCliRaw(['--dry-run', '--dir=.', '--repo=https://github.com/user/repo.git', `--email=${email}`], dir);
+      const json = parseJsonFromCliOutput(result.output);
+      fs.rmSync(dir, { recursive: true });
+
+      expect(result.stderr).toContain('Only --email is set.');
+      expect(json.name).toBe('local or global git user name will be used for the commit');
     });
 
     it('should pass cname parameter', () => {
@@ -501,7 +517,7 @@ describe('CLI End-to-End Tests', () => {
       expect(tree(remote)).toEqual(['.nojekyll', '404.html', 'CNAME', 'index.html']);
     });
 
-    it('should never publish .env files of the directory', () => {
+    it('should publish .env files of the directory with a warning', () => {
       const remote = createBareRepo(path.join(tempDir, 'remote.git'));
       const dist = path.join(tempDir, 'dist');
       fs.mkdirSync(dist);
@@ -511,7 +527,19 @@ describe('CLI End-to-End Tests', () => {
       const result = runCliRaw([`--dir=${dist}`, `--repo=${remote}`, '--name=CLI Bot', '--email=cli@example.org'], tempDir);
 
       expect(result.status).toBe(0);
-      expect(tree(remote)).toEqual(['.nojekyll', '404.html', 'index.html']);
+      expect(tree(remote)).toEqual(['.env', '.nojekyll', '404.html', 'index.html']);
+      expect(result.stderr).toContain('⚠️  WARNING: Publishing env files, which usually contain secrets: .env');
+    });
+
+    it('should color warnings with FORCE_COLOR and not with NO_COLOR', () => {
+      const unexpected = ['--dir=missing', 'extra-argument'];
+
+      const colored = runCliRaw(unexpected, tempDir, { FORCE_COLOR: '1' });
+      const plain = runCliRaw(unexpected, tempDir, { NO_COLOR: '1' });
+
+      expect(colored.stderr).toContain('\u001b[1m\u001b[33m⚠️  Ignoring unexpected argument(s)');
+      expect(plain.stderr).toContain('⚠️  Ignoring unexpected argument(s)');
+      expect(plain.stderr).not.toContain('\u001b[');
     });
 
     it('should refuse a project root as directory', () => {

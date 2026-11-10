@@ -21,7 +21,7 @@ export interface User {
 /**
  * Whether a file name or path belongs to an env file (`.env`, `.env.production`,
  * `production.env`, or anything inside a directory with such a name, any case).
- * These hold secrets and are never published, whatever the options say.
+ * Env files usually hold secrets, so publish() warns about every one it publishes.
  */
 export function isEnvFile(filePath: string): boolean {
   return filePath.split(/[/\\]/).some((segment) => {
@@ -35,9 +35,9 @@ export function isEnvFile(filePath: string): boolean {
  * Symbolic links are followed (their targets get copied); broken links and
  * links to a directory of the current path (cycles) are skipped.
  * Entries starting with `.` are skipped unless `dotfiles` is set; entries named
- * `.git` (any case, git can't track them) and env files are always skipped.
+ * `.git` (any case, git can't track them) are always skipped.
  */
-export async function listFiles(base: string, dotfiles: boolean, onEnvFile: (relPath: string) => void = () => undefined): Promise<string[]> {
+export async function listFiles(base: string, dotfiles: boolean): Promise<string[]> {
   const files: string[] = [];
   // JavaScript implementation: the native realpath fails on some Windows volumes (e.g. RAM disks)
   const resolve = promisify(realpath);
@@ -52,10 +52,6 @@ export async function listFiles(base: string, dotfiles: boolean, onEnvFile: (rel
     const entries = await fs.readdir(path.join(base, relDir), { withFileTypes: true });
     for (const entry of entries) {
       const relPath = relDir ? `${relDir}/${entry.name}` : entry.name;
-      if (isEnvFile(entry.name)) {
-        onEnvFile(relPath);
-        continue;
-      }
       if (entry.name.toLowerCase() === '.git' || (!dotfiles && entry.name.startsWith('.'))) {
         continue;
       }

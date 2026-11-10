@@ -12,7 +12,7 @@ const { mockSpawn } = vi.hoisted(() => ({ mockSpawn: vi.fn() }));
 vi.mock('child_process', () => ({ spawn: mockSpawn }));
 
 import { FakeResult, fakeSpawn, gitSubcommand, SpawnCall, withoutConfigArgs } from '../../test-helpers/git';
-import { publish, PublishOptions } from '../lib';
+import { envFileWarning, publish, PublishOptions } from '../lib';
 
 const SHA1 = 'a'.repeat(40);
 const SHA256 = 'b'.repeat(64);
@@ -301,14 +301,15 @@ describe('gh-pages-fork git commands', () => {
     expect(commit.options.env?.GIT_COMMITTER_EMAIL).toBe(user.email);
   });
 
-  it('removes env files of the index from the commit', async () => {
+  it('warns about env files of the index and commits them', async () => {
     results['ls-files'] = { output: ['.env', 'index.html', 'config/.env.production'].join('\0') };
+    const warnings: string[] = [];
 
-    await deploy({ add: true });
+    await publish(dist, { repo, user, message: 'Deploy', nojekyll: false, notfound: false, add: true }, undefined, (message) => warnings.push(message));
 
-    expect(commands()).toContain('git rm --cached --quiet -- .env config/.env.production');
-    const rmIndex = commands().findIndex((command) => command.startsWith('git rm'));
-    expect(rmIndex).toBeLessThan(commands().indexOf('git commit -m Deploy'));
+    expect(warnings).toEqual(envFileWarning(['.env', 'config/.env.production']));
+    expect(commands().some((command) => command.startsWith('git rm'))).toBe(false);
+    expect(commands()).toContain('git commit -m Deploy');
   });
 
   it('disables credential helpers and keeps the token out of the clone config for a URL with a password', async () => {

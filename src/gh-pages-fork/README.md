@@ -35,7 +35,7 @@ The file structure and function names follow upstream, so upstream changes can b
 
 ### Features Kept ✅
 
-- `publish(basePath, options, log?)` — async, rejects on any error
+- `publish(basePath, options, log?, warn?)` — async, rejects on any error
 - `getCacheDir(cwd?)` and `getRepo()`
 - Options: `repo`, `branch`, `remote`, `message`, `git`, `depth`, `add`, `dotfiles`, `nojekyll`, `cname`, `user`
 - `Git`: `clone`, `exec`, `commit`, `push`, `getRemoteUrl`
@@ -43,7 +43,7 @@ The file structure and function names follow upstream, so upstream changes can b
 ### Added 🆕
 
 - Option `notfound`: 404.html as a copy of index.html, written after `basePath` is copied (replaces a 404.html of `basePath`)
-- Env files are never published (see the table below)
+- A warning for env files in the commit (see the table below), `envFileWarning()`
 - `Git.keepExistingFiles()`, `Git.addAll()`, `Git.setIdentity()`
 - `redact()` for logging repository URLs
 
@@ -63,7 +63,7 @@ The file structure and function names follow upstream, so upstream changes can b
 | Directory layout     | `.git` inside the work tree                                               | `<private dir>/git` and `<private dir>/work`, so no copied file can reach the git directory       |
 | New branch           | full clone of the default branch, `checkout --orphan` keeps its files     | an empty repository in the object format of the remote (`git init`, `remote add`, `symbolic-ref`); an empty remote is cloned, which takes over its format |
 | Staging              | `git rm` of the `remove` glob, copy, `git add .`                          | copy into the empty work tree, `git add --force --all` (the index starts empty); with `add`: `read-tree HEAD`, then `git add --force --ignore-removal`. Ignore rules, `.gitmodules` and symlinks on the branch don't affect the result |
-| Env files            | published like other files                                                | `.env`, `.env.*`, `*.env` (any case, any folder, also folders with such a name) are skipped by `listFiles()` and removed from the index before the commit, also with `add`; no option turns this off |
+| Env files            | published like other files                                                | published like other files; `.env`, `.env.*`, `*.env` (any case, any folder, also folders with such a name) in the commit, also kept by `add`, are listed in a warning (`warn` callback, falls back to `log`) |
 | Project root         | —                                                                         | with `dotfiles`, a `basePath` with a `.git` entry is refused                                      |
 | Cache directory      | `find-cache-dir` (`$CACHE_DIR`, closest `package.json`); `getCacheDir(optPath)` returns a per-repository subdirectory | same lookup, `getCacheDir(cwd)` returns the directory for temporary clones or `undefined`; then (and when it isn't writable) clones go to a private `angular-cli-ghpages-clone-*` directory in the os temp dir; the path is made absolute |
 | Stale clones         | `gh-pages-clean`                                                          | before each deploy, temporary clones older than 6 hours, all other entries of the cache directory and `<os tmpdir>/angular-cli-ghpages-cache` are removed |
@@ -74,8 +74,8 @@ The file structure and function names follow upstream, so upstream changes can b
 | Process results      | resolves on a falsy exit code (also for a process killed by a signal); stdout and stderr in one buffer; crashes on a missing git executable | rejects unless the exit code is 0 (the signal is added to the message); `exec()` resolves with stdout only (no `output` field); a missing executable rejects with ENOENT |
 | `getRemoteUrl()`     | every failure becomes "Failed to get remote.X.url (...)"                  | that message for a missing key (exit code 1); other git errors are added to the message           |
 | `commit()`           | `git diff-index --quiet HEAD`                                             | `git diff-index --cached --quiet HEAD`: the work tree only holds the new files                    |
-| Logging              | `util.debuglog('gh-pages')`                                               | `log` callback parameter of `publish()`; credentials in the repository URL are replaced with `***`; removed files are listed |
-| File list            | glob `src` pattern via tinyglobby                                         | `listFiles()`: all files below `basePath`, follows symlinks, skips broken links, cycles, `.git` (any case) and env files, honors `dotfiles` |
+| Logging              | `util.debuglog('gh-pages')`                                               | `log` and `warn` callback parameters of `publish()`; credentials in the repository URL are replaced with `***`; removed files are listed |
+| File list            | glob `src` pattern via tinyglobby                                         | `listFiles()`: all files below `basePath`, follows symlinks, skips broken links, cycles and `.git` (any case), honors `dotfiles` |
 | Copying              | `fs-extra` copy (keeps the file mode), one file after another             | streams into new files (mode 0666 minus umask, git records 100644); directories once; limited concurrency |
 | Cleanup errors       | —                                                                         | a failing removal of the temporary clone is logged, it never changes the result                   |
 | `getUser()`          | always runs `git`                                                         | uses the configured `git` executable                                                              |

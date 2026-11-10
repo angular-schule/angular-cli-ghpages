@@ -95,14 +95,16 @@ jobs:
           echo 'SECRET=value' > public/.env
           echo 'SECRET=value' > public/config/.env.production
 
-          # env files are never published
-          $CLI --dir=public --repo="$REMOTE"
-          test "$(tree gh-pages)" = '.nojekyll 404.html index.html '
+          # env files are published like other files, with a warning
+          $CLI --dir=public --repo="$REMOTE" 2> warnings.txt
+          cat warnings.txt
+          grep -F 'WARNING: Publishing env files, which usually contain secrets: .env, config/.env.production' warnings.txt
+          test "$(tree gh-pages)" = '.env .nojekyll 404.html config/.env.production index.html '
 
           # --add keeps existing files; an unchanged redeploy creates no commit
           mv public/index.html public/new.html
           $CLI --dir=public --repo="$REMOTE" --add --no-notfound
-          test "$(tree gh-pages)" = '.nojekyll 404.html index.html new.html '
+          test "$(tree gh-pages)" = '.env .nojekyll 404.html config/.env.production index.html new.html '
           COMMITS=$(git --git-dir="$REMOTE" rev-list --count gh-pages)
           $CLI --dir=public --repo="$REMOTE" --add --no-notfound
           test "$(git --git-dir="$REMOTE" rev-list --count gh-pages)" = "$COMMITS"
@@ -158,6 +160,7 @@ jobs:
       # Each test creates a bare repo as a fake remote to deploy to
       - name: Test Angular 18
         run: |
+          set -o pipefail
           cd /tmp
           git init --bare remote-18.git
           npx @angular/cli@18 new test-app-18 --defaults
@@ -168,16 +171,18 @@ jobs:
           npx ng deploy
           echo second > dist/test-app-18/browser/second.txt
           echo SECRET=value > dist/test-app-18/browser/.env
-          npx ng deploy --no-build --message="second deploy"
+          npx ng deploy --no-build --message="second deploy" 2>&1 | tee deploy.log
+          grep -F 'WARNING: Publishing env files, which usually contain secrets: .env' deploy.log
           cd /tmp/remote-18.git && git branch | grep gh-pages
           test "$(git rev-list --count gh-pages)" = 2
           git cat-file -e gh-pages:.nojekyll
-          if git ls-tree -r --name-only gh-pages | grep -E '(^|/)\.env'; then exit 1; fi
+          git cat-file -e gh-pages:.env
           git cat-file -e gh-pages:second.txt
           echo "Angular 18: build + deploy successful"
 
       - name: Test Angular 19
         run: |
+          set -o pipefail
           cd /tmp
           git init --bare remote-19.git
           npx @angular/cli@19 new test-app-19 --defaults
@@ -188,16 +193,18 @@ jobs:
           npx ng deploy
           echo second > dist/test-app-19/browser/second.txt
           echo SECRET=value > dist/test-app-19/browser/.env
-          npx ng deploy --no-build --message="second deploy"
+          npx ng deploy --no-build --message="second deploy" 2>&1 | tee deploy.log
+          grep -F 'WARNING: Publishing env files, which usually contain secrets: .env' deploy.log
           cd /tmp/remote-19.git && git branch | grep gh-pages
           test "$(git rev-list --count gh-pages)" = 2
           git cat-file -e gh-pages:.nojekyll
-          if git ls-tree -r --name-only gh-pages | grep -E '(^|/)\.env'; then exit 1; fi
+          git cat-file -e gh-pages:.env
           git cat-file -e gh-pages:second.txt
           echo "Angular 19: build + deploy successful"
 
       - name: Test Angular 20
         run: |
+          set -o pipefail
           cd /tmp
           git init --bare remote-20.git
           npx @angular/cli@20 new test-app-20 --defaults
@@ -208,16 +215,18 @@ jobs:
           npx ng deploy
           echo second > dist/test-app-20/browser/second.txt
           echo SECRET=value > dist/test-app-20/browser/.env
-          npx ng deploy --no-build --message="second deploy"
+          npx ng deploy --no-build --message="second deploy" 2>&1 | tee deploy.log
+          grep -F 'WARNING: Publishing env files, which usually contain secrets: .env' deploy.log
           cd /tmp/remote-20.git && git branch | grep gh-pages
           test "$(git rev-list --count gh-pages)" = 2
           git cat-file -e gh-pages:.nojekyll
-          if git ls-tree -r --name-only gh-pages | grep -E '(^|/)\.env'; then exit 1; fi
+          git cat-file -e gh-pages:.env
           git cat-file -e gh-pages:second.txt
           echo "Angular 20: build + deploy successful"
 
       - name: Test Angular 21
         run: |
+          set -o pipefail
           cd /tmp
           git init --bare remote-21.git
           npx @angular/cli@21 new test-app-21 --defaults
@@ -228,16 +237,18 @@ jobs:
           npx ng deploy
           echo second > dist/test-app-21/browser/second.txt
           echo SECRET=value > dist/test-app-21/browser/.env
-          npx ng deploy --no-build --message="second deploy"
+          npx ng deploy --no-build --message="second deploy" 2>&1 | tee deploy.log
+          grep -F 'WARNING: Publishing env files, which usually contain secrets: .env' deploy.log
           cd /tmp/remote-21.git && git branch | grep gh-pages
           test "$(git rev-list --count gh-pages)" = 2
           git cat-file -e gh-pages:.nojekyll
-          if git ls-tree -r --name-only gh-pages | grep -E '(^|/)\.env'; then exit 1; fi
+          git cat-file -e gh-pages:.env
           git cat-file -e gh-pages:second.txt
           echo "Angular 21: build + deploy successful"
 
       - name: Test Angular 22
         run: |
+          set -o pipefail
           cd /tmp
           git init --bare remote-22.git
           npx @angular/cli@22 new test-app-22 --defaults
@@ -248,10 +259,11 @@ jobs:
           npx ng deploy
           echo second > dist/test-app-22/browser/second.txt
           echo SECRET=value > dist/test-app-22/browser/.env
-          npx ng deploy --no-build --message="second deploy"
+          npx ng deploy --no-build --message="second deploy" 2>&1 | tee deploy.log
+          grep -F 'WARNING: Publishing env files, which usually contain secrets: .env' deploy.log
           cd /tmp/remote-22.git && git branch | grep gh-pages
           test "$(git rev-list --count gh-pages)" = 2
           git cat-file -e gh-pages:.nojekyll
-          if git ls-tree -r --name-only gh-pages | grep -E '(^|/)\.env'; then exit 1; fi
+          git cat-file -e gh-pages:.env
           git cat-file -e gh-pages:second.txt
           echo "Angular 22: build + deploy successful"

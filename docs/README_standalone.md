@@ -190,7 +190,7 @@ which are not related at all to angular.
 
 The command includes dotfiles by default (e.g. `.htaccess` will be committed)
 With `--no-dotfiles` files starting with `.` are ignored.
-Env files (`.env`, `.env.*`, `*.env`, in any folder) are never published and are removed from the target branch if they are already there. Files and folders named `.git` are never published either.
+Env files (`.env`, `.env.*`, `*.env`, in any folder) are published like every other file, but each deploy (also `--dry-run`) shows a warning listing them, because they usually contain secrets. Files and folders named `.git` are never published.
 Ignore rules (a global gitignore or a `.gitignore` inside the directory) don't apply: every other file of the directory is published.
 
 #### --dry-run <a name="dry-run"></a>

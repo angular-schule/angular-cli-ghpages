@@ -82,12 +82,19 @@ commander
   )
   .parse(process.argv);
 
+// Warnings in bold yellow, like ng deploy shows them (NO_COLOR and FORCE_COLOR as usual)
+var colorWarnings = process.env.FORCE_COLOR
+  ? process.env.FORCE_COLOR !== '0'
+  : Boolean(process.stderr.isTTY) && !process.env.NO_COLOR;
+
 var consoleLogger = {
   createChild: () => consoleLogger,
   log: console.log,
   debug: console.debug,
   info: console.info,
-  warn: console.warn,
+  warn: function (message) {
+    console.warn(colorWarnings ? '\u001b[1m\u001b[33m' + message + '\u001b[39m\u001b[22m' : message);
+  },
   error: console.error,
   fatal: console.error
 };

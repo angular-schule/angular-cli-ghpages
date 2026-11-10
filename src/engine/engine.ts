@@ -2,6 +2,7 @@ import {logging} from '@angular-devkit/core';
 
 import {Schema} from '../deploy/schema';
 import * as ghpages from '../gh-pages-fork/lib';
+import {isEnvFile, listFiles} from '../gh-pages-fork/lib/util';
 import {pathExists} from '../utils';
 import {defaults} from './defaults';
 import {
@@ -89,6 +90,11 @@ async function publishViaGhPages(
   logger: logging.LoggerApi
 ) {
   if (options.dryRun) {
+    // Only the build: env files kept by --add are on the branch, which a dry-run doesn't read
+    const envFiles = (await listFiles(dir, options.dotfiles)).filter(isEnvFile).sort();
+    if (envFiles.length > 0) {
+      ghpages.envFileWarning(envFiles).forEach((line) => logger.warn(line));
+    }
     if (options.notfound) {
       logger.info('Dry-run / SKIPPED: copying of index.html to 404.html');
     }
@@ -134,6 +140,7 @@ async function publishViaGhPages(
       nojekyll: options.nojekyll,
       notfound: options.notfound
     },
-    (message) => logger.info(message)
+    (message) => logger.info(message),
+    (message) => logger.warn(message)
   );
 }

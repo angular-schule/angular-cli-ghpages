@@ -32,6 +32,12 @@ const { capturedOptions } = vi.hoisted(() => {
   return { capturedOptions };
 });
 
+// The dry-run lists the build to warn about env files; the test directories don't exist
+vi.mock('../gh-pages-fork/lib/util', async () => ({
+  ...(await vi.importActual('../gh-pages-fork/lib/util')),
+  listFiles: vi.fn().mockResolvedValue([])
+}));
+
 vi.mock('../gh-pages-fork/lib', async () => ({
   ...(await vi.importActual('../gh-pages-fork/lib')),
   publish: vi.fn()

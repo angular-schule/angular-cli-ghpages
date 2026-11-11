@@ -4,7 +4,7 @@ This file provides guidance when working with code in this repository.
 
 ## Overview
 
-`angular-cli-ghpages` is an Angular CLI builder/schematic that deploys Angular applications to GitHub Pages, Cloudflare Pages, or any Git repository. It wraps the `gh-pages` npm package and integrates with Angular CLI's deployment infrastructure via `ng deploy`.
+`angular-cli-ghpages` is an Angular CLI builder/schematic that deploys Angular applications to GitHub Pages, Cloudflare Pages, or any Git repository. It publishes via `src/gh-pages-fork/`, a minimal TypeScript fork of the `gh-pages` npm package, and integrates with Angular CLI's deployment infrastructure via `ng deploy`.
 
 ## Development Commands
 
@@ -83,6 +83,8 @@ Publishing uses [npm Trusted Publishers](https://docs.npmjs.com/trusted-publishe
 
 Publishes with provenance attestation for supply chain security.
 
+Release notes of the next major version are collected in `docs/release-notes-v4.md` (compared with the last release): add every user-visible change there in the same commit.
+
 For pre-release versions, after publishing:
 ```bash
 npm dist-tag add angular-cli-ghpages@X.X.X-rc.X next
@@ -102,12 +104,18 @@ npm dist-tag add angular-cli-ghpages@X.X.X-rc.X next
    - Adds deploy target to `angular.json`
 
 3. **Standalone CLI** (`src/angular-cli-ghpages`):
-   - Bash script for non-Angular CLI usage
-   - Uses `commander` for CLI parsing
+   - Node.js script for non-Angular CLI usage (`npx angular-cli-ghpages`)
+   - Parses options with `src/commander-fork` (frozen subset of commander v3.0.2, see its `README.md`)
+   - Positional arguments are ignored with a warning; `--flag=false` (also `0`, `no`, `off`) leaves a boolean flag unset
+   - An empty `--dir` is an error; a leading slash stays relative to the cwd as long as that path exists
 
 4. **Core Engine** (`src/engine/`):
-   - `engine.ts` - Core deployment logic (wraps gh-pages)
+   - `engine.ts` - Core deployment logic (publishes via gh-pages-fork)
    - `defaults.ts` - Default configuration values
+
+5. **gh-pages fork** (`src/gh-pages-fork/`):
+   - Minimal TypeScript fork of `gh-pages`, internal use only (see its `README.md`)
+   - Same file structure and function names as upstream (`lib/index.ts`, `lib/git.ts`, `lib/util.ts`)
 
 ### Deployment Flow
 
@@ -120,11 +128,32 @@ actions.ts (deploy function)
   ├─→ Build Angular app (if not --no-build)
   │   Uses BuilderContext.scheduleTarget()
   └─→ engine.run()
-      ├─→ Prepare options (tokens, CI env vars)
-      ├─→ Create .nojekyll file (bypasses Jekyll on GitHub)
-      ├─→ Create 404.html (copy of index.html for SPAs)
-      ├─→ Create CNAME file (if custom domain)
-      └─→ Publish via gh-pages package
+      ├─→ Check that dist exists, prepare options (tokens, CI env vars)
+      ├─→ --dry-run: listPublishedFiles() and listIgnoredFiles() (the checks and warnings below
+      │   that need no clone), print the options, stop
+      └─→ gh-pages-fork publish() (never modifies dist)
+          ├─→ listPublishedFiles(): refuse a non-directory, a project root (.git entry and
+          │   package.json, when dotfiles are on), an empty branch name or commit message, an empty directory
+          ├─→ Remove stale temporary clones of interrupted deploys
+          ├─→ git ls-remote in a throwaway repository with the remote (the user's includeIf
+          │   sections apply, the project's config doesn't): does the target branch exist?
+          │   yes → clone only that branch without checkout into a fresh temporary directory
+          │   no  → empty repository in the remote's object format, HEAD on the new branch
+          ├─→ --add on an existing branch: index = tree of the branch (read-tree HEAD)
+          ├─→ Write .nojekyll (bypasses Jekyll on GitHub), copy dist (without .git),
+          │   write CNAME (--cname wins over a CNAME of the build), 404.html (copy of index.html)
+          ├─→ Warn about files an ignore rule would leave out (every file is published)
+          ├─→ git add --force (--all, or --ignore-removal with --add)
+          ├─→ Warn about env files in the index, whatever they came from
+          ├─→ Commit if something changed, push refs/heads/<branch> (a hint for a concurrent deploy)
+          └─→ Remove the temporary clone
+
+The git directory (`.git`) lives next to the work tree in the temporary directory, so no
+copied file can overwrite it; a `.git` file in the work tree points to it. Its info/attributes
+unsets all content conversions (text, eol, filter, ident, working-tree-encoding), so every
+file is published byte for byte, whatever .gitattributes or core.autocrlf say. All git commands
+that operate on the clone run with GIT_DIR and GIT_WORK_TREE pinned to it; ls-remote, clone
+and init run without repository variables inherited from a surrounding git process.
 ```
 
 ### Build Target Resolution
@@ -132,17 +161,20 @@ actions.ts (deploy function)
 **Precedence:**
 1. `prerenderTarget` - For SSG/prerendering builds (if specified, overrides all others)
 2. `buildTarget` - Standard build target (if specified)
-3. Default - `${project}:build:production`
+3. Default - `${project}:build:production` (needs a `production` configuration)
+
+Values are full target strings `project:target[:configuration]`.
 
 **Implementation details:**
 - Static build target: `buildTarget || default` (see `src/deploy/builder.ts`)
 - Final target: `prerenderTarget || staticBuildTarget` (see `src/deploy/builder.ts`)
 
-Output directory resolution:
-- Checks `angular.json` for `outputPath`
-- If string: appends `/browser` (modern Angular convention)
+Output directory resolution (also with `--no-build`):
+- Checks `angular.json` for `outputPath` of the build target (resolved against the workspace root)
+- If undefined: `dist/<project>/browser` (Angular 20+ default)
+- If string: appends `/browser` (application builder); browser builders (`*:browser`, `*:browser-esbuild`, `*-browser`, see `writesIntoOutputPath()` in `src/deploy/actions.ts`) write straight into `outputPath`
 - If object: uses `${base}/${browser}` properties
-- Can be overridden with `--dir` option
+- Can be overridden with `--dir` option (relative to the current working directory, or absolute)
 
 ### Token Injection
 
@@ -175,14 +207,16 @@ The engine appends CI metadata to commit messages when running on:
 
 1. **No Server-Side Rendering**: GitHub Pages only supports static files. SSR/Universal build targets are not supported.
 
-2. **404.html Handling**:
+2. **404.html Handling** (written by gh-pages-fork into the deployment, replacing a `404.html` of the build; `--no-notfound` publishes that one):
    - **GitHub Pages**: Requires `404.html` workaround (only way to get SPA routing, but returns HTTP 404 status)
    - **Cloudflare Pages**: MUST NOT have `404.html` - its presence disables native SPA mode
    - **Future**: Consider changing default or auto-detecting deployment target
 
-3. **Jekyll Bypass**: Creates `.nojekyll` to prevent GitHub Pages from processing files through Jekyll (which would break files starting with `_` or `.txt` in assets).
+3. **Env files are published with a warning**: `.env`, `.env.*`, `*.env` (any case, any folder, also folders with such a name) are published like every other file of the build, as in gh-pages; someone who puts one into the build may intend it. Every deploy (also `--dry-run`) warns about them via `logger.warn` (bold yellow in `ng deploy` and in the standalone CLI). Protection against accidentally publishing a project root: an empty `--dir` is an error, and a directory with a `.git` entry and a `package.json` (a project root) is refused while dotfiles are on. CI verifies the warning for every Angular version and on every platform.
 
-4. **Breaking Changes in v2**: Changed from guessing build conventions in Angular 17+. Projects may need explicit `--build-target` specification.
+4. **Jekyll Bypass**: Creates `.nojekyll` to prevent GitHub Pages from processing files through Jekyll (which would break files starting with `_` or `.txt` in assets).
+
+5. **Build target**: No guessing of build conventions for Angular 17+; projects may need an explicit `--build-target`.
 
 ## Deprecated Options (Maintainers Only)
 
@@ -194,7 +228,8 @@ The engine appends CI metadata to commit messages when running on:
 
 ## Testing
 
-- Uses Vitest (`npm test`), tests in `*.spec.ts` files
+- Uses Vitest (`npm test`, also type-checks all sources including specs), tests in `*.spec.ts` files
+- Shared helpers for specs that run real git or mock child processes: `src/test-helpers/git.ts` (not part of the package)
 - Requires git clone with `origin` remote (see `test-prerequisites.spec.ts`)
 - All tests preserve/restore `process.env` using `originalEnv` pattern
 - **No test counts in documentation** - they become stale quickly and are bragging
@@ -219,6 +254,8 @@ Use proper types, `unknown`, or `Partial<T>` instead. For mocks: `Partial<Comple
 For sync considerations with AngularFire, monitor:
 - https://github.com/angular/angularfire/blob/master/src/schematics/deploy/builder.ts
 - https://github.com/angular/angularfire/blob/master/src/schematics/deploy/actions.ts
+
+For `src/gh-pages-fork`, monitor upstream https://github.com/tschaub/gh-pages (releases, security advisories, `lib/`). npm audit and Dependabot can't report problems in forked code; port relevant fixes file by file and update the base commit in `src/gh-pages-fork/README.md`.
 
 ## GitHub CLI Usage
 

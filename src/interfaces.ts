@@ -1,5 +1,3 @@
-import type {GhPagesGit} from './engine/engine.prepare-options-helpers';
-
 /**
  * Angular outputPath configuration
  * Can be either a string (path) or an object with base + browser properties
@@ -46,36 +44,6 @@ export function isOutputPathObject(value: unknown): value is AngularOutputPathOb
 export interface DeployUser {
   name: string;
   email: string;
-}
-
-/**
- * Options for gh-pages.publish()
- * Based on https://github.com/tschaub/gh-pages#options
- *
- * Note: Only includes options that gh-pages actually accepts.
- * Internal options (notfound, noDotfiles, noNotfound, noNojekyll, dryRun)
- * are handled by angular-cli-ghpages before calling gh-pages.
- */
-export interface PublishOptions {
-  repo?: string;
-  remote?: string;
-  branch?: string;
-  message?: string;
-  user?: { name: string; email: string };
-  dotfiles?: boolean;
-  nojekyll?: boolean;
-  cname?: string;
-  add?: boolean;
-  git?: string;
-  beforeAdd?: (git: GhPagesGit) => void | Promise<void>;
-  [key: string]: unknown; // Allow additional gh-pages options
-}
-
-export interface GHPages {
-  // gh-pages v5+ supports both callback and Promise-based APIs
-  publish(dir: string, options: PublishOptions, callback: (error: Error | null) => void): void;
-  publish(dir: string, options: PublishOptions): Promise<void>;
-  clean?(): void;
 }
 
 export interface ArchitectTarget {

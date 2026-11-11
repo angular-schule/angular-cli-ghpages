@@ -34,6 +34,89 @@ jobs:
           path: src/dist
           retention-days: 1
 
+  # Install the built package fresh (like `npx angular-cli-ghpages` in a
+  # non-Angular project) on every Node.js version that engines allows, on all
+  # platforms: load the package entry point and deploy with the standalone CLI
+  # to a local bare repository.
+  test-package:
+    needs: build-and-test
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest]
+        node-version: ['18.19.1', '20', '22', '24']
+        include:
+          - os: macos-latest
+            node-version: '24'
+          - os: windows-latest
+            node-version: '24'
+    defaults:
+      run:
+        shell: bash
+
+    steps:
+      - uses: actions/setup-node@v7
+        with:
+          node-version: ${{ matrix.node-version }}
+
+      - name: Download build artifact
+        uses: actions/download-artifact@v8
+        with:
+          name: dist
+          path: dist
+
+      - name: Install the package
+        run: |
+          (cd dist && npm pack --pack-destination "$RUNNER_TEMP")
+          mkdir "$RUNNER_TEMP/site" && cd "$RUNNER_TEMP/site"
+          npm init -y > /dev/null
+          npm install --no-fund --no-audit "$RUNNER_TEMP"/angular-cli-ghpages-*.tgz
+
+      - name: Load the package with require and import
+        run: |
+          cd "$RUNNER_TEMP/site"
+          node -e "if (typeof require('angular-cli-ghpages').deployToGHPages !== 'function') process.exit(1)"
+          node --input-type=module -e "import('angular-cli-ghpages').then((m) => { if (typeof m.default.deployToGHPages !== 'function') process.exit(1); })"
+          node -e "require('angular-cli-ghpages/deploy/builder')"
+
+      - name: Deploy with the standalone CLI
+        run: |
+          cd "$RUNNER_TEMP/site"
+          git config --global user.name "CI Bot"
+          git config --global user.email "ci@test.local"
+          REMOTE="$RUNNER_TEMP/remote.git"
+          CLI="node node_modules/angular-cli-ghpages/angular-cli-ghpages"
+          tree() { git --git-dir="$REMOTE" ls-tree -r --name-only "$1" | sort | tr '\n' ' '; }
+          git init --bare --initial-branch=main "$REMOTE"
+
+          mkdir -p public/config
+          echo '<h1>site</h1>' > public/index.html
+          echo 'SECRET=value' > public/.env
+          echo 'SECRET=value' > public/config/.env.production
+
+          # env files are published like other files, with a warning
+          $CLI --dir=public --repo="$REMOTE" 2> warnings.txt || { cat warnings.txt; exit 1; }
+          cat warnings.txt
+          grep -F 'WARNING: Publishing env files, which usually contain secrets: .env, config/.env.production' warnings.txt
+          test "$(tree gh-pages)" = '.env .nojekyll 404.html config/.env.production index.html '
+
+          # --add keeps existing files; an unchanged redeploy creates no commit
+          mv public/index.html public/new.html
+          $CLI --dir=public --repo="$REMOTE" --add --no-notfound
+          test "$(tree gh-pages)" = '.env .nojekyll 404.html config/.env.production index.html new.html '
+          COMMITS=$(git --git-dir="$REMOTE" rev-list --count gh-pages)
+          $CLI --dir=public --repo="$REMOTE" --add --no-notfound
+          test "$(git --git-dir="$REMOTE" rev-list --count gh-pages)" = "$COMMITS"
+
+          # an empty --dir and a project root as directory never publish anything
+          git init project
+          echo '{}' > project/package.json
+          echo 'SECRET=value' > project/.env
+          if $CLI --dir= --repo="$REMOTE" --branch=never; then exit 1; fi
+          if (cd project && node ../node_modules/angular-cli-ghpages/angular-cli-ghpages --dir=. --repo="$REMOTE" --branch=never); then exit 1; fi
+          if git --git-dir="$REMOTE" rev-parse --verify never; then exit 1; fi
+
   # Test ng add and ng deploy across multiple Angular versions (sequentially)
   # This catches breaking changes in angular.json structure
   # Each test creates its own git repo and deploys locally to verify the full flow
@@ -78,6 +161,7 @@ jobs:
       # Each test creates a bare repo as a fake remote to deploy to
       - name: Test Angular 18
         run: |
+          set -o pipefail
           cd /tmp
           git init --bare remote-18.git
           npx @angular/cli@18 new test-app-18 --defaults
@@ -87,14 +171,19 @@ jobs:
           npx ng add angular-cli-ghpages
           npx ng deploy
           echo second > dist/test-app-18/browser/second.txt
-          npx ng deploy --no-build --message="second deploy"
+          echo SECRET=value > dist/test-app-18/browser/.env
+          npx ng deploy --no-build --message="second deploy" 2>&1 | tee deploy.log
+          grep -F 'WARNING: Publishing env files, which usually contain secrets: .env' deploy.log
           cd /tmp/remote-18.git && git branch | grep gh-pages
           test "$(git rev-list --count gh-pages)" = 2
           git cat-file -e gh-pages:.nojekyll
+          git cat-file -e gh-pages:.env
+          git cat-file -e gh-pages:second.txt
           echo "Angular 18: build + deploy successful"
 
       - name: Test Angular 19
         run: |
+          set -o pipefail
           cd /tmp
           git init --bare remote-19.git
           npx @angular/cli@19 new test-app-19 --defaults
@@ -104,14 +193,19 @@ jobs:
           npx ng add angular-cli-ghpages
           npx ng deploy
           echo second > dist/test-app-19/browser/second.txt
-          npx ng deploy --no-build --message="second deploy"
+          echo SECRET=value > dist/test-app-19/browser/.env
+          npx ng deploy --no-build --message="second deploy" 2>&1 | tee deploy.log
+          grep -F 'WARNING: Publishing env files, which usually contain secrets: .env' deploy.log
           cd /tmp/remote-19.git && git branch | grep gh-pages
           test "$(git rev-list --count gh-pages)" = 2
           git cat-file -e gh-pages:.nojekyll
+          git cat-file -e gh-pages:.env
+          git cat-file -e gh-pages:second.txt
           echo "Angular 19: build + deploy successful"
 
       - name: Test Angular 20
         run: |
+          set -o pipefail
           cd /tmp
           git init --bare remote-20.git
           npx @angular/cli@20 new test-app-20 --defaults
@@ -121,14 +215,19 @@ jobs:
           npx ng add angular-cli-ghpages
           npx ng deploy
           echo second > dist/test-app-20/browser/second.txt
-          npx ng deploy --no-build --message="second deploy"
+          echo SECRET=value > dist/test-app-20/browser/.env
+          npx ng deploy --no-build --message="second deploy" 2>&1 | tee deploy.log
+          grep -F 'WARNING: Publishing env files, which usually contain secrets: .env' deploy.log
           cd /tmp/remote-20.git && git branch | grep gh-pages
           test "$(git rev-list --count gh-pages)" = 2
           git cat-file -e gh-pages:.nojekyll
+          git cat-file -e gh-pages:.env
+          git cat-file -e gh-pages:second.txt
           echo "Angular 20: build + deploy successful"
 
       - name: Test Angular 21
         run: |
+          set -o pipefail
           cd /tmp
           git init --bare remote-21.git
           npx @angular/cli@21 new test-app-21 --defaults
@@ -138,14 +237,19 @@ jobs:
           npx ng add angular-cli-ghpages
           npx ng deploy
           echo second > dist/test-app-21/browser/second.txt
-          npx ng deploy --no-build --message="second deploy"
+          echo SECRET=value > dist/test-app-21/browser/.env
+          npx ng deploy --no-build --message="second deploy" 2>&1 | tee deploy.log
+          grep -F 'WARNING: Publishing env files, which usually contain secrets: .env' deploy.log
           cd /tmp/remote-21.git && git branch | grep gh-pages
           test "$(git rev-list --count gh-pages)" = 2
           git cat-file -e gh-pages:.nojekyll
+          git cat-file -e gh-pages:.env
+          git cat-file -e gh-pages:second.txt
           echo "Angular 21: build + deploy successful"
 
       - name: Test Angular 22
         run: |
+          set -o pipefail
           cd /tmp
           git init --bare remote-22.git
           npx @angular/cli@22 new test-app-22 --defaults
@@ -155,8 +259,12 @@ jobs:
           npx ng add angular-cli-ghpages
           npx ng deploy
           echo second > dist/test-app-22/browser/second.txt
-          npx ng deploy --no-build --message="second deploy"
+          echo SECRET=value > dist/test-app-22/browser/.env
+          npx ng deploy --no-build --message="second deploy" 2>&1 | tee deploy.log
+          grep -F 'WARNING: Publishing env files, which usually contain secrets: .env' deploy.log
           cd /tmp/remote-22.git && git branch | grep gh-pages
           test "$(git rev-list --count gh-pages)" = 2
           git cat-file -e gh-pages:.nojekyll
+          git cat-file -e gh-pages:.env
+          git cat-file -e gh-pages:second.txt
           echo "Angular 22: build + deploy successful"

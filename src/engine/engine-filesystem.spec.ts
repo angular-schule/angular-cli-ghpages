@@ -2,12 +2,11 @@
  * Real filesystem integration tests for file creation
  *
  * These tests use actual temporary directories to verify that:
- * - 404.html is copied from index.html (handled by angular-cli-ghpages)
- * - Dry-run mode prevents file creation
- * - Error handling works as expected
+ * - the engine never modifies the dist folder
+ * - dry-run mode prevents file creation
  *
- * Note: CNAME and .nojekyll files are now handled by gh-pages v6+ via options.
- * See "gh-pages v6 delegation" tests below for verification.
+ * 404.html, CNAME and .nojekyll are written by the publish step of
+ * gh-pages-fork; the tests below verify that the options reach it.
  */
 
 import { logging } from '@angular-devkit/core';
@@ -17,8 +16,16 @@ import * as path from 'path';
 import { MockInstance } from 'vitest';
 
 import * as engine from './engine';
-import { cleanupMonkeypatch } from './engine.prepare-options-helpers';
+import * as ghpages from '../gh-pages-fork/lib';
 import { pathExists } from '../utils';
+
+vi.mock('../gh-pages-fork/lib', async () => {
+  const actual = await vi.importActual<typeof import('../gh-pages-fork/lib')>('../gh-pages-fork/lib');
+  return {
+    ...actual,
+    publish: vi.fn().mockResolvedValue(undefined)
+  };
+});
 
 describe('engine - real filesystem tests', () => {
   const logger = new logging.Logger('test');
@@ -26,9 +33,6 @@ describe('engine - real filesystem tests', () => {
   let loggerInfoSpy: MockInstance;
 
   beforeEach(async () => {
-    // Clean up any previous monkeypatch so each test starts fresh
-    cleanupMonkeypatch();
-
     // Create a unique temp directory for each test
     const tmpBase = os.tmpdir();
     const uniqueDir = `angular-cli-ghpages-test-${Date.now()}-${Math.random().toString(36).substring(7)}`;
@@ -37,6 +41,7 @@ describe('engine - real filesystem tests', () => {
 
     // Spy on logger to capture warnings
     loggerInfoSpy = vi.spyOn(logger, 'info');
+    vi.mocked(ghpages.publish).mockClear();
   });
 
   afterEach(async () => {
@@ -47,156 +52,51 @@ describe('engine - real filesystem tests', () => {
     loggerInfoSpy.mockRestore();
   });
 
-  afterAll(() => {
-    // Clean up monkeypatch after all tests
-    cleanupMonkeypatch();
-  });
+  /**
+   * publish() writes 404.html (a copy of index.html) into its clone; the
+   * engine only passes the notfound option and never modifies dist.
+   */
+  describe('404.html', () => {
+    it('should pass notfound to publish() and leave dist untouched', async () => {
+      await fs.writeFile(path.join(testDir, 'index.html'), '<html><body>Test</body></html>');
 
-  describe('404.html file creation', () => {
-    it('should create 404.html as exact copy of index.html when notfound is true', async () => {
-      // First create an index.html file
-      const indexPath = path.join(testDir, 'index.html');
-      const indexContent = '<!DOCTYPE html><html><head><title>Test</title></head><body><h1>Test App</h1></body></html>';
-      await fs.writeFile(indexPath, indexContent);
+      await engine.run(testDir, { notfound: true, nojekyll: false, dotfiles: true }, logger);
 
-      const ghpages = require('gh-pages');
-      vi.spyOn(ghpages, 'clean').mockImplementation(() => {});
-      vi.spyOn(ghpages, 'publish').mockImplementation((_dir: unknown, _opts: unknown, callback?: (error: Error | null) => void) => {
-        if (callback) {
-          callback(null);
-        }
-        return Promise.resolve(undefined);
-      });
-
-      const options = {
-        notfound: true,
-        nojekyll: false,
-        dotfiles: true
-      };
-
-      await engine.run(testDir, options, logger);
-
-      const notFoundPath = path.join(testDir, '404.html');
-      const exists = await pathExists(notFoundPath);
-      expect(exists).toBe(true);
-
-      const notFoundContent = await fs.readFile(notFoundPath, 'utf-8');
-      expect(notFoundContent).toBe(indexContent);
+      expect(vi.mocked(ghpages.publish).mock.calls[0][1].notfound).toBe(true);
+      expect(await fs.readdir(testDir)).toEqual(['index.html']);
     });
 
-    it('should NOT create 404.html when notfound is false', async () => {
-      const indexPath = path.join(testDir, 'index.html');
-      await fs.writeFile(indexPath, '<html><body>Test</body></html>');
+    it('should pass notfound: false to publish()', async () => {
+      await fs.writeFile(path.join(testDir, 'index.html'), '<html><body>Test</body></html>');
 
-      const ghpages = require('gh-pages');
-      vi.spyOn(ghpages, 'clean').mockImplementation(() => {});
-      vi.spyOn(ghpages, 'publish').mockImplementation((_dir: unknown, _opts: unknown, callback?: (error: Error | null) => void) => {
-        if (callback) {
-          callback(null);
-        }
-        return Promise.resolve(undefined);
-      });
+      await engine.run(testDir, { notfound: false, nojekyll: false, dotfiles: true }, logger);
 
-      const options = {
-        notfound: false,
-        nojekyll: false,
-        dotfiles: true
-      };
-
-      await engine.run(testDir, options, logger);
-
-      const notFoundPath = path.join(testDir, '404.html');
-      const exists = await pathExists(notFoundPath);
-      expect(exists).toBe(false);
-    });
-
-    it('should gracefully continue when index.html does not exist (not throw error)', async () => {
-      // No index.html created - directory is empty
-
-      const ghpages = require('gh-pages');
-      vi.spyOn(ghpages, 'clean').mockImplementation(() => {});
-      vi.spyOn(ghpages, 'publish').mockImplementation((_dir: unknown, _opts: unknown, callback?: (error: Error | null) => void) => {
-        if (callback) {
-          callback(null);
-        }
-        return Promise.resolve(undefined);
-      });
-
-      const options = {
-        notfound: true,
-        nojekyll: false,
-        dotfiles: true
-      };
-
-      // Should NOT throw - this is the critical test for graceful handling
-      await expect(
-        engine.run(testDir, options, logger)
-      ).resolves.toBeUndefined();
-
-      // Should log a warning message
-      expect(loggerInfoSpy).toHaveBeenCalledWith(
-        'index.html could not be copied to 404.html. Proceeding without it.'
-      );
-
-      const notFoundPath = path.join(testDir, '404.html');
-      const exists = await pathExists(notFoundPath);
-      expect(exists).toBe(false);
+      expect(vi.mocked(ghpages.publish).mock.calls[0][1].notfound).toBe(false);
     });
 
     it('should NOT create 404.html when dry-run is true', async () => {
-      const indexPath = path.join(testDir, 'index.html');
-      await fs.writeFile(indexPath, '<html><body>Test</body></html>');
+      await fs.writeFile(path.join(testDir, 'index.html'), '<html><body>Test</body></html>');
 
-      const ghpages = require('gh-pages');
-      vi.spyOn(ghpages, 'clean').mockImplementation(() => {});
+      await engine.run(testDir, { notfound: true, nojekyll: false, dotfiles: true, dryRun: true }, logger);
 
-      const options = {
-        notfound: true,
-        nojekyll: false,
-        dotfiles: true,
-        dryRun: true
-      };
-
-      await engine.run(testDir, options, logger);
-
-      const notFoundPath = path.join(testDir, '404.html');
-      const exists = await pathExists(notFoundPath);
-      expect(exists).toBe(false);
+      expect(await pathExists(path.join(testDir, '404.html'))).toBe(false);
+      expect(ghpages.publish).not.toHaveBeenCalled();
+      expect(loggerInfoSpy).toHaveBeenCalledWith('Dry-run / SKIPPED: copying of index.html to 404.html');
     });
   });
 
   /**
-   * gh-pages v6+ Delegation Tests
-   *
-   * gh-pages v6.1.0 added native support for creating CNAME and .nojekyll files:
-   * - See: https://github.com/tschaub/gh-pages/pull/533
-   *
-   * We now delegate file creation to gh-pages via the cname/nojekyll options
-   * instead of creating them ourselves. This is cleaner and avoids duplication.
+   * publish() writes CNAME and .nojekyll into its clone; the engine only
+   * passes the options.
    *
    * What we're testing:
-   * - Verify we DO pass cname option to gh-pages when provided
-   * - Verify we DO pass nojekyll option to gh-pages when enabled
-   * - Verify 404.html is still created by us (gh-pages doesn't handle this)
+   * - Verify we DO pass cname option to publish() when provided
+   * - Verify we DO pass nojekyll option to publish() when enabled
    */
-  describe('gh-pages v6 delegation - cname and nojekyll', () => {
-    it('should pass cname option to gh-pages when provided', async () => {
+  describe('publish options - cname and nojekyll', () => {
+    it('should pass cname option to publish() when provided', async () => {
       const indexPath = path.join(testDir, 'index.html');
       await fs.writeFile(indexPath, '<html>test</html>');
-
-      const ghpages = require('gh-pages');
-      vi.spyOn(ghpages, 'clean').mockImplementation(() => {});
-
-      let capturedOptions: { cname?: string; nojekyll?: boolean } = {};
-      const publishSpy = vi.spyOn(ghpages, 'publish').mockImplementation(
-        (_dir: string, options: { cname?: string; nojekyll?: boolean }, callback?: (error: Error | null) => void) => {
-          capturedOptions = options;
-          if (callback) {
-            callback(null);
-          }
-          return Promise.resolve();
-        }
-      );
 
       const testDomain = 'example.com';
       const options = {
@@ -208,27 +108,15 @@ describe('engine - real filesystem tests', () => {
 
       await engine.run(testDir, options, logger);
 
-      expect(publishSpy).toHaveBeenCalled();
+      expect(ghpages.publish).toHaveBeenCalled();
+      const capturedOptions = vi.mocked(ghpages.publish).mock.calls[0][1];
       expect(capturedOptions.cname).toBe(testDomain);
     });
 
-    it('should pass nojekyll option to gh-pages when enabled', async () => {
+    it('should pass nojekyll option to publish() when enabled', async () => {
       const indexPath = path.join(testDir, 'index.html');
       await fs.writeFile(indexPath, '<html>test</html>');
 
-      const ghpages = require('gh-pages');
-      vi.spyOn(ghpages, 'clean').mockImplementation(() => {});
-
-      let capturedOptions: { cname?: string; nojekyll?: boolean } = {};
-      const publishSpy = vi.spyOn(ghpages, 'publish').mockImplementation(
-        (_dir: string, options: { cname?: string; nojekyll?: boolean }, callback?: (error: Error | null) => void) => {
-          capturedOptions = options;
-          if (callback) {
-            callback(null);
-          }
-          return Promise.resolve();
-        }
-      );
 
       const options = {
         nojekyll: true,
@@ -238,27 +126,14 @@ describe('engine - real filesystem tests', () => {
 
       await engine.run(testDir, options, logger);
 
-      expect(publishSpy).toHaveBeenCalled();
+      expect(ghpages.publish).toHaveBeenCalled();
+      const capturedOptions = vi.mocked(ghpages.publish).mock.calls[0][1];
       expect(capturedOptions.nojekyll).toBe(true);
     });
 
     it('should pass both cname and nojekyll options when both enabled', async () => {
       const indexPath = path.join(testDir, 'index.html');
       await fs.writeFile(indexPath, '<html>test</html>');
-
-      const ghpages = require('gh-pages');
-      vi.spyOn(ghpages, 'clean').mockImplementation(() => {});
-
-      let capturedOptions: { cname?: string; nojekyll?: boolean } = {};
-      const publishSpy = vi.spyOn(ghpages, 'publish').mockImplementation(
-        (_dir: string, options: { cname?: string; nojekyll?: boolean }, callback?: (error: Error | null) => void) => {
-          capturedOptions = options;
-          if (callback) {
-            callback(null);
-          }
-          return Promise.resolve();
-        }
-      );
 
       const testDomain = 'test.example.com';
       const options = {
@@ -270,32 +145,17 @@ describe('engine - real filesystem tests', () => {
 
       await engine.run(testDir, options, logger);
 
-      expect(publishSpy).toHaveBeenCalled();
+      expect(ghpages.publish).toHaveBeenCalled();
+      const capturedOptions = vi.mocked(ghpages.publish).mock.calls[0][1];
       expect(capturedOptions.cname).toBe(testDomain);
       expect(capturedOptions.nojekyll).toBe(true);
-
-      // Verify 404.html is still created by us (not delegated to gh-pages)
-      const notFoundPath = path.join(testDir, '404.html');
-      expect(await pathExists(notFoundPath)).toBe(true);
+      expect(capturedOptions.notfound).toBe(true);
     });
 
     it('should NOT pass cname when not provided (undefined)', async () => {
       const indexPath = path.join(testDir, 'index.html');
       await fs.writeFile(indexPath, '<html>test</html>');
 
-      const ghpages = require('gh-pages');
-      vi.spyOn(ghpages, 'clean').mockImplementation(() => {});
-
-      let capturedOptions: { cname?: string; nojekyll?: boolean } = {};
-      const publishSpy = vi.spyOn(ghpages, 'publish').mockImplementation(
-        (_dir: string, options: { cname?: string; nojekyll?: boolean }, callback?: (error: Error | null) => void) => {
-          capturedOptions = options;
-          if (callback) {
-            callback(null);
-          }
-          return Promise.resolve();
-        }
-      );
 
       const options = {
         nojekyll: false,
@@ -306,7 +166,8 @@ describe('engine - real filesystem tests', () => {
 
       await engine.run(testDir, options, logger);
 
-      expect(publishSpy).toHaveBeenCalled();
+      expect(ghpages.publish).toHaveBeenCalled();
+      const capturedOptions = vi.mocked(ghpages.publish).mock.calls[0][1];
       expect(capturedOptions.cname).toBeUndefined();
     });
 
@@ -314,19 +175,6 @@ describe('engine - real filesystem tests', () => {
       const indexPath = path.join(testDir, 'index.html');
       await fs.writeFile(indexPath, '<html>test</html>');
 
-      const ghpages = require('gh-pages');
-      vi.spyOn(ghpages, 'clean').mockImplementation(() => {});
-
-      let capturedOptions: { cname?: string; nojekyll?: boolean } = {};
-      const publishSpy = vi.spyOn(ghpages, 'publish').mockImplementation(
-        (_dir: string, options: { cname?: string; nojekyll?: boolean }, callback?: (error: Error | null) => void) => {
-          capturedOptions = options;
-          if (callback) {
-            callback(null);
-          }
-          return Promise.resolve();
-        }
-      );
 
       const options = {
         nojekyll: false,
@@ -336,8 +184,111 @@ describe('engine - real filesystem tests', () => {
 
       await engine.run(testDir, options, logger);
 
-      expect(publishSpy).toHaveBeenCalled();
+      expect(ghpages.publish).toHaveBeenCalled();
+      const capturedOptions = vi.mocked(ghpages.publish).mock.calls[0][1];
       expect(capturedOptions.nojekyll).toBe(false);
+    });
+  });
+
+  describe('env files in dry-run', () => {
+    it('should warn about the env files that would be published', async () => {
+      const warnSpy = vi.spyOn(logger, 'warn');
+      await fs.mkdir(path.join(testDir, 'config'));
+      await fs.writeFile(path.join(testDir, 'index.html'), '<h1>app</h1>');
+      await fs.writeFile(path.join(testDir, '.env'), 'SECRET=value');
+      await fs.writeFile(path.join(testDir, 'config', 'production.env'), 'SECRET=value');
+
+      await engine.run(testDir, { dryRun: true, dotfiles: true }, logger);
+
+      const warnings = warnSpy.mock.calls.map(([message]) => message);
+      expect(warnings).toEqual(ghpages.envFileWarning(['.env', 'config/production.env']));
+      expect(ghpages.publish).not.toHaveBeenCalled();
+      warnSpy.mockRestore();
+    });
+
+    it('should not warn about a .env that --no-dotfiles leaves out', async () => {
+      const warnSpy = vi.spyOn(logger, 'warn');
+      await fs.writeFile(path.join(testDir, 'index.html'), '<h1>app</h1>');
+      await fs.writeFile(path.join(testDir, '.env'), 'SECRET=value');
+
+      await engine.run(testDir, { dryRun: true, noDotfiles: true }, logger);
+
+      expect(warnSpy).not.toHaveBeenCalled();
+      warnSpy.mockRestore();
+    });
+
+    it('should warn about files that an ignore rule matches', async () => {
+      const warnSpy = vi.spyOn(logger, 'warn');
+      await fs.writeFile(path.join(testDir, 'index.html'), '<h1>app</h1>');
+      await fs.writeFile(path.join(testDir, '.gitignore'), '*.map\n');
+      await fs.writeFile(path.join(testDir, 'main.js.map'), '{}');
+
+      await engine.run(testDir, { dryRun: true }, logger);
+
+      expect(warnSpy.mock.calls.map(([message]) => message)).toEqual(ghpages.ignoredFileWarning(['main.js.map']));
+      warnSpy.mockRestore();
+    });
+  });
+
+  describe('checks of a deploy in dry-run', () => {
+    it('should fail when --dir is a file', async () => {
+      const file = path.join(testDir, 'index.html');
+      await fs.writeFile(file, '<h1>app</h1>');
+
+      await expect(engine.run(file, { dryRun: true }, logger))
+        .rejects.toThrow(`The path "${file}" to publish (--dir) is not an existing directory.`);
+    });
+
+    it('should fail for an empty directory', async () => {
+      await expect(engine.run(testDir, { dryRun: true }, logger))
+        .rejects.toThrow(`The directory "${testDir}" doesn't contain any files to publish.`);
+    });
+
+    it('should refuse a project root', async () => {
+      await fs.mkdir(path.join(testDir, '.git'));
+      await fs.writeFile(path.join(testDir, 'package.json'), '{}');
+
+      await expect(engine.run(testDir, { dryRun: true }, logger)).rejects.toThrow(/looks like a project root/);
+    });
+
+    it('should fail for an empty branch name', async () => {
+      await fs.writeFile(path.join(testDir, 'index.html'), '<h1>app</h1>');
+
+      await expect(engine.run(testDir, { dryRun: true, branch: '' }, logger))
+        .rejects.toThrow('The branch to publish to (--branch) must not be empty.');
+    });
+
+    it('should say that the 404.html copy is left out without an index.html', async () => {
+      await fs.writeFile(path.join(testDir, 'app.html'), '<h1>app</h1>');
+
+      await engine.run(testDir, { dryRun: true }, logger);
+
+      expect(loggerInfoSpy).toHaveBeenCalledWith('index.html could not be copied to 404.html. The deploy would proceed without it.');
+    });
+
+    it('should not promise a commit author for --name without --email', async () => {
+      await fs.writeFile(path.join(testDir, 'index.html'), '<h1>app</h1>');
+
+      await engine.run(testDir, { dryRun: true, name: 'Only Name' }, logger);
+
+      const output = loggerInfoSpy.mock.calls.map(([message]) => String(message)).join('\n');
+      expect(output).toContain('"name": "local or global git user name will be used for the commit"');
+    });
+  });
+
+  describe('warnings of a deploy', () => {
+    it('should forward the warnings of publish() to logger.warn', async () => {
+      const warnSpy = vi.spyOn(logger, 'warn');
+      const warning = ghpages.envFileWarning(['.env'])[0];
+      vi.mocked(ghpages.publish).mockImplementationOnce(async (_dir, _options, _log, warn) => {
+        warn?.(warning);
+      });
+      await fs.writeFile(path.join(testDir, 'index.html'), '<h1>app</h1>');
+
+      await engine.run(testDir, { dotfiles: true }, logger);
+
+      expect(warnSpy).toHaveBeenCalledWith(warning);
+      warnSpy.mockRestore();
     });
   });
 });

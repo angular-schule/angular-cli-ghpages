@@ -9,7 +9,11 @@ import { JsonObject, logging } from '@angular-devkit/core';
 import { BuildTarget } from '../interfaces';
 import { Schema } from './schema';
 
+import * as path from 'path';
+
 import deploy from './actions';
+
+const WORKSPACE_ROOT = path.resolve('/workspace');
 
 interface EngineHost {
   run(dir: string, options: Schema, logger: logging.LoggerApi): Promise<void>;
@@ -54,11 +58,21 @@ describe('Deploy Angular apps', () => {
     );
   });
 
+  it('warns that --base-href has no effect with --no-build', async () => {
+    const warn = vi.spyOn(context.logger, 'warn');
+    const build = vi.spyOn(context, 'scheduleTarget');
+
+    await deploy(mockEngine, context, BUILD_TARGET, { noBuild: true, baseHref: '/folder/' });
+
+    expect(build).not.toHaveBeenCalled();
+    expect(warn).toHaveBeenCalledWith('--base-href has no effect with --no-build: it is an option of the build.');
+  });
+
   it('should invoke engine.run', async () => {
     const spy = vi.spyOn(mockEngine, 'run');
     await deploy(mockEngine, context, BUILD_TARGET, {});
 
-    expect(spy).toHaveBeenCalledWith('dist/some-folder/browser', {}, context.logger);
+    expect(spy).toHaveBeenCalledWith(path.join(WORKSPACE_ROOT, 'dist/some-folder/browser'), {}, context.logger);
   });
 
   describe('error handling', () => {
@@ -116,27 +130,49 @@ describe('Deploy Angular apps', () => {
 
     it('uses default path when outputPath is undefined (Angular 20+)', async () => {
       const dir = await captureDir(undefined);
-      expect(dir).toBe(`dist/${PROJECT}/browser`);
+      expect(dir).toBe(path.join(WORKSPACE_ROOT, `dist/${PROJECT}/browser`));
     });
 
     it('appends /browser when outputPath is string (Angular 18-19)', async () => {
       const dir = await captureDir('dist/my-app');
-      expect(dir).toBe('dist/my-app/browser');
+      expect(dir).toBe(path.join(WORKSPACE_ROOT, 'dist/my-app/browser'));
+    });
+
+    it.each([
+      '@angular-devkit/build-angular:browser',
+      '@angular-devkit/build-angular:browser-esbuild',
+      '@angular-builders/custom-webpack:browser',
+      '@nx/angular:webpack-browser'
+    ])('uses a string outputPath as it is for the browser builder %s', async (builder) => {
+      const outputPath = 'dist/my-app';
+      context.getBuilderNameForTarget = () => Promise.resolve(builder);
+
+      const dir = await captureDir(outputPath);
+
+      expect(dir).toBe(path.join(WORKSPACE_ROOT, outputPath));
+    });
+
+    it('appends /browser to a string outputPath for the application builder', async () => {
+      context.getBuilderNameForTarget = () => Promise.resolve('@angular/build:application');
+
+      const dir = await captureDir('dist/my-app');
+
+      expect(dir).toBe(path.join(WORKSPACE_ROOT, 'dist/my-app/browser'));
     });
 
     it('uses base/browser when outputPath is object', async () => {
       const dir = await captureDir({ base: 'dist/my-app', browser: 'browser' });
-      expect(dir).toBe('dist/my-app/browser');
+      expect(dir).toBe(path.join(WORKSPACE_ROOT, 'dist/my-app/browser'));
     });
 
     it('defaults browser to "browser" when omitted from object', async () => {
       const dir = await captureDir({ base: 'dist/my-app' });
-      expect(dir).toBe('dist/my-app/browser');
+      expect(dir).toBe(path.join(WORKSPACE_ROOT, 'dist/my-app/browser'));
     });
 
     it('uses base only when browser is empty string (SPA mode)', async () => {
       const dir = await captureDir({ base: 'dist/my-app', browser: '' });
-      expect(dir).toBe('dist/my-app');
+      expect(dir).toBe(path.join(WORKSPACE_ROOT, 'dist/my-app'));
     });
   });
 });
@@ -156,7 +192,7 @@ const initMocks = () => {
     currentDirectory: 'cwd',
     id: 1,
     logger: new logging.NullLogger(),
-    workspaceRoot: 'cwd',
+    workspaceRoot: WORKSPACE_ROOT,
     addTeardown: _ => {},
     validateOptions: <T extends JsonObject = JsonObject>(_options: JsonObject) => Promise.resolve({} as T),
     getBuilderNameForTarget: () => Promise.resolve(''),

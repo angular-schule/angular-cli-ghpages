@@ -21,6 +21,7 @@
    - [--prerender-target](#prerender-target)
    - [--no-build](#no-build)
    - [--repo](#repo)
+   - [--remote](#remote)
    - [--message](#message)
    - [--branch](#branch)
    - [--name & --email](#name)
@@ -40,8 +41,8 @@
 
 A detailed changelog is available in the [releases](https://github.com/angular-schule/angular-cli-ghpages/releases) section.
 
-`angular-cli-ghpages` v3 supports Angular 18 to 22.
-For previous versions of Angular, use v1 or v2.
+`angular-cli-ghpages` v4 supports Angular 18 to 22.
+For older versions of Angular, use v1 or v2.
 
 ## ⚠️ Prerequisites <a name="prerequisites"></a>
 
@@ -49,7 +50,7 @@ This command has the following prerequisites:
 
 - Git 1.9 or higher (execute `git --version` to check your version)
 - Angular project created via [Angular CLI](https://github.com/angular/angular-cli) v18 or greater
-- Older Angular projects can still use a v1.x version or use the standalone program. See the documentation at [README_standalone](https://github.com/angular-schule/angular-cli-ghpages/blob/master/docs/README_standalone.md).
+- Older Angular projects can still use a v1.x version or use the standalone program. See the documentation at [README_standalone](https://github.com/angular-schule/angular-cli-ghpages/blob/main/docs/README_standalone.md).
 
 ## 🚀 Quick Start <a name="quickstart"></a>
 
@@ -120,7 +121,7 @@ This will install the NPM package and add the necessary `deploy` configuration t
 ng add angular-cli-ghpages
 ```
 
-If you have multiple projects in one workspace, you should manually define the project name:
+If you have multiple projects in one workspace, run the command inside the folder of the project or define the project name:
 
 ```sh
 ng add angular-cli-ghpages --project MYPROJECTNAME
@@ -135,7 +136,7 @@ In short: a token replaces username and password and is a safer choice because a
 
 All you need to do is to set an environment variable called `GH_TOKEN` (or `PERSONAL_TOKEN`) in your CI/CD environment.
 For GitHub Actions, you can also use the `GITHUB_TOKEN` which provides more security and requires no additional setup.
-All the tokens only work if the remote repository uses the HTTPS scheme.
+The tokens are added to repository URLs starting with `https://github.com/` (see [--repo](#repo)).
 Tokens are generally not supported for Git over SSH.
 
 If the current working directory is already a git repository, you don't need to specify the repository again. The current remote repository with the name `origin` will be used in this case.
@@ -151,7 +152,8 @@ ng deploy --repo=https://github.com/<username>/<repositoryname>.git --name="Your
 
 > **ℹ️ Note for GitHub Actions**
 >
-> The `GITHUB_TOKEN` (installation access token) will only trigger a release of a new website if the action runs in a private repository. In a public repo, a commit is generated, but the site does not change. If your repo is public, you must still use the `GH_TOKEN` (personal access token).
+> The `GITHUB_TOKEN` needs write access to the repository (`permissions: contents: write` in the workflow, or **Read and write permissions** in the repository settings under **Actions** → **General**).
+> GitHub's documentation says that commits pushed with the `GITHUB_TOKEN` don't trigger a GitHub Pages build. If your site isn't updated after a deploy, use a personal access token (`GH_TOKEN`) instead.
 
 ## 📦 Deployment Options <a name="options"></a>
 
@@ -192,42 +194,28 @@ See the option [--cname](#cname) for more information!
 #### --build-target <a name="build-target"></a>
 
 - **optional**
-- Default: `undefined` (string)
+- Default: `<project>:build:production` (string), with the project of the deploy target
 - Example:
-  - `ng deploy` – Angular project is built in `production` mode
-  - `ng deploy --build-target=test` – Angular project is using the build configuration `test` (this configuration must exist in the `angular.json` file)
+  - `ng deploy` – the `production` configuration of the build target is used
+  - `ng deploy --build-target=my-app:build:staging` – the build configuration `staging` of the project `my-app` is used (this configuration must exist in the `angular.json` file)
 
-If no `buildTarget` is set, the `production` build of the default project will be chosen.
-The `buildTarget` simply points to an existing build configuration for your project, as specified in the `configurations` section of `angular.json`.
-Most projects have a default configuration and a production configuration (commonly activated by using the `--configuration production` option) but it is possible to specify as many build configurations as needed.
+The build target is a full target string `project:target[:configuration]`, like the `buildTarget` options of the Angular CLI (a configuration name alone, e.g. `--build-target=staging`, fails with `Invalid target string`).
+`ng deploy --build-target=my-app:build:staging` builds like `ng build my-app --configuration=staging`.
 
-This is equivalent to calling the command `ng build --configuration=XXX`.
-This command has no effect if the option `--no-build` is active.
+The default needs a `production` configuration in the build target. A project without one sets the build target explicitly, e.g. `--build-target=my-app:build`.
 
-**⚠️ BREAKING CHANGE (v1)**
-
-This option was called `--configuration` in previous versions.
-
-BEFORE (_does not work_):
-
-```
-ng deploy --configuration=test
-```
-
-NOW:
-
-```
-ng deploy --build-target=test
-```
+The build target also determines the directory that is published (its `outputPath`, see [--dir](#dir)), with `--no-build` too.
 
 #### --prerender-target <a name="prerender-target"></a>
 
 - **optional**
 - Default: `undefined`
+- Example: `ng deploy --prerender-target=my-app:prerender:production`
 
-Specifies the Angular architect target to use for prerendering instead of buildTarget.
+A separate prerender target as `project:target[:configuration]`, for setups with a prerender builder.
+If `prerenderTarget` is specified, it takes precedence over `buildTarget`, for the build and for the published directory.
 
-**Target Precedence:** If `prerenderTarget` is specified, it takes precedence over `buildTarget`. This option has no effect if `--no-build` is active.
+With the application builder (`@angular/build:application`, the default since Angular 17), prerendering is part of the build target (`"prerender": true` or `"outputMode": "static"` in its options): no prerender target is needed, `ng deploy` publishes the browser output of the build.
 
 #### --no-build <a name="no-build"></a>
 
@@ -239,7 +227,8 @@ Specifies the Angular architect target to use for prerendering instead of buildT
 
 Skip the build process during deployment.
 This can be used when you are sure that you haven't changed anything and want to deploy with the latest artifact.
-This command causes the `--build-target` setting to have no effect.
+The build target (`--build-target`, `--prerender-target` or the default) still determines the published directory.
+`--base-href` is an option of the build and has no effect with `--no-build` (a warning says so).
 
 #### --repo <a name="repo"></a>
 
@@ -256,10 +245,25 @@ you can provide the repository URL in the `repo` option.
 
 > **ℹ️ Hint**
 >
-> Set an environment variable with the name `GH_TOKEN` / `PERSONAL_TOKEN` or `GITHUB_TOKEN` and it will be automatically added to the URL, if it uses the HTTPS schema (it must start with `https://github.com`).
+> Set an environment variable with the name `GH_TOKEN`, `PERSONAL_TOKEN` or `GITHUB_TOKEN` (if several are set, in this order, the first one is used) and it will be automatically added to the URL, if the URL starts with `https://github.com/` (lower case, without a username).
+> The URL then becomes `https://x-access-token:<token>@github.com/...`.
+> URLs of other hosts (e.g. GitHub Enterprise) get no token: put the token into the URL yourself, e.g. with the placeholder below.
 > Tokens are generally not supported for Git over SSH (starts with `git@github.com`).
 
-Learn more about ["personal access tokens" here](https://help.github.com/articles/creating-an-access-token-for-command-line-use/) (`GH_TOKEN`) and about the ["installation access token" here](https://help.github.com/en/actions/automating-your-workflow-with-github-actions/authenticating-with-the-github_token) (`GITHUB_TOKEN`). `PERSONAL_TOKEN` is an alias for `GH_TOKEN`.
+A URL with the placeholder `GH_TOKEN`, e.g. `--repo=https://GH_TOKEN@github.com/<username>/<repositoryname>.git`, gets the value of the environment variable `GH_TOKEN` in place of the placeholder (only `GH_TOKEN`, not `PERSONAL_TOKEN` or `GITHUB_TOKEN`), for any host.
+
+Learn more about ["personal access tokens" here](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens) (`GH_TOKEN` or `PERSONAL_TOKEN`) and about the ["installation access token" here](https://docs.github.com/en/actions/security-for-github-actions/security-guides/automatic-token-authentication) (`GITHUB_TOKEN`).
+
+Tokens and passwords in the URL are hidden (`https://***@github.com/...`) in every message, also in the output of `--dry-run`.
+
+#### --remote <a name="remote"></a>
+
+- **optional**
+- Default: `origin` (string)
+- Example: `ng deploy --remote=upstream`
+
+The name of the git remote of the current working directory whose URL is used as the target repository.
+It has no effect if `--repo` is set.
 
 #### --message <a name="message"></a>
 
@@ -274,7 +278,7 @@ Some additional text is always added to the message, if the command runs on Trav
 
 - **optional**
 - Default: `gh-pages` (string)
-- Example: `ng deploy --branch=master`
+- Example: `ng deploy --branch=main`
 
 The name of the branch you'll be pushing to.
 The default uses GitHub's `gh-pages` branch,
@@ -302,6 +306,10 @@ In this case, provide **both** `name` and `email` string values to identify the 
 
 The command includes dotfiles by default (e.g. `.htaccess` will be committed).
 With `--no-dotfiles` files starting with `.` are ignored.
+Env files (`.env`, `.env.*`, `*.env`, in any folder, also inside a folder with such a name) are published like every other file, but each deploy (also `--dry-run`) shows a warning listing them, because they usually contain secrets.
+Files and folders named `.git` are never published.
+Ignore rules (a global gitignore or a `.gitignore` inside the build) don't apply: every other file of the build is published, and a warning lists the files an ignore rule matches.
+Every file is published byte for byte as it is in the build: git attributes (a `.gitattributes` inside the build or of the user, e.g. `text=auto` or Git LFS filters) and `core.autocrlf` don't change it.
 
 #### --no-notfound <a name="no-notfound"></a>
 
@@ -312,6 +320,8 @@ With `--no-dotfiles` files starting with `.` are ignored.
   - `ng deploy --no-notfound` – No `404.html` file is created.
 
 By default, a `404.html` file is created, because this is the only known workaround for SPA routing on GitHub Pages (note: GitHub still returns HTTP 404 status, which may affect Brave browser and social previews).
+The `404.html` is added to the deployment only; your build folder isn't modified.
+If you want to publish your own `404.html`, use `--no-notfound`: otherwise the copy of `index.html` replaces it in the deployment.
 
 > [!IMPORTANT]
 > **Cloudflare Pages users:** You **must** use `--no-notfound` to enable native SPA routing. Cloudflare Pages only activates SPA mode when no `404.html` file exists. See [#178](https://github.com/angular-schule/angular-cli-ghpages/issues/178)
@@ -343,6 +353,7 @@ The same applies to `.txt` files in your assets folder: They will just disappear
   - `ng deploy --cname=example.com`
 
 A CNAME file will be created enabling you to use a custom domain.
+It replaces a `CNAME` file of the build (e.g. from `public/CNAME`); without `--cname`, a `CNAME` file of the build is published like every other file.
 [More information on GitHub Pages using a custom domain](https://help.github.com/articles/using-a-custom-domain-with-github-pages/).
 
 #### --add <a name="add"></a>
@@ -353,17 +364,22 @@ A CNAME file will be created enabling you to use a custom domain.
   - `ng deploy --add=true`
 
 If it is set to `true`, it will only add, and never remove existing files.
-By default, existing files in the target branch are removed before adding new ones.
-[More information](https://www.npmjs.com/package/gh-pages#optionsadd).
+By default, the build replaces the complete content of the target branch.
 
 #### --dir <a name="dir"></a>
 
 - **optional**
-- Default: `undefined` (string) – Conventions will be used to guess the correct directory in your `dist` folder.
+- Default: `undefined` (string) – The output directory of the build target in `angular.json` is used (relative to the workspace root).
 - Example:
   - `ng deploy --dir=dist/completely-different-folder/en`
 
-Overrides the directory for all published sources, relative to the current working directory.
+Overrides the directory for all published sources, relative to the current working directory (absolute paths work as well).
+
+Without `--dir`, the browser output of the build target is published:
+
+- no `outputPath`: `dist/<project>/browser`
+- `outputPath` as a string: `<outputPath>/browser` for the application builder; `<outputPath>` itself for the browser builders (`@angular-devkit/build-angular:browser`, `:browser-esbuild` and builders named after them, e.g. `@angular-builders/custom-webpack:browser`), which write the files straight into it
+- `outputPath` as an object: `<base>/<browser>` (`browser` defaults to `browser`; an empty string publishes `<base>`)
 
 #### --dry-run <a name="dry-run"></a>
 
@@ -375,6 +391,8 @@ Overrides the directory for all published sources, relative to the current worki
 
 Run through without making any changes.
 This can be very useful because it outputs what would happen without doing anything.
+The dry run performs the checks of a deploy that need no clone (the directory exists and isn't a project root, it contains files, `--branch` and `--message` aren't empty) and shows the same warnings about env files and files that match an ignore rule.
+It doesn't contact the remote repository, so it can't tell whether the repository is reachable or the credentials work.
 
 ## 📁 Configuration File <a name="configuration-file"></a>
 
@@ -399,7 +417,9 @@ To avoid repeating command-line options, you can configure them in your `angular
 - dir
 - dryRun
 
-A list of all available options is also available [here](https://github.com/angular-schule/angular-cli-ghpages/blob/master/src/deploy/schema.json).
+Options that the schema doesn't know (e.g. a typo such as `noJekyll`) are ignored without an error: check the spelling if an option seems to have no effect.
+
+A list of all available options is also available [here](https://github.com/angular-schule/angular-cli-ghpages/blob/main/src/deploy/schema.json).
 
 Example:
 

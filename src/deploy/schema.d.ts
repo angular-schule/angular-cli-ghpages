@@ -14,15 +14,15 @@ export interface Schema {
    */
   baseHref?: string;
   /**
-   * A named build target, as specified in the `configurations` section of angular.json. Each named target is accompanied by a configuration of option defaults for that target. This is equivalent to calling the command `ng build --configuration=XXX`.
+   * The build target as `project:target[:configuration]`, e.g. `my-app:build:staging` (default: `<project>:build:production`). It also determines the output directory, with --no-build too.
    */
   buildTarget?: string;
   /**
-   * Architect target for prerendering/SSG. Takes precedence over buildTarget when specified. Requires a prerender target configured in angular.json.
+   * A separate prerender target as `project:target[:configuration]` (e.g. `my-app:prerender:production` of a setup with a prerender builder). Takes precedence over --build-target. The application builder prerenders within the build target and needs no prerender target.
    */
   prerenderTarget?: string;
   /**
-   * Skip build process during deployment.
+   * Build the project before the deployment (default). `--no-build` (`noBuild: true` in angular.json) deploys the existing build output.
    */
   noBuild?: boolean;
   /**
@@ -50,23 +50,23 @@ export interface Schema {
    */
   email?: string;
   /**
-   * Deprecated! This parameter is no longer needed. It will be ignored.
+   * Deprecated! This parameter has no effect and is ignored.
    */
   noSilent?: boolean;
   /**
-   * Exclude dotfiles (files starting with `.`) from deployment.
+   * Publish files and folders starting with `.` (default). `--no-dotfiles` (`noDotfiles: true` in angular.json) leaves them out.
    */
   noDotfiles?: boolean;
   /**
-   * By default a 404.html file is created for SPA routing on GitHub Pages. For Cloudflare Pages, you must use --no-notfound to enable native SPA routing.
+   * Create a 404.html copy of index.html for SPA routing on GitHub Pages (default; it replaces a 404.html of the build). `--no-notfound` (`noNotfound: true` in angular.json) leaves it out, as Cloudflare Pages needs for its native SPA routing.
    */
   noNotfound?: boolean;
   /**
-   * Skip creating the .nojekyll file.
+   * Create a .nojekyll file, so GitHub Pages serves files starting with `_` without Jekyll processing (default). `--no-nojekyll` (`noNojekyll: true` in angular.json) leaves it out.
    */
   noNojekyll?: boolean;
   /**
-   * Generate a CNAME file for the specified domain.
+   * Write a CNAME file with this domain into the deployment (it replaces a CNAME file of the build).
    */
   cname?: string;
   /**
@@ -74,11 +74,11 @@ export interface Schema {
    */
   add?: boolean;
   /**
-   * Overrides the directory for all published sources, relative to the current working directory.
+   * The directory to publish, relative to the current working directory or absolute (default: the browser output of the build target).
    */
   dir?: string;
   /**
-   * For testing: Run through without making any changes. Execute with --dry-run and nothing will happen.
+   * Run the checks of a deploy and show the options, without cloning, committing or pushing anything.
    */
   dryRun?: boolean;
   [k: string]: unknown;

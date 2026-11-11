@@ -43,6 +43,13 @@ This fork intentionally removes features (subcommands, actions, etc.) and preser
 - Custom event listeners (except version and help)
 - Most EventEmitter functionality
 
+### Fixes on top of commander v3.0.2 🔧
+
+1. **Negate detection**: only real `--no-` flags count as negated options
+2. **Version flags**: short-only (`-v`) and custom version flags work
+3. **Boolean flags with `=false`**: `--add=false` (also `0`, `no`, `off`, in any case) leaves the flag unset; any other value sets it, like commander v3.0.2. Negated flags (`--no-dotfiles=false`) set the flag with any value, like commander v3.0.2
+4. **`.opts()` with method names**: an unset option whose name is also a `Command` method (`--name`) is `undefined` in `.opts()`, not the method
+
 ## Compatibility Matrix
 
 | Capability                  | Commander v3.0.2 | commander-fork |
@@ -101,7 +108,7 @@ This fork is **FROZEN** - we will NOT update it unless:
 For internal fixes (angular-cli-ghpages team only):
 1. Update `commander-fork/index.js`
 2. Add test in `commander-fork/test/`
-3. Bump version to `3.0.2-fork.2`, etc.
+3. Describe the change in this README (the fork has no version of its own)
 
 ## Original Project
 

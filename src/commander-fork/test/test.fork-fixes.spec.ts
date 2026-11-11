@@ -1,11 +1,13 @@
 /**
  * Tests for angular-cli-ghpages fork-specific fixes and features
  *
- * This file contains tests for the 2 intentional improvements we made
+ * This file contains tests for the 4 intentional improvements we made
  * to commander v3.0.2 for angular-cli-ghpages:
  *
- * FIX 1/2: Tightened negate detection regex
- * FIX 2/2: Support for short-only and custom version flags
+ * FIX 1/4: Tightened negate detection regex
+ * FIX 2/4: Support for short-only and custom version flags
+ * FIX 3/4: "--flag=false" leaves a boolean flag unset
+ * FIX 4/4: .opts() leaves unset options undefined, also --name
  *
  * These tests do NOT exist in the original commander v3.0.2.
  */
@@ -25,8 +27,8 @@ describe('Fork Fix 2: Version short-only and custom flags', () => {
 
     beforeEach(() => {
       captured = {out: '', code: null};
-      exitSpy = vi.spyOn(process, 'exit').mockImplementation((c?: number) => {
-        captured.code = c ?? 0;
+      exitSpy = vi.spyOn(process, 'exit').mockImplementation((c?: string | number | null) => {
+        captured.code = Number(c ?? 0);
         return undefined as never;
       });
       writeSpy = vi.spyOn(process.stdout, 'write').mockImplementation((s: string | Uint8Array) => {
@@ -74,8 +76,8 @@ describe('Fork Fix 2: Version short-only and custom flags', () => {
 
     beforeEach(() => {
       exitCode = null;
-      exitSpy = vi.spyOn(process, 'exit').mockImplementation((c?: number) => {
-        exitCode = c ?? 0;
+      exitSpy = vi.spyOn(process, 'exit').mockImplementation((c?: string | number | null) => {
+        exitCode = Number(c ?? 0);
         throw new Error(`exit(${c})`);
       });
       writeSpy = vi.spyOn(process.stdout, 'write').mockImplementation(() => true);
@@ -110,7 +112,7 @@ describe('Fork Fix 2: Version short-only and custom flags', () => {
     let writeSpy: MockInstance;
 
     beforeEach(() => {
-      exitSpy = vi.spyOn(process, 'exit').mockImplementation((code?: number) => {
+      exitSpy = vi.spyOn(process, 'exit').mockImplementation((code?: string | number | null) => {
         return undefined as never;
       });
       writeSpy = vi.spyOn(process.stdout, 'write').mockImplementation(() => true);
@@ -179,7 +181,7 @@ describe('Fork Fix 2: Version short-only and custom flags', () => {
 
     beforeEach(() => {
       errSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
-      exitSpy = vi.spyOn(process, 'exit').mockImplementation((code?: number) => {
+      exitSpy = vi.spyOn(process, 'exit').mockImplementation((code?: string | number | null) => {
         return undefined as never;
       });
     });
@@ -234,3 +236,88 @@ describe('Fork Fix 2: Version short-only and custom flags', () => {
 });
 
 export {};
+
+describe('Fork Fix 3: Boolean flags with =false', () => {
+  let exitSpy: MockInstance;
+
+  beforeEach(() => {
+    exitSpy = vi.spyOn(process, 'exit').mockImplementation(() => {
+      throw new Error('process.exit');
+    });
+  });
+
+  afterEach(() => {
+    exitSpy.mockRestore();
+  });
+
+  function parse(...args: string[]) {
+    const program = new commander.Command();
+    program
+      .option('-a, --add', 'add')
+      .option('--no-dotfiles', 'no dotfiles')
+      .option('-d, --dir <dir>', 'dir');
+    program.parse(['node', 'test', ...args]);
+    return program;
+  }
+
+  it('sets the flag for =true', () => {
+    expect(parse('--add=true').add).toBe(true);
+  });
+
+  it('leaves the flag unset for =false', () => {
+    const program = parse('--add=false');
+    expect(program.add).toBeUndefined();
+    expect(program.args).toEqual([]);
+  });
+
+  it('sets negated flags with any value, like commander v3.0.2', () => {
+    for (const value of ['true', 'false', '0', 'off']) {
+      expect(parse(`--no-dotfiles=${value}`).dotfiles).toBe(false);
+    }
+  });
+
+  it('leaves the flag unset for 0, no and off in any case', () => {
+    for (const value of ['False', 'FALSE', '0', 'no', 'OFF']) {
+      expect(parse(`--add=${value}`).add).toBeUndefined();
+    }
+  });
+
+  it('sets the flag for any other value, like commander v3.0.2', () => {
+    const program = parse('--add=yes');
+    expect(program.add).toBe(true);
+    expect(program.args).toEqual([]);
+  });
+
+  it('keeps splitting options with an argument', () => {
+    const dir = 'dist/app';
+
+    expect(parse(`--dir=${dir}`).dir).toBe(dir);
+  });
+});
+
+describe('Fork Fix 4: opts() with option names of Command methods', () => {
+  function parse(...args: string[]) {
+    const program = new commander.Command();
+    program
+      .option('--name <name>', 'name')
+      .option('--email <email>', 'email');
+    program.parse(['node', 'test', ...args]);
+    return program;
+  }
+
+  it('leaves an unset --name undefined', () => {
+    const email = 'bot@example.org';
+
+    expect(parse(`--email=${email}`).opts()).toEqual({ name: undefined, email });
+  });
+
+  it('returns a set --name', () => {
+    const name = 'Deploy Bot';
+
+    expect(parse(`--name=${name}`).opts().name).toBe(name);
+  });
+
+  it('keeps the name() method of the command', () => {
+    expect(typeof parse().name).toBe('function');
+  });
+});

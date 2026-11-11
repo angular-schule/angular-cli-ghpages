@@ -21,6 +21,12 @@
  * - .opts() - get parsed options
  * - Property access (e.g., program.dir)
  * - Basic --help output
+ *
+ * Fixes on top of commander v3.0.2 (marked FORK FIX 1/4 to 4/4 below):
+ * 1. Tightened negate detection for --no- flags
+ * 2. Short-only and custom version flags
+ * 3. "--flag=false" (also 0, no, off) leaves a boolean flag unset
+ * 4. .opts() leaves an unset option undefined, also when a Command method has its name (--name)
  */
 
 /**
@@ -67,7 +73,7 @@ function Option(flags, description) {
   this.flags = flags;
   this.required = flags.indexOf('<') >= 0;
   this.optional = flags.indexOf('[') >= 0;
-  // FORK FIX 1/2: Tightened negate detection to avoid false positives
+  // FORK FIX 1/4: Tightened negate detection to avoid false positives
   // Original: this.negate = flags.indexOf('-no-') !== -1;
   // Problem: Would match '-no-' anywhere, e.g., '--enable-notifications' would incorrectly match
   // Fix: Only match '--no-' at word boundaries (start of string or after delimiter)
@@ -334,7 +340,20 @@ Command.prototype.normalize = function(args) {
         });
       }
     } else if (/^--/.test(arg) && ~(index = arg.indexOf('='))) {
-      ret.push(arg.slice(0, index), arg.slice(index + 1));
+      // FORK FIX 3/4: "--flag=false" leaves a boolean flag unset
+      // Upstream commander v3.0.2 splits "--add=false" into "--add" plus a positional
+      // "false", which sets the flag. Here false, 0, no and off (any case) leave a
+      // boolean flag unset; any other value sets it like upstream. Negated flags
+      // (--no-dotfiles=false) and the version flag keep the upstream behavior.
+      opt = this.optionFor(arg.slice(0, index));
+      if (opt && !opt.required && !opt.optional) {
+        var keepsFlag = opt.attributeName() === this._versionOptionName || opt.negate;
+        if (keepsFlag || !/^(false|0|no|off)$/i.test(arg.slice(index + 1))) {
+          ret.push(arg.slice(0, index));
+        }
+      } else {
+        ret.push(arg.slice(0, index), arg.slice(index + 1));
+      }
     } else {
       ret.push(arg);
     }
@@ -450,7 +469,11 @@ Command.prototype.opts = function() {
 
   for (var i = 0; i < len; i++) {
     var key = this.options[i].attributeName();
-    result[key] = key === this._versionOptionName ? this._version : this[key];
+    // FORK FIX 4/4: option values are own properties; this[key] would return
+    // a method of Command.prototype for an unset option like --name
+    result[key] = key === this._versionOptionName
+      ? this._version
+      : Object.prototype.hasOwnProperty.call(this, key) ? this[key] : undefined;
   }
   return result;
 };
@@ -506,7 +529,7 @@ Command.prototype.version = function(str, flags, description) {
   flags = flags || '-V, --version';
   description = description || 'output the version number';
   var versionOption = new Option(flags, description);
-  // FORK FIX 2/2: Support short-only and custom version flags properly
+  // FORK FIX 2/4: Support short-only and custom version flags properly
   // Original: this._versionOptionName = versionOption.long.substr(2) || 'version';
   // Problem: .substr(2) on '-v' gives empty string, falls back to 'version',
   //          but event is 'option:v' (or 'option:-v'), so listener never fires.

@@ -19,7 +19,7 @@ function resetStubStatus() {
 
 beforeEach(() => {
   stubError = vi.spyOn(console, 'error').mockImplementation(() => {});
-  stubExit = vi.spyOn(process, 'exit').mockImplementation((code?: number) => {
+  stubExit = vi.spyOn(process, 'exit').mockImplementation((code?: string | number | null) => {
     return undefined as never;
   });
 });

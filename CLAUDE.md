@@ -83,6 +83,8 @@ Publishing uses [npm Trusted Publishers](https://docs.npmjs.com/trusted-publishe
 
 Publishes with provenance attestation for supply chain security.
 
+Release notes of the next major version are collected in `docs/release-notes-v4.md` (compared with the last release): add every user-visible change there in the same commit.
+
 For pre-release versions, after publishing:
 ```bash
 npm dist-tag add angular-cli-ghpages@X.X.X-rc.X next

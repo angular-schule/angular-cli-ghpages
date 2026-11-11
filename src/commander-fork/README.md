@@ -108,7 +108,7 @@ This fork is **FROZEN** - we will NOT update it unless:
 For internal fixes (angular-cli-ghpages team only):
 1. Update `commander-fork/index.js`
 2. Add test in `commander-fork/test/`
-3. Bump version to `3.0.2-fork.2`, etc.
+3. Describe the change in this README (the fork has no version of its own)
 
 ## Original Project
 

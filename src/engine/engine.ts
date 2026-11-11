@@ -2,7 +2,7 @@ import {logging} from '@angular-devkit/core';
 
 import {Schema} from '../deploy/schema';
 import * as ghpages from '../gh-pages-fork/lib';
-import {isEnvFile, listFiles} from '../gh-pages-fork/lib/util';
+import {isEnvFile} from '../gh-pages-fork/lib/util';
 import {pathExists} from '../utils';
 import {defaults} from './defaults';
 import {
@@ -19,9 +19,10 @@ export async function run(
   options: Schema | PreparedOptions,
   logger: logging.LoggerApi
 ) {
+  // First: a missing build is the likeliest mistake and needs no git
+  await checkIfDistFolderExists(dir);
   const prepared = await prepareOptions(options, logger);
 
-  await checkIfDistFolderExists(dir);
   await publishViaGhPages(dir, prepared, logger);
 
   if (!prepared.dryRun) {
@@ -90,14 +91,21 @@ async function publishViaGhPages(
   logger: logging.LoggerApi
 ) {
   if (options.dryRun) {
-    // Only the build: env files kept by --add are on the branch, which a dry-run doesn't read.
-    // A hint only: a build that can't be listed doesn't fail the dry run.
-    const envFiles = (await listFiles(dir, options.dotfiles).catch(() => [])).filter(isEnvFile).sort();
+    // The checks and warnings of a deploy that need no clone. Not covered: the
+    // remote itself and the files on the branch (kept by --add, or their ignore rules).
+    const files = await ghpages.listPublishedFiles(dir, toPublishOptions(options));
+    const ignored = await ghpages.listIgnoredFiles(dir, files, options.git);
+    if (ignored.length > 0) {
+      ghpages.ignoredFileWarning(ignored).forEach((line) => logger.warn(line));
+    }
+    const envFiles = files.filter(isEnvFile);
     if (envFiles.length > 0) {
       ghpages.envFileWarning(envFiles).forEach((line) => logger.warn(line));
     }
     if (options.notfound) {
-      logger.info('Dry-run / SKIPPED: copying of index.html to 404.html');
+      logger.info(files.includes('index.html')
+        ? 'Dry-run / SKIPPED: copying of index.html to 404.html'
+        : 'index.html could not be copied to 404.html. The deploy would proceed without it.');
     }
     logger.info(
       `Dry-run / SKIPPED: publishing folder '${dir}' with the following options: ` +
@@ -109,8 +117,8 @@ async function publishViaGhPages(
           remote: options.remote,
           message: options.message,
           branch: options.branch,
-          name: options.name ? `the name '${options.name}' will be used for the commit` : 'local or global git user name will be used for the commit',
-          email: options.email ? `the email '${options.email}' will be used for the commit` : 'local or global git user email will be used for the commit',
+          name: options.user ? `the name '${options.user.name}' will be used for the commit` : 'local or global git user name will be used for the commit',
+          email: options.user ? `the email '${options.user.email}' will be used for the commit` : 'local or global git user email will be used for the commit',
           dotfiles: options.dotfiles ? `files starting with dot ('.') will be included` : `files starting with dot ('.') will be ignored`,
           notfound: options.notfound ? 'a 404.html file will be created' : 'a 404.html file will NOT be created',
           nojekyll: options.nojekyll ? 'a .nojekyll file will be created' : 'a .nojekyll file will NOT be created',
@@ -128,20 +136,24 @@ async function publishViaGhPages(
 
   await ghpages.publish(
     dir,
-    {
-      repo: options.repo,
-      branch: options.branch,
-      message: options.message,
-      remote: options.remote,
-      git: options.git,
-      add: options.add,
-      dotfiles: options.dotfiles,
-      user: options.user,
-      cname: options.cname,
-      nojekyll: options.nojekyll,
-      notfound: options.notfound
-    },
+    toPublishOptions(options),
     (message) => logger.info(message),
     (message) => logger.warn(message)
   );
+}
+
+function toPublishOptions(options: PreparedOptions): ghpages.PublishOptions {
+  return {
+    repo: options.repo,
+    branch: options.branch,
+    message: options.message,
+    remote: options.remote,
+    git: options.git,
+    add: options.add,
+    dotfiles: options.dotfiles,
+    user: options.user,
+    cname: options.cname,
+    nojekyll: options.nojekyll,
+    notfound: options.notfound
+  };
 }

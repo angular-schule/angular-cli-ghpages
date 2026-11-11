@@ -126,25 +126,30 @@ actions.ts (deploy function)
   ├─→ Build Angular app (if not --no-build)
   │   Uses BuilderContext.scheduleTarget()
   └─→ engine.run()
-      ├─→ Prepare options (tokens, CI env vars)
+      ├─→ Check that dist exists, prepare options (tokens, CI env vars)
+      ├─→ --dry-run: listPublishedFiles() and listIgnoredFiles() (the checks and warnings below
+      │   that need no clone), print the options, stop
       └─→ gh-pages-fork publish() (never modifies dist)
-          ├─→ Refuse a directory with a .git entry and a package.json (project root) when dotfiles are on
+          ├─→ listPublishedFiles(): refuse a non-directory, a project root (.git entry and
+          │   package.json, when dotfiles are on), an empty branch name or commit message, an empty directory
           ├─→ Remove stale temporary clones of interrupted deploys
           ├─→ git ls-remote in a throwaway repository with the remote (the user's includeIf
           │   sections apply, the project's config doesn't): does the target branch exist?
           │   yes → clone only that branch without checkout into a fresh temporary directory
           │   no  → empty repository in the remote's object format, HEAD on the new branch
           ├─→ --add on an existing branch: index = tree of the branch (read-tree HEAD)
-          ├─→ Write .nojekyll (bypasses Jekyll on GitHub) and CNAME (if custom domain),
-          │   copy dist (without .git), write 404.html (copy of index.html)
+          ├─→ Write .nojekyll (bypasses Jekyll on GitHub), copy dist (without .git),
+          │   write CNAME (--cname wins over a CNAME of the build), 404.html (copy of index.html)
           ├─→ Warn about files an ignore rule would leave out (every file is published)
           ├─→ git add --force (--all, or --ignore-removal with --add)
           ├─→ Warn about env files in the index, whatever they came from
-          ├─→ Commit if something changed, push
+          ├─→ Commit if something changed, push refs/heads/<branch> (a hint for a concurrent deploy)
           └─→ Remove the temporary clone
 
 The git directory (`.git`) lives next to the work tree in the temporary directory, so no
-copied file can overwrite it; a `.git` file in the work tree points to it. All git commands
+copied file can overwrite it; a `.git` file in the work tree points to it. Its info/attributes
+unsets all content conversions (text, eol, filter, ident, working-tree-encoding), so every
+file is published byte for byte, whatever .gitattributes or core.autocrlf say. All git commands
 that operate on the clone run with GIT_DIR and GIT_WORK_TREE pinned to it; ls-remote, clone
 and init run without repository variables inherited from a surrounding git process.
 ```
@@ -154,16 +159,18 @@ and init run without repository variables inherited from a surrounding git proce
 **Precedence:**
 1. `prerenderTarget` - For SSG/prerendering builds (if specified, overrides all others)
 2. `buildTarget` - Standard build target (if specified)
-3. Default - `${project}:build:production`
+3. Default - `${project}:build:production` (needs a `production` configuration)
+
+Values are full target strings `project:target[:configuration]`.
 
 **Implementation details:**
 - Static build target: `buildTarget || default` (see `src/deploy/builder.ts`)
 - Final target: `prerenderTarget || staticBuildTarget` (see `src/deploy/builder.ts`)
 
-Output directory resolution:
-- Checks `angular.json` for `outputPath` (resolved against the workspace root)
+Output directory resolution (also with `--no-build`):
+- Checks `angular.json` for `outputPath` of the build target (resolved against the workspace root)
 - If undefined: `dist/<project>/browser` (Angular 20+ default)
-- If string: appends `/browser` (modern Angular convention)
+- If string: appends `/browser` (application builder); browser builders (`*:browser`, `*:browser-esbuild`, `*-browser`, see `writesIntoOutputPath()` in `src/deploy/actions.ts`) write straight into `outputPath`
 - If object: uses `${base}/${browser}` properties
 - Can be overridden with `--dir` option (relative to the current working directory, or absolute)
 

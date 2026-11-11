@@ -217,13 +217,66 @@ describe('engine - real filesystem tests', () => {
       warnSpy.mockRestore();
     });
 
-    it('should not fail the dry run when the build can\'t be listed', async () => {
+    it('should warn about files that an ignore rule matches', async () => {
+      const warnSpy = vi.spyOn(logger, 'warn');
+      await fs.writeFile(path.join(testDir, 'index.html'), '<h1>app</h1>');
+      await fs.writeFile(path.join(testDir, '.gitignore'), '*.map\n');
+      await fs.writeFile(path.join(testDir, 'main.js.map'), '{}');
+
+      await engine.run(testDir, { dryRun: true }, logger);
+
+      expect(warnSpy.mock.calls.map(([message]) => message)).toEqual(ghpages.ignoredFileWarning(['main.js.map']));
+      warnSpy.mockRestore();
+    });
+  });
+
+  describe('checks of a deploy in dry-run', () => {
+    it('should fail when --dir is a file', async () => {
       const file = path.join(testDir, 'index.html');
       await fs.writeFile(file, '<h1>app</h1>');
 
-      await expect(engine.run(file, { dryRun: true }, logger)).resolves.toBeUndefined();
+      await expect(engine.run(file, { dryRun: true }, logger))
+        .rejects.toThrow(`The path "${file}" to publish (--dir) is not an existing directory.`);
     });
 
+    it('should fail for an empty directory', async () => {
+      await expect(engine.run(testDir, { dryRun: true }, logger))
+        .rejects.toThrow(`The directory "${testDir}" doesn't contain any files to publish.`);
+    });
+
+    it('should refuse a project root', async () => {
+      await fs.mkdir(path.join(testDir, '.git'));
+      await fs.writeFile(path.join(testDir, 'package.json'), '{}');
+
+      await expect(engine.run(testDir, { dryRun: true }, logger)).rejects.toThrow(/looks like a project root/);
+    });
+
+    it('should fail for an empty branch name', async () => {
+      await fs.writeFile(path.join(testDir, 'index.html'), '<h1>app</h1>');
+
+      await expect(engine.run(testDir, { dryRun: true, branch: '' }, logger))
+        .rejects.toThrow('The branch to publish to (--branch) must not be empty.');
+    });
+
+    it('should say that the 404.html copy is left out without an index.html', async () => {
+      await fs.writeFile(path.join(testDir, 'app.html'), '<h1>app</h1>');
+
+      await engine.run(testDir, { dryRun: true }, logger);
+
+      expect(loggerInfoSpy).toHaveBeenCalledWith('index.html could not be copied to 404.html. The deploy would proceed without it.');
+    });
+
+    it('should not promise a commit author for --name without --email', async () => {
+      await fs.writeFile(path.join(testDir, 'index.html'), '<h1>app</h1>');
+
+      await engine.run(testDir, { dryRun: true, name: 'Only Name' }, logger);
+
+      const output = loggerInfoSpy.mock.calls.map(([message]) => String(message)).join('\n');
+      expect(output).toContain('"name": "local or global git user name will be used for the commit"');
+    });
+  });
+
+  describe('warnings of a deploy', () => {
     it('should forward the warnings of publish() to logger.warn', async () => {
       const warnSpy = vi.spyOn(logger, 'warn');
       const warning = ghpages.envFileWarning(['.env'])[0];

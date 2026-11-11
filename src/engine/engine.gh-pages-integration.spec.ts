@@ -33,14 +33,11 @@ vi.mock('../gh-pages-fork/lib/git', async () => {
   };
 });
 
-// The dry-run lists the build to warn about env files; the test directories don't exist
-vi.mock('../gh-pages-fork/lib/util', async () => ({
-  ...(await vi.importActual('../gh-pages-fork/lib/util')),
-  listFiles: vi.fn().mockResolvedValue([])
-}));
-
+// The dry run checks the build like a deploy; the test directories don't exist
 vi.mock('../gh-pages-fork/lib', async () => ({
   ...(await vi.importActual('../gh-pages-fork/lib')),
+  listPublishedFiles: vi.fn().mockResolvedValue(['index.html']),
+  listIgnoredFiles: vi.fn().mockResolvedValue([]),
   publish: vi.fn()
 }));
 

@@ -6,7 +6,10 @@
   "properties": {
     "project": {
       "type": "string",
-      "description": "The project for which the deploy config should be added"
+      "description": "The project for which the deploy config should be added (default: the project of the current directory, or the only project of the workspace)",
+      "$default": {
+        "$source": "projectName"
+      }
     }
   },
   "required": [],

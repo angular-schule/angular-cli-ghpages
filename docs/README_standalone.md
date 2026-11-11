@@ -1,7 +1,6 @@
 # angular-cli-ghpages: README for the standalone program
 
-In the past, this project was a standalone program.
-This is still possible.
+Besides `ng deploy`, `angular-cli-ghpages` is a standalone program: it publishes any directory, also without the Angular CLI.
 
 ## Installation & Setup
 
@@ -37,18 +36,6 @@ or (`<base href="/">` stays untouched)
 ```bash
 ng build
 npx angular-cli-ghpages [OPTIONS]  --dir=dist/[PROJECTNAME]/browser
-```
-
-### Usage with Ionic
-
-You can use the tool with Angular based Ionic projects, too. Instead of the ` dist` folder, the Ionic CLI will create a `www` folder you have to point the tool to. Just use the following commands:
-
-```bash
-ionic build --prod -- --base-href=https://USERNAME.github.io/REPOSITORY_NAME/`
-```
-
-```bash
-npx angular-cli-ghpages --dir=www
 ```
 
 ## Build Target Parameters (Angular Builder Only)
@@ -91,7 +78,13 @@ If you need automatic build integration, use `ng deploy` instead of the standalo
 
 ## Extra
 
-For your convenience, the command will recognize the environment variable `GH_TOKEN` and will replace this pattern in the `--repo` string.
+The program is also available under the short name `ngh` (e.g. `npx ngh --dir=dist/my-app/browser` after the installation).
+
+### Tokens
+
+A repository URL starting with `https://github.com/` (also the URL of the remote when `--repo` isn't set) gets a token from the environment variable `GH_TOKEN`, `PERSONAL_TOKEN` or `GITHUB_TOKEN` (the first one that is set, in this order): it becomes `https://x-access-token:<token>@github.com/...`.
+
+For other URLs, the command recognizes the placeholder `GH_TOKEN` in the `--repo` string and replaces it with the value of the environment variable `GH_TOKEN` (only this variable).
 
 ```bash
 npx angular-cli-ghpages --repo=https://GH_TOKEN@github.com/<username>/<repositoryname>.git --name="Displayed Username" --email=mail@example.org
@@ -99,7 +92,18 @@ npx angular-cli-ghpages --repo=https://GH_TOKEN@github.com/<username>/<repositor
 
 > Don't share the GH_TOKEN with anyone! It is essentially a password to your GitHub account.
 
+Tokens and passwords in the URL are hidden (`https://***@github.com/...`) in every message, also in the output of `--dry-run`.
+
+### Git configuration
+
+The deploy works in a temporary clone: `node_modules/.cache/gh-pages` of the nearest folder with a `package.json`, or the temp directory of the system (without a `package.json`, or if `node_modules` isn't writable).
+Your git configuration applies to it, also `[includeIf "hasconfig:remote.*.url:..."]` sections (e.g. an SSH key per account).
+`[includeIf "gitdir:..."]` sections match the path of the clone: a pattern for the folder of your projects (e.g. `gitdir:~/work/`) applies when the clone is in `node_modules/.cache` of a project in that folder, not in the temp directory of the system. Without a `package.json`, use `hasconfig:remote.*.url:` instead.
+
 ## Options
+
+Short forms: `-d` (`--dir`), `-r` (`--repo`), `-R` (`--remote`), `-m` (`--message`), `-b` (`--branch`), `-n` (`--name`), `-e` (`--email`), `-T` (`--no-dotfiles`), `-c` (`--cname`), `-a` (`--add`), `-V` (`--version`), `-h` (`--help`).
+Boolean flags also accept a value: `--add=true` sets the flag, `--add=false` (also `0`, `no` and `off`) leaves it unset.
 
 #### --help <a name="help"></a>
 
@@ -140,9 +144,8 @@ If you want to push to another remote, you can provide the remote name in the `r
 - Default: `Auto-generated commit`
 - Example: `npx angular-cli-ghpages --message="What could possibly go wrong?"`
 
-The commit message **must be wrapped in quotes**.  
-Some handy additional text is always added,
-if the environment variable `process.env.TRAVIS` exists (for Travis CI).
+The commit message **must be wrapped in quotes** if there are any spaces in the text.
+Some additional text (e.g. a link to the commit and the build) is always added to the message if the command runs on Travis CI, CircleCI or GitHub Actions.
 
 #### --branch <a name="branch"></a>
 
@@ -192,16 +195,19 @@ The command includes dotfiles by default (e.g. `.htaccess` will be committed)
 With `--no-dotfiles` files starting with `.` are ignored.
 Env files (`.env`, `.env.*`, `*.env`, in any folder) are published like every other file, but each deploy (also `--dry-run`) shows a warning listing them, because they usually contain secrets. Files and folders named `.git` are never published.
 Ignore rules (a global gitignore or a `.gitignore` inside the directory) don't apply: every other file of the directory is published, and a warning lists the files an ignore rule matches.
+Every file is published byte for byte as it is in the directory: git attributes (a `.gitattributes` inside the directory or of the user, e.g. `text=auto` or Git LFS filters) and `core.autocrlf` don't change it.
 
 #### --dry-run <a name="dry-run"></a>
 
 - **optional**
-- Default: `undefined`
+- Default: `false`
 - Example:
   - `npx angular-cli-ghpages` -- Normal behaviour: Changes are applied.
   - `npx angular-cli-ghpages --dry-run` -- No changes are applied at all.
 
-Run through without making any changes. This can be very usefull, because it outputs what would happend without doing anything.
+Run through without making any changes. This can be very useful, because it outputs what would happen without doing anything.
+The dry run performs the checks of a deploy that need no clone (the directory exists and isn't a project root, it contains files, `--branch` and `--message` aren't empty) and shows the same warnings about env files and files that match an ignore rule.
+It doesn't contact the remote repository, so it can't tell whether the repository is reachable or the credentials work.
 
 #### --cname <a name="cname"></a>
 
@@ -210,7 +216,7 @@ Run through without making any changes. This can be very usefull, because it out
 - Example:
   - `npx angular-cli-ghpages --cname=example.com`
 
-A CNAME file will be created enabling you to use a custom domain. [More information on GitHub Pages using a custom domain](https://help.github.com/articles/using-a-custom-domain-with-github-pages/).
+A CNAME file will be created enabling you to use a custom domain. It replaces a `CNAME` file of the directory; without `--cname`, a `CNAME` file of the directory is published like every other file. [More information on GitHub Pages using a custom domain](https://help.github.com/articles/using-a-custom-domain-with-github-pages/).
 
 #### --add <a name="add"></a>
 
@@ -219,7 +225,7 @@ A CNAME file will be created enabling you to use a custom domain. [More informat
 - Example:
   - `npx angular-cli-ghpages --add` (or `--add=true`; `--add=false` keeps the default, as do `0`, `no` and `off`)
 
-If is set to `true`, it will only add, and never remove existing files.
+If it is set to `true`, it will only add, and never remove existing files.
 By default, the published directory replaces the complete content of the target branch.
 
 #### --no-notfound <a name="no-notfound"></a>

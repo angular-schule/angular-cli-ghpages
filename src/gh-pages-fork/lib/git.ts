@@ -65,13 +65,16 @@ export function spawn(exe: string, args: string[], options: SpawnOptions = {}): 
 /**
  * process.env without the repository variables, plus `extra`.
  */
-function isolatedEnv(extra: NodeJS.ProcessEnv = {}): NodeJS.ProcessEnv {
+export function isolatedEnv(extra: NodeJS.ProcessEnv = {}): NodeJS.ProcessEnv {
   const env = { ...process.env };
   for (const name of REPOSITORY_VARIABLES) {
     delete env[name];
   }
   return { ...env, ...extra };
 }
+
+/** Unsets every attribute that converts content on `git add` */
+export const PUBLISH_AS_IS_ATTRIBUTES = '* -text -eol -filter -ident -working-tree-encoding\n';
 
 /** Scheme (group 1) and userinfo (group 2) of a repository URL; two characters minimum, so `C:\\` is no scheme */
 const URL_WITH_USERINFO = /^([a-z][a-z0-9+.-]+:[/\\]*)([^/]*)@/i;
@@ -186,6 +189,12 @@ export class Git {
     await fs.rm(gitFile, { force: true });
     await fs.writeFile(gitFile, 'gitdir: ../.git\n');
 
+    // Highest precedence of all attribute sources: no .gitattributes of the build or
+    // of the user (and no core.autocrlf) changes the published bytes, no LFS filter
+    // replaces a file by a pointer. Every file is published exactly as it is in the build.
+    await fs.mkdir(path.join(gitDir, 'info'), { recursive: true });
+    await fs.writeFile(path.join(gitDir, 'info', 'attributes'), PUBLISH_AS_IS_ATTRIBUTES);
+
     const git = new Git(
       workTree,
       options.git,
@@ -257,7 +266,16 @@ export class Git {
    * tag has the same name as the branch.
    */
   async push(remote: string, branch: string): Promise<void> {
-    await this.exec('push', '--tags', remote, 'refs/heads/' + branch);
+    try {
+      await this.exec('push', '--tags', remote, 'refs/heads/' + branch);
+    } catch (error) {
+      // Two deploys at the same time: the second one finds a branch it didn't clone
+      if (error instanceof ProcessError && /cannot lock ref|reference already exists|\[rejected\]|fetch first|non-fast-forward/.test(error.message)) {
+        throw new ProcessError(error.code, error.message +
+          `\nThe branch "${branch}" changed on the remote during the deploy (another deploy at the same time?). Run the deploy again.`);
+      }
+      throw error;
+    }
   }
 
   /**
@@ -280,7 +298,7 @@ export class Git {
       throw new Error(
         'Failed to get remote.' + remote + '.url (task must either be ' +
         'run in a git repository with a configured ' + remote + ' remote ' +
-        'or must be configured with the "repo" option).'
+        'or must be configured with the --repo option).'
       );
     }
     return repo;

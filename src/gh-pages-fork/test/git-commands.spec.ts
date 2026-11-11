@@ -97,6 +97,15 @@ describe('gh-pages-fork git commands', () => {
     'git push --tags origin refs/heads/gh-pages'
   ];
 
+  it('explains a push rejected by a concurrent deploy', async () => {
+    const rejected = '! [rejected]        gh-pages -> gh-pages (fetch first)';
+    results['push'] = { code: 1, output: rejected };
+
+    await expect(deploy()).rejects.toThrow(
+      `${rejected}\nThe branch "gh-pages" changed on the remote during the deploy (another deploy at the same time?). Run the deploy again.`
+    );
+  });
+
   it('deploys to an existing branch', async () => {
     await deploy();
 

@@ -626,7 +626,7 @@ describe('prepareOptions helpers - intensive tests', () => {
 
       await expect(getRepo(options))
         .rejects
-        .toThrow('Failed to get remote.nonexistent-remote-12345.url (task must either be run in a git repository with a configured nonexistent-remote-12345 remote or must be configured with the "repo" option).');
+        .toThrow('Failed to get remote.nonexistent-remote-12345.url (task must either be run in a git repository with a configured nonexistent-remote-12345 remote or must be configured with the --repo option).');
     });
 
     it('should throw helpful error when not in a git repository', async () => {
@@ -642,7 +642,7 @@ describe('prepareOptions helpers - intensive tests', () => {
         // Same error for both "not in a git repo" and "remote doesn't exist"
         await expect(getRepo(options))
           .rejects
-          .toThrow('Failed to get remote.origin.url (task must either be run in a git repository with a configured origin remote or must be configured with the "repo" option).');
+          .toThrow('Failed to get remote.origin.url (task must either be run in a git repository with a configured origin remote or must be configured with the --repo option).');
       } finally {
         process.chdir(originalCwd);
         await fs.rm(tempDir, { recursive: true, force: true });

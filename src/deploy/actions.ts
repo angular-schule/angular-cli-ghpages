@@ -5,6 +5,15 @@ import path from 'path';
 import { BuildTarget, AngularOutputPath, isOutputPathObject } from '../interfaces';
 import { Schema } from './schema';
 
+/**
+ * Browser builders write straight into a string outputPath (no `browser` subfolder):
+ * `@angular-devkit/build-angular:browser` and `:browser-esbuild`, and builders
+ * named after them (`@angular-builders/custom-webpack:browser`, `@nx/angular:webpack-browser`).
+ */
+export function writesIntoOutputPath(builder: string): boolean {
+  return /:(?:[\w-]+-)?browser(?:-esbuild)?$/.test(builder);
+}
+
 export default async function deploy(
   engine: {
     run: (
@@ -20,6 +29,9 @@ export default async function deploy(
   // 1. BUILD
   if (options.noBuild) {
     context.logger.info(`📦 Skipping build`);
+    if (options.baseHref) {
+      context.logger.warn('--base-href has no effect with --no-build: it is an option of the build.');
+    }
   } else {
     if (!context.target) {
       throw new Error('Cannot execute the build target');
@@ -55,9 +67,8 @@ export default async function deploy(
 
   } else {
 
-    const buildOptions = await context.getTargetOptions(
-      targetFromTargetString(buildTarget.name)
-    );
+    const target = targetFromTargetString(buildTarget.name);
+    const buildOptions = await context.getTargetOptions(target);
 
     // Output path configuration
     // The outputPath option can be either:
@@ -75,7 +86,10 @@ export default async function deploy(
       const projectName = buildTarget.name.split(':')[0];
       dir = path.join('dist', projectName, 'browser');
     } else if (typeof outputPath === 'string') {
-      dir = path.join(outputPath, 'browser');
+      // The browser builders of @angular-devkit/build-angular write straight into
+      // outputPath; the application builder writes the browser files into a subfolder
+      const builder = await context.getBuilderNameForTarget(target);
+      dir = writesIntoOutputPath(builder) ? outputPath : path.join(outputPath, 'browser');
     } else if (isOutputPathObject(outputPath)) {
       // browser defaults to 'browser' per Angular CLI schema
       // Explicit empty string '' means no subfolder (browser files directly in base)

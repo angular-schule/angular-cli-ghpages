@@ -134,6 +134,7 @@ describe('CLI End-to-End Tests', () => {
       const email = 'bot@example.com';
 
       const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'cli-email-'));
+      fs.writeFileSync(path.join(dir, 'index.html'), '<h1>app</h1>');
 
       const result = runCliRaw(['--dry-run', '--dir=.', '--repo=https://github.com/user/repo.git', `--email=${email}`], dir);
       const json = parseJsonFromCliOutput(result.output);
@@ -463,6 +464,7 @@ describe('CLI End-to-End Tests', () => {
     it('should keep a leading slash relative to the cwd when that path exists', () => {
       const cwd = fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(), 'cli-dir-')));
       fs.mkdirSync(path.join(cwd, 'dist', 'app'), { recursive: true });
+      fs.writeFileSync(path.join(cwd, 'dist', 'app', 'index.html'), '<h1>app</h1>');
       const program = path.resolve(__dirname, '../dist/angular-cli-ghpages');
 
       try {

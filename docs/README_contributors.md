@@ -42,7 +42,8 @@ Follow the instructions for [checking and updating the Angular CLI version](#ang
 This builder requires the method `getTargetOptions()` from the Angular DevKit which was introduced [here](https://github.com/angular/angular-cli/pull/13825/files).
 
 **Version compatibility:**
-- **v3.x:** Supports Angular 18 and higher (current version)
+- **v4.x:** Supports Angular 18 to 22 (current version)
+- **v3.x:** Supports Angular 18 to 22
 - **v2.x:** Supported Angular 18 (previous major version)
 - **v1.x:** Supported Angular 9-17 (deprecated)
 

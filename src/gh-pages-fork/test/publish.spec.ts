@@ -2,6 +2,7 @@
  * publish() against real git repositories (local bare repos as remotes).
  */
 
+import { execFileSync } from 'child_process';
 import * as fs from 'fs/promises';
 import * as os from 'os';
 import * as path from 'path';
@@ -349,7 +350,7 @@ describe('gh-pages-fork publish()', () => {
   it('rejects when basePath is not a directory', async () => {
     const file = path.join(dist, 'index.html');
 
-    await expect(publish(file, { repo: fileUrl(remote), user })).rejects.toThrow('The "base" option must be an existing directory');
+    await expect(publish(file, { repo: fileUrl(remote), user })).rejects.toThrow(`The path "${file}" to publish (--dir) is not an existing directory.`);
   });
 
   it('commits with the git user from the environment when the project has none', async () => {
@@ -737,13 +738,56 @@ describe('gh-pages-fork publish()', () => {
     expect(tree(remote)).toEqual(['assets/app.js', 'index.html']);
   });
 
-  it('prefers a CNAME of the directory over the option', async () => {
+  it('replaces a CNAME of the directory with the --cname option', async () => {
+    const messages: string[] = [];
+    const cname = 'option.example.org';
+    await fs.writeFile(path.join(dist, 'CNAME'), 'build.example.org');
+
+    await deploy({ cname }, (message) => messages.push(message));
+
+    expect(git(remote, 'show', 'gh-pages:CNAME')).toBe(cname);
+    expect(messages).toContain(`Replacing the CNAME file of the build with ${cname}`);
+  });
+
+  it('publishes a CNAME of the directory without the --cname option', async () => {
     const fromBuild = 'build.example.org';
     await fs.writeFile(path.join(dist, 'CNAME'), fromBuild);
 
-    await deploy({ cname: 'option.example.org' });
+    await deploy();
 
     expect(git(remote, 'show', 'gh-pages:CNAME')).toBe(fromBuild);
+  });
+
+  it('replaces a CNAME folder of the directory with the --cname option', async () => {
+    const cname = 'option.example.org';
+    await fs.mkdir(path.join(dist, 'CNAME'));
+    await fs.writeFile(path.join(dist, 'CNAME', 'index.html'), 'route');
+
+    await deploy({ cname });
+
+    expect(tree(remote)).toEqual(['CNAME', 'assets/app.js', 'index.html']);
+    expect(git(remote, 'show', 'gh-pages:CNAME')).toBe(cname);
+  });
+
+  it('publishes the bytes of the build regardless of git attributes and core.autocrlf', async () => {
+    process.env.GIT_CONFIG_GLOBAL = path.join(tempDir, 'gitconfig');
+    await fs.writeFile(process.env.GIT_CONFIG_GLOBAL, '[core]\n\tautocrlf = true\n[filter "upper"]\n\tclean = tr a-z A-Z\n\tsmudge = cat\n');
+    const crlf = 'line 1\r\nline 2\r\n';
+    await fs.writeFile(path.join(dist, '.gitattributes'), '* text=auto\n*.txt filter=upper ident\n');
+    await fs.writeFile(path.join(dist, 'crlf.html'), crlf);
+    await fs.writeFile(path.join(dist, 'lower.txt'), '$Id$ lower case');
+
+    await deploy({ dotfiles: true });
+
+    const blob = (file: string) => execFileSync('git', ['cat-file', 'blob', `gh-pages:${file}`], { cwd: remote }).toString();
+    expect(blob('crlf.html')).toBe(crlf);
+    expect(blob('lower.txt')).toBe('$Id$ lower case');
+  });
+
+  it('rejects an empty branch name and an empty commit message before cloning', async () => {
+    await expect(deploy({ branch: '' })).rejects.toThrow('The branch to publish to (--branch) must not be empty.');
+    await expect(deploy({ message: '' })).rejects.toThrow('The commit message (--message) must not be empty.');
+    expect(git(remote, 'branch', '--list')).toBe('');
   });
 
   it('resolves a relative remote from a subdirectory against the top level of the repository', async () => {

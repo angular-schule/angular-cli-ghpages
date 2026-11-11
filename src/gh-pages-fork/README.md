@@ -43,6 +43,7 @@ The file structure and function names follow upstream, so upstream changes can b
 ### Added 🆕
 
 - Option `notfound`: 404.html as a copy of index.html, written after `basePath` is copied (replaces a 404.html of `basePath`)
+- `listPublishedFiles()` (the checks of `publish()` before the clone) and `listIgnoredFiles()` for the dry run of angular-cli-ghpages
 - A warning for env files in the commit (see the table below), `envFileWarning()`
 - `Git.keepExistingFiles()`, `Git.addAll()`, `Git.setIdentity()`
 - `redact()` for logging repository URLs
@@ -65,6 +66,10 @@ The file structure and function names follow upstream, so upstream changes can b
 | Staging              | `git rm` of the `remove` glob, copy, `git add .`                          | copy into the empty work tree, `git add --force --all` (the index starts empty); with `add`: `read-tree HEAD`, then `git add --force --ignore-removal`. Ignore rules, `.gitmodules` and symlinks on the branch don't affect the result; a warning lists the files an ignore rule matches |
 | Env files            | published like other files                                                | published like other files; `.env`, `.env.*`, `*.env` (any case, any folder, also folders with such a name) in the commit, also kept by `add`, are listed in a warning (`warn` callback, falls back to `log`) |
 | Project root         | —                                                                         | with `dotfiles`, a `basePath` with a `.git` entry and a `package.json` is refused                 |
+| Checks before clone  | `basePath` must be a directory                                            | also an empty `branch` or `message` is refused before anything is cloned                          |
+| CNAME                | written before the copy: a CNAME of `basePath` wins                       | written after the copy: the `cname` option replaces a CNAME (file or folder) of `basePath`        |
+| Git attributes       | `.gitattributes` and `core.autocrlf` apply on `git add`                   | `info/attributes` of the clone unsets all content conversions: the bytes of `basePath` are published |
+| Push                 | `git push --tags <remote> <branch>`                                       | `git push --tags <remote> refs/heads/<branch>` (a tag with the branch's name doesn't break it); a rejection by a concurrent push gets a hint |
 | Cache directory      | `find-cache-dir` (`$CACHE_DIR`, closest `package.json`); `getCacheDir(optPath)` returns a per-repository subdirectory | same lookup, `getCacheDir(cwd)` returns the directory for temporary clones or `undefined`; then (and when it isn't writable) clones go to a private `angular-cli-ghpages-clone-*` directory in the os temp dir; the path is made absolute |
 | Stale clones         | `gh-pages-clean`                                                          | before each deploy, temporary clones older than 6 hours, all other entries of the cache directory and `<os tmpdir>/angular-cli-ghpages-cache` are removed |
 | Repository check     | "Remote url mismatch" check against the cached clone                      | none (every clone is fresh); relative local paths are resolved before cloning                     |

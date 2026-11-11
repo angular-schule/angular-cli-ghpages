@@ -8,7 +8,7 @@ As GitHub has introduced [GitHub Actions](https://github.com/features/actions), 
 2. You've written some form of YML code before and/or have minimal knowledge of the syntax
 3. You already have a working Angular app that can be deployed to GitHub Pages
 4. You have already added **angular-cli-ghpages** in your project. If not:
-   - Please checkout [Quick Start Guide](https://github.com/angular-schule/angular-cli-ghpages#-quick-start-local-development-)
+   - Please checkout [Quick Start Guide](https://github.com/angular-schule/angular-cli-ghpages#quickstart)
    - Or simply run `ng add angular-cli-ghpages` in your project.
 
 ## Getting started
@@ -50,19 +50,19 @@ More info can be found here:
 
        steps:
          - name: Checkout
-           uses: actions/checkout@v4
+           uses: actions/checkout@v7
 
-         - name: Use Node.js 20.x
-           uses: actions/setup-node@v4
+         - name: Use Node.js 24.x
+           uses: actions/setup-node@v7
            with:
-             node-version: 20.x
+             node-version: 24.x
              cache: "npm"
 
          - name: Install dependencies
            run: npm install
 
          - name: Run tests
-           run: npm run ng -- test --no-watch --no-progress --browsers=ChromeHeadless
+           run: npm test -- --watch=false
 
          - name: Prepare and deploy
            env:
@@ -71,7 +71,8 @@ More info can be found here:
    ```
 
 6. Make sure to replace **`/the-repository-name/`**, **`Displayed Username`** and **`mail@example.org`** with correct values in above snippet.
-7. If you do not have tests you may remove the step "Run tests" from the example.
+7. The step "Run tests" runs the `test` script of your `package.json` once (`--watch=false` works for the default test runners of the Angular CLI, Vitest and Karma; Karma also needs a headless browser, e.g. `--browsers=ChromeHeadless`). If you do not have tests you may remove the step.
+   If your site isn't updated after a deploy with the `GITHUB_TOKEN`, use a personal access token (`GH_TOKEN`) as a secret instead, see the [note in the README](https://github.com/angular-schule/angular-cli-ghpages#continuous-delivery).
 8. You can also control when your workflows are triggered:
 
    - It can be helpful to not have your workflows run on every push to every branch in the repo.

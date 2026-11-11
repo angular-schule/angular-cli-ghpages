@@ -58,6 +58,16 @@ describe('Deploy Angular apps', () => {
     );
   });
 
+  it('warns that --base-href has no effect with --no-build', async () => {
+    const warn = vi.spyOn(context.logger, 'warn');
+    const build = vi.spyOn(context, 'scheduleTarget');
+
+    await deploy(mockEngine, context, BUILD_TARGET, { noBuild: true, baseHref: '/folder/' });
+
+    expect(build).not.toHaveBeenCalled();
+    expect(warn).toHaveBeenCalledWith('--base-href has no effect with --no-build: it is an option of the build.');
+  });
+
   it('should invoke engine.run', async () => {
     const spy = vi.spyOn(mockEngine, 'run');
     await deploy(mockEngine, context, BUILD_TARGET, {});
@@ -125,6 +135,28 @@ describe('Deploy Angular apps', () => {
 
     it('appends /browser when outputPath is string (Angular 18-19)', async () => {
       const dir = await captureDir('dist/my-app');
+      expect(dir).toBe(path.join(WORKSPACE_ROOT, 'dist/my-app/browser'));
+    });
+
+    it.each([
+      '@angular-devkit/build-angular:browser',
+      '@angular-devkit/build-angular:browser-esbuild',
+      '@angular-builders/custom-webpack:browser',
+      '@nx/angular:webpack-browser'
+    ])('uses a string outputPath as it is for the browser builder %s', async (builder) => {
+      const outputPath = 'dist/my-app';
+      context.getBuilderNameForTarget = () => Promise.resolve(builder);
+
+      const dir = await captureDir(outputPath);
+
+      expect(dir).toBe(path.join(WORKSPACE_ROOT, outputPath));
+    });
+
+    it('appends /browser to a string outputPath for the application builder', async () => {
+      context.getBuilderNameForTarget = () => Promise.resolve('@angular/build:application');
+
+      const dir = await captureDir('dist/my-app');
+
       expect(dir).toBe(path.join(WORKSPACE_ROOT, 'dist/my-app/browser'));
     });
 

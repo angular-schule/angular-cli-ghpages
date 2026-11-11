@@ -55,19 +55,19 @@ commander
   )
   .option(
     '-T, --no-dotfiles',
-    'Includes dotfiles by default. Otherwise files starting with `.` are ignored.',
+    'Leaves out files and folders starting with `.`. By default they are published.',
   )
   .option(
     '--no-notfound',
-    'By default a 404.html file is created, because this is the only known workaround to avoid 404 error messages on GitHub Pages. For Cloudflare Pages we highly recommend to disable the 404.html file by setting this switch to true!',
+    'Leaves out the 404.html copy of index.html (a 404.html of the build stays). By default it is created for SPA routing on GitHub Pages; Cloudflare Pages needs --no-notfound for its native SPA routing.',
   )
   .option(
     '--no-nojekyll',
-    'By default a .nojekyll file is created, because we assume you don\'t want to compile the build again with Jekyll.',
+    'Leaves out the .nojekyll file. By default it is created, so GitHub Pages serves files starting with `_` (no Jekyll processing).',
   )
   .option(
     '-c, --cname <domain>',
-    'Generate a CNAME file for the specified domain.',
+    'Write a CNAME file with this domain into the deployment (it replaces a CNAME file of the build).',
     defaults.cname
   )
   .option(
@@ -77,7 +77,7 @@ commander
   )
   .option(
     '--dry-run',
-    'For testing: Run through without making any changes.',
+    'Run the checks of a deploy and show the options, without cloning, committing or pushing anything.',
     defaults.dryRun
   )
   .parse(process.argv);

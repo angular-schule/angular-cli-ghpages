@@ -10,7 +10,7 @@ import * as fs from 'fs/promises';
 import * as os from 'os';
 import * as path from 'path';
 
-import { Git, hasHttpUserinfo, hasPassword, redact, withoutUserinfo } from './git';
+import { Git, hasHttpUserinfo, hasPassword, isolatedEnv, redact, spawn, withoutUserinfo } from './git';
 import { copy, getUser, isEnvFile, listFiles, User } from './util';
 
 export { redact };
@@ -168,8 +168,8 @@ export async function getRepo(options: { repo?: string; git?: string; remote?: s
  * Publish the files in `basePath` to a branch of a git repository.
  *
  * Prepares the branch in a fresh temporary directory without checking out its
- * files, writes .nojekyll and CNAME, the files from `basePath` and a 404.html
- * copy of index.html, stages them as the complete new content of the branch
+ * files, writes .nojekyll, the files from `basePath`, CNAME (replacing one of the
+ * build) and a 404.html copy of index.html, stages them as the complete new content of the branch
  * (with `add`: on top of the existing files), commits and pushes. Env files in
  * the commit are published like all other files, with a warning (`warn`, falls
  * back to `log`). The temporary directory is removed when publish() finishes;
@@ -177,11 +177,23 @@ export async function getRepo(options: { repo?: string; git?: string; remote?: s
  * clone is done (an interrupted deploy can leave it there for the next deploy's
  * cleanup) and is passed to git on the command line.
  */
-export async function publish(basePath: string, config: PublishOptions, log: Log = () => undefined, warn: Log = log): Promise<void> {
+/**
+ * Check what a deploy of `basePath` would publish and fail early with a clear
+ * message: the directory, a project root, an empty directory, an empty branch
+ * name or commit message. Runs for the deploy and for the dry run.
+ * Resolves with the files to publish (relative paths, `/` as separator).
+ */
+export async function listPublishedFiles(basePath: string, config: PublishOptions): Promise<string[]> {
   const options = { ...defaults, ...config };
 
-  if (!(await fs.stat(basePath)).isDirectory()) {
-    throw new Error('The "base" option must be an existing directory');
+  let isDirectory = false;
+  try {
+    isDirectory = (await fs.stat(basePath)).isDirectory();
+  } catch {
+    // reported below
+  }
+  if (!isDirectory) {
+    throw new Error(`The path "${basePath}" to publish (--dir) is not an existing directory.`);
   }
 
   // A project root as publish directory (e.g. an empty --dir) would publish the
@@ -194,10 +206,41 @@ export async function publish(basePath: string, config: PublishOptions, log: Log
     );
   }
 
+  if (!options.branch) {
+    throw new Error('The branch to publish to (--branch) must not be empty.');
+  }
+  if (!options.message) {
+    throw new Error('The commit message (--message) must not be empty.');
+  }
+
   const files = await listFiles(basePath, options.dotfiles);
   if (files.length === 0) {
     throw new Error(`The directory "${basePath}" doesn't contain any files to publish.`);
   }
+  return files;
+}
+
+/**
+ * The files of `files` (relative to `basePath`) that an ignore rule of the
+ * build or of the user's git config matches, without a clone: a throwaway
+ * repository with `basePath` as work tree, which git only reads. The dry run
+ * uses this; a deploy also sees the ignore rules of a branch kept by `add`.
+ */
+export async function listIgnoredFiles(basePath: string, files: string[], gitCmd = defaults.git): Promise<string[]> {
+  const gitDir = await fs.mkdtemp(path.join(os.tmpdir(), 'angular-cli-ghpages-ignored-'));
+  try {
+    await spawn(gitCmd, ['init', '--quiet', '--bare', gitDir], { env: isolatedEnv() });
+    const git = new Git(basePath, gitCmd, [], isolatedEnv({ GIT_DIR: gitDir, GIT_WORK_TREE: path.resolve(basePath) }));
+    const ignored = new Set((await git.exec('ls-files', '--others', '--ignored', '--exclude-standard', '-z')).split('\0').filter(Boolean));
+    return files.filter((file) => ignored.has(file));
+  } finally {
+    await fs.rm(gitDir, { recursive: true, force: true });
+  }
+}
+
+export async function publish(basePath: string, config: PublishOptions, log: Log = () => undefined, warn: Log = log): Promise<void> {
+  const options = { ...defaults, ...config };
+  const files = await listPublishedFiles(basePath, options);
 
   const user = options.user ?? await getUser(process.cwd(), options.git);
   const repoUrl = await getRepo(options);
@@ -227,13 +270,15 @@ export async function publish(basePath: string, config: PublishOptions, log: Log
       await fs.writeFile(path.join(git.cwd, '.nojekyll'), '');
     }
 
-    if (options.cname) {
-      log(`Creating CNAME for ${options.cname}`);
-      await fs.writeFile(path.join(git.cwd, 'CNAME'), options.cname);
-    }
-
     log('Copying files');
     await copy(files, basePath, git.cwd);
+
+    // After the copy: --cname replaces a CNAME of the build
+    if (options.cname) {
+      log(files.includes('CNAME') ? `Replacing the CNAME file of the build with ${options.cname}` : `Creating CNAME for ${options.cname}`);
+      await fs.rm(path.join(git.cwd, 'CNAME'), { recursive: true, force: true });
+      await fs.writeFile(path.join(git.cwd, 'CNAME'), options.cname);
+    }
 
     // After the copy: the SPA fallback for GitHub Pages replaces a 404.html of the
     // build (--no-notfound publishes that one). writeFile: a new file without the
